@@ -48,6 +48,7 @@
 .snvModifierNote { margin: 0; padding: 10px 12px; border-radius: 12px; color: #e7c1ef; background: rgba(255, 255, 255, .04); font-size: .78rem; font-weight: 800; text-align: center; }
 .snvConfirmRoster { width: 100%; margin-top: 18px; padding: 13px 18px; border-color: #d6a9e2; background: #82509a; }
 .snvStageForward { display: flex; align-items: center; justify-content: space-between; }
+.snvStageForward > span { word-break: keep-all; }
 .snvStageForward small { font-size: .7rem; font-weight: 900; opacity: .78; }
 .snvConfirmRoster.prominent { min-height: 60px; font-size: 1rem; }
 .snvConfirmRoster.prominent:not(:disabled) { border-color: #f1c66e; color: #241308; background: linear-gradient(135deg, #f5d488, #dca854); box-shadow: 0 14px 34px rgba(205, 143, 45, .34); }
@@ -106,22 +107,22 @@
 .snvCurrentActorLegend > span { width: 11px; height: 11px; border: 2px solid #f4d275; border-radius: 50%; background: rgba(244, 210, 117, .16); box-shadow: 0 0 12px rgba(244, 210, 117, .55); }
 :is(.snvSeatingWorkspace, .grimoirePresentationWorkspace) { display: grid; height: var(--grimoire-height, 600px); margin-top: 18px; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: stretch; transition: height .24s ease; }
 :is(.snvGrimoireDraft, .rectangularGrimoireBoard) { position: relative; width: 100%; height: var(--grimoire-height, 600px); border: 1px solid rgba(214, 169, 226, .28); border-radius: 28px; background: radial-gradient(circle, rgba(130, 80, 154, .24), rgba(12, 7, 17, .82)); transition: height .24s ease; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { position: absolute; left: var(--seat-x); top: var(--seat-y); display: grid; box-sizing: border-box; width: 108px; height: 88px; min-height: 0; padding: 5px; place-content: center; gap: 1px; transform: translate(-50%, -50%); border: 1px solid rgba(230, 209, 237, .26); border-radius: 20px; color: #f8f0fb; background: #2b1932; box-shadow: 0 9px 26px rgba(5, 2, 8, .4); font: inherit; cursor: pointer; overflow: hidden; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.unassigned { border-color: rgba(225, 197, 234, .36); background: #3a2543; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned { border-color: rgba(214, 169, 226, .3); background: #2d1a35; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.alignment-good { border-color: rgba(111, 195, 226, .78); background: linear-gradient(145deg, #203847, #28233b); }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.alignment-evil { border-color: rgba(224, 103, 127, .8); background: linear-gradient(145deg, #4a222e, #2b1b31); }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.kind-townsfolk { --kind-accent: #6dc5ea; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.kind-outsider { --kind-accent: #b797ed; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.kind-minion { --kind-accent: #e79862; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.kind-demon { --kind-accent: #ed6679; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned::after { position: absolute; right: 10px; bottom: 0; left: 10px; height: 4px; border-radius: 999px 999px 0 0; background: var(--kind-accent); content: ""; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.selected, :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button[aria-pressed="true"] { border-color: #d6a9e2; background: #573368; box-shadow: 0 0 0 3px rgba(214, 169, 226, .16); }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.snvCurrentActorSeat { z-index: 2; border-color: #f4d275; box-shadow: 0 0 0 4px rgba(244, 210, 117, .25), 0 0 34px rgba(244, 210, 117, .55); }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button img { width: 46px; height: 46px; margin: 0 auto; object-fit: contain; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button .snvSeatNumber { position: absolute; top: 7px; left: 8px; color: #a998b0; font-size: .58rem; font-weight: 900; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button .snvSeatPlayerName { display: block; max-width: 100%; overflow: hidden; color: #f6edf8; font-size: .7rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
-:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button small { display: block; max-width: 100%; overflow: hidden; color: #aa98b2; font-size: .58rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) { position: absolute; left: var(--seat-x); top: var(--seat-y); display: grid; box-sizing: border-box; width: 108px; height: 88px; min-height: 0; padding: 5px; place-content: center; gap: 1px; transform: translate(-50%, -50%); border: 1px solid rgba(230, 209, 237, .26); border-radius: 20px; color: #f8f0fb; background: #2b1932; box-shadow: 0 9px 26px rgba(5, 2, 8, .4); font: inherit; cursor: pointer; overflow: hidden; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).unassigned { border-color: rgba(225, 197, 234, .36); background: #3a2543; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).assigned { border-color: rgba(214, 169, 226, .3); background: #2d1a35; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).assigned.alignment-good { border-color: rgba(111, 195, 226, .78); background: linear-gradient(145deg, #203847, #28233b); }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).assigned.alignment-evil { border-color: rgba(224, 103, 127, .8); background: linear-gradient(145deg, #4a222e, #2b1b31); }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).kind-townsfolk { --kind-accent: #6dc5ea; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).kind-outsider { --kind-accent: #b797ed; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).kind-minion { --kind-accent: #e79862; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).kind-demon { --kind-accent: #ed6679; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).assigned::after { position: absolute; right: 10px; bottom: 0; left: 10px; height: 4px; border-radius: 999px 999px 0 0; background: var(--kind-accent); content: ""; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).selected, :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article)[aria-pressed="true"] { border-color: #d6a9e2; background: #573368; box-shadow: 0 0 0 3px rgba(214, 169, 226, .16); }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).assigned.snvCurrentActorSeat { z-index: 2; border-color: #f4d275; box-shadow: 0 0 0 4px rgba(244, 210, 117, .25), 0 0 34px rgba(244, 210, 117, .55); }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) img { width: 46px; height: 46px; margin: 0 auto; object-fit: contain; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) .snvSeatNumber { position: absolute; top: 7px; left: 8px; color: #a998b0; font-size: .58rem; font-weight: 900; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) .snvSeatPlayerName { display: block; max-width: 100%; overflow: hidden; color: #f6edf8; font-size: .7rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) small { display: block; max-width: 100%; overflow: hidden; color: #aa98b2; font-size: .58rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
 :is(.snvGrimoireCenter, .rectangularGrimoireCenter) { position: absolute; left: 50%; top: 50%; display: grid; width: 94px; aspect-ratio: 1; place-content: center; transform: translate(-50%, -50%); border: 1px solid rgba(214, 169, 226, .22); border-radius: 50%; text-align: center; background: rgba(15, 8, 19, .62); }
 :is(.snvGrimoireCenter, .rectangularGrimoireCenter) strong { font: 1.6rem Georgia, serif; }
 :is(.snvGrimoireCenter, .rectangularGrimoireCenter) span { color: #a996af; font-size: .65rem; font-weight: 850; }
@@ -304,15 +305,15 @@
 :is(.snvDayMode, [data-theme="day"]) .snvRoleDetailButton { border-color: rgba(96, 60, 105, .3); color: #3f2d44; background: rgba(255, 255, 255, .46); }
 :is(.snvDayMode, [data-theme="day"]) .snvRoleDetailIdentity:hover { background: rgba(96, 60, 105, .08); }
 :is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) { color: #35283a; border-color: rgba(88, 55, 97, .2); background: linear-gradient(145deg, #fffdfb, #eee5f0); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .62); }
-:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { border-color: rgba(88, 55, 97, .2); color: #35283a; background: #f7f1f8; box-shadow: 0 9px 24px rgba(73, 46, 80, .16); }
-:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.unassigned { border-color: rgba(88, 55, 97, .22); background: #f1e8f3; }
-:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.alignment-good { border-color: rgba(52, 143, 177, .64); background: linear-gradient(145deg, #f8fdff, #e3f1f6); }
-:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.alignment-evil { border-color: rgba(190, 67, 94, .68); background: linear-gradient(145deg, #fff9fa, #f5dfe4); }
-:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.selected, :is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button[aria-pressed="true"] { border-color: #82509a; background: #eadcef; box-shadow: 0 0 0 3px rgba(130, 80, 154, .14), 0 9px 24px rgba(73, 46, 80, .14); }
-:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.snvCurrentActorSeat { border-color: #c59527; box-shadow: 0 0 0 4px rgba(213, 165, 74, .22), 0 0 30px rgba(197, 149, 39, .32); }
-:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button .snvSeatNumber { color: #75637a; }
-:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button .snvSeatPlayerName { color: #302535; }
-:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button small { color: #6b5a70; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) { border-color: rgba(88, 55, 97, .2); color: #35283a; background: #f7f1f8; box-shadow: 0 9px 24px rgba(73, 46, 80, .16); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).unassigned { border-color: rgba(88, 55, 97, .22); background: #f1e8f3; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).assigned.alignment-good { border-color: rgba(52, 143, 177, .64); background: linear-gradient(145deg, #f8fdff, #e3f1f6); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).assigned.alignment-evil { border-color: rgba(190, 67, 94, .68); background: linear-gradient(145deg, #fff9fa, #f5dfe4); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).selected, :is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article)[aria-pressed="true"] { border-color: #82509a; background: #eadcef; box-shadow: 0 0 0 3px rgba(130, 80, 154, .14), 0 9px 24px rgba(73, 46, 80, .14); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article).assigned.snvCurrentActorSeat { border-color: #c59527; box-shadow: 0 0 0 4px rgba(213, 165, 74, .22), 0 0 30px rgba(197, 149, 39, .32); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) .snvSeatNumber { color: #75637a; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) .snvSeatPlayerName { color: #302535; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) small { color: #6b5a70; }
 :is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireCenter, .rectangularGrimoireCenter) { border-color: rgba(88, 55, 97, .2); background: #f5edf6; box-shadow: 0 8px 22px rgba(73, 46, 80, .12); }
 :is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireCenter, .rectangularGrimoireCenter) strong { color: #382b3d; }
 :is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireCenter, .rectangularGrimoireCenter) span, :is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireCenter, .rectangularGrimoireCenter) time { color: #705e75; }
@@ -348,15 +349,15 @@
 :is(.snvDayMode, [data-theme="day"]) .snvReturnDialog button { border-color: rgba(88, 55, 97, .2); color: #47364c; background: rgba(255, 255, 255, .58); }
 :is(.snvDayMode, [data-theme="day"]) .snvReturnDialog button:last-child { border-color: #82509a; color: #fff; background: #82509a; }
 :is(.snvDayMode, [data-theme="day"]) .snvReturnDialog button.snvDestructiveAction { border-color: #b6435a; color: #fff; background: #a8344c; }
-:is(.snvPrototypeHeader, .productionApplicationHeader), :is(.snvEyebrow, .productionApplicationEyebrow), :is(.snvPrototypeHeader, .productionApplicationHeader) p, .snvSetupControls, :is(.snvCatalogPreview, .roleCatalog), :is(.snvManualSurface, .playPresentation), :is(.snvSeatingSurface, .grimoirePresentation), .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, :is(.snvGrimoireDraft, .rectangularGrimoireBoard), :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { transition: color .72s ease, background-color .72s ease, border-color .72s ease, box-shadow .72s ease; }
+:is(.snvPrototypeHeader, .productionApplicationHeader), :is(.snvEyebrow, .productionApplicationEyebrow), :is(.snvPrototypeHeader, .productionApplicationHeader) p, .snvSetupControls, :is(.snvCatalogPreview, .roleCatalog), :is(.snvManualSurface, .playPresentation), :is(.snvSeatingSurface, .grimoirePresentation), .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, :is(.snvGrimoireDraft, .rectangularGrimoireBoard), :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) { transition: color .72s ease, background-color .72s ease, border-color .72s ease, box-shadow .72s ease; }
 @media (prefers-reduced-motion: reduce) {
-  :is(.snvFoundationPrototype, .productionApplicationShell), :is(.snvFoundationPrototype, .productionApplicationShell)::before, :is(.snvPrototypeHeader, .productionApplicationHeader), :is(.snvEyebrow, .productionApplicationEyebrow), :is(.snvPrototypeHeader, .productionApplicationHeader) p, .snvPhaseMark, .snvSetupControls, :is(.snvCatalogPreview, .roleCatalog), :is(.snvManualSurface, .playPresentation), :is(.snvSeatingSurface, .grimoirePresentation), .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, :is(.snvGrimoireDraft, .rectangularGrimoireBoard), :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { transition-duration: 0s; }
+  :is(.snvFoundationPrototype, .productionApplicationShell), :is(.snvFoundationPrototype, .productionApplicationShell)::before, :is(.snvPrototypeHeader, .productionApplicationHeader), :is(.snvEyebrow, .productionApplicationEyebrow), :is(.snvPrototypeHeader, .productionApplicationHeader) p, .snvPhaseMark, .snvSetupControls, :is(.snvCatalogPreview, .roleCatalog), :is(.snvManualSurface, .playPresentation), :is(.snvSeatingSurface, .grimoirePresentation), .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, :is(.snvGrimoireDraft, .rectangularGrimoireBoard), :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) { transition-duration: 0s; }
 }
 @keyframes snvTabForwardIn { from { opacity: .45; transform: translateX(100vw); } to { opacity: 1; transform: translateX(0); } }
 @keyframes snvTabBackwardIn { from { opacity: .45; transform: translateX(-100vw); } to { opacity: 1; transform: translateX(0); } }
 :is(.snvFoundationPrototype, .productionApplicationShell).tabForward > .snvTabPanel { animation: snvTabForwardIn .32s cubic-bezier(.22, .8, .28, 1); }
 :is(.snvFoundationPrototype, .productionApplicationShell).tabBackward > .snvTabPanel { animation: snvTabBackwardIn .32s cubic-bezier(.22, .8, .28, 1); }
-@media (max-width: 1040px) { :is(.snvSeatingWorkspace, .grimoirePresentationWorkspace) { height: auto; grid-template-columns: 1fr; } :is(.snvGrimoireDraft, .rectangularGrimoireBoard) { height: var(--mobile-grimoire-height, 760px); } :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray.contentHeight { order: -1; height: auto; } .snvLiveSeatDetails { order: -1; height: var(--mobile-grimoire-height, 520px); animation-name: snvMobilePanelSwapIn; } }
+@media (max-width: 1040px) { :is(.snvSeatingWorkspace, .grimoirePresentationWorkspace) { height: auto; grid-template-columns: 1fr; } :is(.snvGrimoireDraft, .rectangularGrimoireBoard) { height: var(--mobile-grimoire-height, 760px); } :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray.contentHeight { order: -1; height: auto; } .snvLiveSeatDetails { order: -1; height: var(--mobile-grimoire-height, 520px); animation-name: snvMobilePanelSwapIn; } }
 @media (max-width: 780px) {
   .snvScriptHomeLink + :is(.snvPrototypeHeader, .productionApplicationHeader) { padding-top: 52px; }
   :is(.snvSetupSurface, .setupPresentation), :is(.snvManualSurface, .playPresentation), :is(.snvSeatingWorkspace, .grimoirePresentationWorkspace), .snvStorageSurface { grid-template-columns: 1fr; }
@@ -393,8 +394,8 @@
   .snvDetailsDialog, .snvReturnDialog { width: 100%; border-radius: 24px 24px 0 0; }
   :is(.snvSeatingWorkspace, .grimoirePresentationWorkspace) { height: auto; }
   :is(.snvGrimoireDraft, .rectangularGrimoireBoard) { height: var(--mobile-grimoire-height, 760px); border-radius: 24px; }
-  :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); width: 88px; height: 76px; min-height: 0; padding: 5px; gap: 1px; }
-  :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button img { width: 38px; height: 38px; }
+  :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) { left: var(--mobile-seat-x); top: var(--mobile-seat-y); width: 88px; height: 76px; min-height: 0; padding: 5px; gap: 1px; }
+  :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > :is(button, article) img { width: 38px; height: 38px; }
   .snvSeatingTray.mobileCollapsed, .snvLiveSeatDetails.mobileCollapsed { display: none; }
   .snvSeatingTray.mobileOpen, .snvLiveSeatDetails.mobileOpen { position: fixed; z-index: 190; right: 0; bottom: 0; left: 0; display: grid; width: auto; height: auto; max-height: min(430px, calc(100dvh - 20px)); padding: 14px max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); border-radius: 24px 24px 0 0; background: #201426; box-shadow: 0 -22px 70px rgba(0, 0, 0, .58); overflow: auto; animation: snvSeatPanelIn .22s ease-out; }
   .snvSeatingTray > header { display: none; }

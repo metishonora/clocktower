@@ -45,6 +45,7 @@ export function RoleCatalog({
   ariaLabel,
   groups,
   onSelect,
+  onInspect,
   renderRole,
   className,
   groupsClassName,
@@ -53,6 +54,7 @@ export function RoleCatalog({
   ariaLabel: string;
   groups: RoleCatalogGroup[];
   onSelect: (roleId: string) => void;
+  onInspect?: (roleId: string) => void;
   renderRole?: (role: RoleCatalogItem) => ReactNode;
   className?: string;
   groupsClassName?: string;
@@ -72,8 +74,9 @@ export function RoleCatalog({
                   className={role.selected ? joinClasses("selected", selectedClassName) : undefined}
                   aria-label={role.ariaLabel}
                   aria-pressed={role.selected ?? false}
-                  disabled={role.disabled}
-                  onClick={() => onSelect(role.id)}
+                  disabled={role.disabled && !onInspect}
+                  data-selection-disabled={role.disabled || undefined}
+                  onClick={() => { onInspect?.(role.id); if (!role.disabled) onSelect(role.id); }}
                 >
                   {renderRole ? renderRole(role) : role.label}
                 </button>

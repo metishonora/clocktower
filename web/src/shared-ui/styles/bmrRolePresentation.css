@@ -1,0 +1,65 @@
+/* BMR colours applied to the unchanged TB/SnV role layouts. */
+.bmrProductionShell, .bmrRevealBackdrop {
+ --role-ink:#fff5f1; --role-muted:#c9a5a9; --role-line:rgba(224,156,164,.22);
+ --role-card:rgba(255,255,255,.04); --role-input:#300b15; --role-accent:#e9c36e; --role-selected:#8e293e;
+}
+.bmrProductionShell[data-theme=day] {
+ --role-ink:#3b2026; --role-muted:#76545b; --role-line:rgba(112,41,54,.22);
+ --role-card:rgba(175,78,91,.07); --role-input:#fff9f3; --role-selected:#a63d49;
+}
+.bmrProductionShell :is(.snvInformationIdentity strong,.snvInformationValues dd,.snvMathematicianAuditOutcome,.snvMadnessQuestion,.snvMadnessPanel h2,.issue107AbilityResult strong) {color:var(--role-ink);}
+.bmrProductionShell :is(.snvInformationValues dt,.snvInformationPairEditor legend,.snvInformationBinary legend,.snvMathematicianAudit summary,.snvMadnessPanel header span,.snvMadnessAbility,.issue107AbilityResult p,.issue107AbilityResult > span) {color:var(--role-muted);}
+.bmrProductionShell :is(.snvInformationValues > div,.snvInformationPairEditor,.snvInformationBinary,.snvMathematicianAudit,.snvTargetedInformationContext,.issue107AbilityResult,.snvMadnessAbility,.snvMadnessStatus) {border-color:var(--role-line);background:var(--role-card);}
+.bmrProductionShell :is(.snvInformationValues select,.snvInformationPairEditor select,.snvNumberConstraintEditor input,.snvMadnessResults button) {color:var(--role-ink);border-color:var(--role-line);background:var(--role-input);}
+.bmrProductionShell .snvDreamerLockedSelect:disabled {color:#ddd9df;background:#514d55;}
+.bmrProductionShell :is(.snvMadnessDock.night > button,.snvMadnessDock.day > button,.snvMadnessPanel.night,.snvMadnessPanel.day,.snvMadnessDialog.night,.snvMadnessDialog.day) {color:var(--role-ink);border-color:var(--role-line);background:var(--role-input);}
+.bmrProductionShell .snvMadnessDock > button.selected {border-color:var(--role-accent);background:var(--role-selected);}
+.bmrProductionShell :is(.cerenovusMadnessRevealPrompt,.snakeCharmerRevealPrompt) {color:var(--role-ink);}
+.bmrProductionShell :is(.cerenovusMadnessRevealPrompt,.snakeCharmerRevealPrompt) > p {color:var(--role-muted);}
+/* Layout and media queries come directly from the original role styles. */
+.bmrRevealBackdrop.bmrRoleRevealBackdrop {
+ color:var(--role-ink);
+ background:radial-gradient(circle at 50% 18%,rgba(130,27,48,.4),transparent 48%),#16050b;
+ overflow-y:auto;
+}
+.bmrRoleReveal.bmrRoleReveal {
+ box-sizing:border-box; max-width:100%;
+ color:var(--role-ink); border-color:var(--role-line);
+ background:radial-gradient(circle at 50% 35%,rgba(130,27,48,.32),rgba(31,7,14,.96));
+}
+.bmrRoleReveal :is(h1,h2,strong,.snvInformationRevealValue) {color:var(--role-ink);}
+.bmrRoleReveal :is(p,.tbRevealEyebrow,.snvInformationRevealLabel,.cerenovusMadnessRevealLead) {color:var(--role-muted);}
+.bmrRoleReveal > span,.bmrRoleReveal :is(.snvTargetedRevealPair > b,.evilTwinRevealPair > b) {color:var(--role-accent);}
+.bmrRoleReveal :is(.tbRevealSeatCards > article,.tbRevealCharacterCard,.tbRevealPlayerCard,.tbRevealTwinPair > article,.tbRevealIdentityCards > article,.snvTargetedRevealPair > div) {color:var(--role-ink);border-color:var(--role-line);background:var(--role-card);}
+.bmrRoleReveal :is(.tbRevealSeatCards > article > span,.tbRevealSection > header,.tbRevealSeatCards > article > strong,.evilTwinRevealIdentity > span) {color:var(--role-ink);border-color:var(--role-line);}
+.bmrRoleReveal.bmrRoleReveal > button {color:#2c1608;border-color:var(--role-accent);background:linear-gradient(135deg,#f3d78f,#d7a54d);}
+
+.bmrRevealBackdrop.bmrSpyRevealBackdrop {display:block;overflow:auto;padding:0;z-index:200;}
+.bmrSpyRevealBackdrop > .productionApplicationShell {width:100%;}
+
+
+.tbRevealWorkspace {grid-template-columns:1fr;}
+.tbSpyRevealToolbar {align-items:end;}
+.tbSpyRevealToolbar p,.tbSpyRevealToolbar h1 {margin:0;}
+.tbSpyRevealToolbar p {color:var(--role-accent,#d6b675);font-size:.7rem;font-weight:900;letter-spacing:.18em;}
+.tbSpyRevealToolbar h1 {margin-top:5px;font:2rem Georgia,serif;}
+.tbRevealTokenList {position:absolute;right:7px;bottom:6px;display:flex;gap:3px;}
+.tbRevealTokenList span {padding:2px 5px;border:1px solid var(--role-line);border-radius:999px;color:var(--role-accent);background:var(--role-input);font-size:.58rem;font-weight:850;}
+
+/* Original role content is rendered in a portal; supply the shell box model there too. */
+.bmrRevealBackdrop, .bmrRevealBackdrop * {box-sizing:border-box;}
+.bmrRevealBackdrop > :is(.bmrReveal,.bmrRoleReveal) {min-width:0;}
+.bmrRoleReveal > * {min-width:0;}
+.bmrRoleReveal.bmrRoleReveal > button {min-width:0;max-width:100%;}
+.bmrRoleReveal:is(.cerenovusMadnessReveal,.snakeCharmerReveal) > button {width:min(260px,100%);}
+.bmrRoleReveal.evilTwinReveal {container-type:inline-size;}
+.bmrRoleReveal.evilTwinReveal > h2 {font-size:clamp(1.25rem,8cqw,4.4rem);white-space:normal;text-wrap:balance;}
+.bmrRevealBluffs img {object-fit:contain;flex-shrink:0;}
+
+.bmrProductionShell .tbScalarInformationResult input {color:var(--role-ink);border-color:var(--role-line);background:var(--role-input);}
+.bmrProductionShell .tbScalarInformationResult dd > span {color:var(--role-muted);}
+
+/* Original Undo layout, with the same BMR panel palette as the live shell. */
+.bmrProductionShell .snvUndoHistoryDialog {color:var(--role-ink);border-color:var(--role-line);background:var(--role-input);}
+.bmrProductionShell .snvUndoHistoryDialog :is(p,.snvUndoLabel) {color:var(--role-muted);}
+.bmrProductionShell .snvUndoEventStack li p {color:var(--role-ink);}

@@ -12,6 +12,8 @@
   ],
   "exclude": [
     "test/**/*Prototype.test.tsx",
-    "test/browser/**"
+    "test/browser/**",
+    "src/custom/**",
+    "test/custom/**"
   ]
 }

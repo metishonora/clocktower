@@ -80,6 +80,7 @@ test("builds the Trouble Brewing report using the shared privacy contract", () =
   assert.equal(report.metadata.reportSchemaVersion, 2);
   assert.equal(report.metadata.scriptId, "troubleBrewing");
   assert.equal(report.fixture.schemaVersion, 3);
+  if (report.fixture.schemaVersion !== 3) throw new Error("expected legacy fixture");
   assert.equal(report.fixture.game.scriptId, "troubleBrewing");
   assert.equal(report.fixture.game.name, "Redacted bug report");
   assert.equal("ui" in report.fixture, false);

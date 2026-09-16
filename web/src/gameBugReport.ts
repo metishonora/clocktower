@@ -3,6 +3,7 @@ import type {
   Phase,
   StepType,
 } from "./core/types.js";
+import { officialGameFileScriptId, type ScriptId } from "./core/scripts.js";
 
 export type GameBugReportEnvironment = {
   appVersion: string;
@@ -27,7 +28,7 @@ export type GameBugReportContext<ActiveTab extends string = string> =
 export type GameBugReportMetadata = {
   reportSchemaVersion: 2;
   schemaVersion: GameFile["schemaVersion"];
-  scriptId: GameFile["game"]["scriptId"];
+  scriptId: ScriptId;
   appVersion: string;
   buildCommit: string;
   pageUrl: string;
@@ -67,6 +68,8 @@ export function buildGameBugReport<ActiveTab extends string = string>(
   config: GameBugReportConfig,
   input: GameBugReportInput<ActiveTab>,
 ): GameBugReport<ActiveTab> {
+  const scriptId = officialGameFileScriptId(input.gameFile);
+  if (!scriptId) throw new Error("커스텀 시나리오 버그 제보는 아직 지원하지 않습니다.");
   const players = setupPlayers(input.gameFile);
   const redaction = buildPlayerRedaction(players);
   const fixture = sanitizeGameFile(input.gameFile);
@@ -82,7 +85,7 @@ export function buildGameBugReport<ActiveTab extends string = string>(
   const metadata: GameBugReportMetadata = {
     reportSchemaVersion: 2,
     schemaVersion: input.gameFile.schemaVersion,
-    scriptId: input.gameFile.game.scriptId,
+    scriptId,
     appVersion: input.environment.appVersion,
     buildCommit: input.environment.buildCommit,
     pageUrl: input.environment.pageUrl,
@@ -184,20 +187,21 @@ function buildPlayerRedaction(players: SetupPlayer[]): PlayerRedaction {
 
 export function sanitizeGameFile(gameFile: GameFile): GameFile {
   const redaction = buildPlayerRedaction(setupPlayers(gameFile));
+  const { ui: _ui, ...canonical } = gameFile;
   const events = gameFile.game.events.map(
     (event) => sanitizeValue(event, redaction),
   ) as GameFile["game"]["events"];
   return {
-    schemaVersion: 3,
+    ...canonical,
     game: {
-      scriptId: gameFile.game.scriptId,
+      ...gameFile.game,
       id: gameFile.game.id,
       name: "Redacted bug report",
       createdAt: gameFile.game.createdAt,
       updatedAt: gameFile.game.updatedAt,
       events,
     },
-  };
+  } as GameFile;
 }
 
 function sanitizeValue(value: unknown, redaction: PlayerRedaction): unknown {

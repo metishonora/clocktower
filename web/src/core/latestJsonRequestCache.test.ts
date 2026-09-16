@@ -1,7 +1,11 @@
 import { equal, notEqual } from "node:assert/strict";
+
 import test from "node:test";
+
 import type { GameFile } from "./types.js";
+
 import { memoizeLatestJsonRequest, serializeReplayRequest } from "./latestJsonRequestCache.js";
+
 
 test("consecutive structurally identical requests reuse the latest replay result", async () => {
   let requestCount = 0;
@@ -24,6 +28,7 @@ test("consecutive structurally identical requests reuse the latest replay result
   equal(requestCount, 2);
 });
 
+
 test("a rejected request is not retained as the latest replay result", async () => {
   let requestCount = 0;
   const request = memoizeLatestJsonRequest(async () => {
@@ -38,6 +43,7 @@ test("a rejected request is not retained as the latest replay result", async () 
   equal(await request(input), 2);
   equal(requestCount, 2);
 });
+
 
 test("a replay cache can ignore UI-only and timestamp changes", async () => {
   let requestCount = 0;

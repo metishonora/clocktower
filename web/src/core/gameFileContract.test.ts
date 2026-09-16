@@ -1,0 +1,160 @@
+import { deepEqual, equal, throws } from "node:assert/strict";
+
+import test from "node:test";
+
+import {
+  exportGameFileJson,
+  parseGameFileJson,
+} from "../gameStorage.js";
+
+
+function officialV3(scriptId = "sectsAndViolets") {
+  return {
+    schemaVersion: 3,
+    game: {
+      scriptId,
+      id: "official-game",
+      name: "Official game",
+      createdAt: "2026-09-02T00:00:00.000Z",
+      updatedAt: "2026-09-02T00:00:00.000Z",
+      events: [],
+    },
+  };
+}
+
+
+function officialV4(scriptId: unknown) {
+  return {
+    schemaVersion: 4,
+    game: {
+      script: { type: "official", scriptId },
+      id: "official-game",
+      name: "Official game",
+      createdAt: "2026-09-02T00:00:00.000Z",
+      updatedAt: "2026-09-02T00:00:00.000Z",
+      events: [],
+    },
+  };
+}
+
+
+function customV4(characterIds: unknown = ["washerwoman", "clockmaker", "imp"]) {
+  const ids = Array.isArray(characterIds)
+    ? characterIds.filter((id): id is string => typeof id === "string")
+    : [];
+  return {
+    schemaVersion: 4,
+    game: {
+      script: {
+        type: "custom",
+        definition: {
+          id: "custom-stable-id",
+          name: "Mixed roster",
+          characterIds,
+          firstNightOrder: firstNightOrderFor(ids),
+        },
+      },
+      id: "custom-game",
+      name: "Friday game",
+      createdAt: "2026-09-02T00:00:00.000Z",
+      updatedAt: "2026-09-02T00:00:00.000Z",
+      events: [],
+    },
+  };
+}
+
+
+test("normalizes script-less schema-v2 Trouble Brewing to the canonical schema-v4 reference", () => {
+  const legacy = structuredClone(officialV3("troubleBrewing")) as unknown as {
+    schemaVersion: number;
+    game: Record<string, unknown>;
+  };
+  legacy.schemaVersion = 2;
+  delete legacy.game.scriptId;
+
+  const parsed = parseGameFileJson(JSON.stringify(legacy));
+
+  equal(parsed.schemaVersion, 4);
+  deepEqual(parsed.game.script, {
+    type: "official",
+    scriptId: "troubleBrewing",
+  });
+});
+
+
+test("normalizes every schema-v3 official identity to the canonical schema-v4 reference", () => {
+  for (const scriptId of ["troubleBrewing", "sectsAndViolets", "badMoonRising"] as const) {
+    const parsed = parseGameFileJson(JSON.stringify(officialV3(scriptId)));
+
+    equal(parsed.schemaVersion, 4);
+    deepEqual(parsed.game.script, { type: "official", scriptId });
+    equal("scriptId" in parsed.game, false);
+  }
+});
+
+
+test("parses every raw schema-v4 official reference and rejects an unknown official ID", () => {
+  for (const scriptId of ["troubleBrewing", "sectsAndViolets", "badMoonRising"] as const) {
+    const parsed = parseGameFileJson(JSON.stringify(officialV4(scriptId)));
+    deepEqual(parsed.game.script, { type: "official", scriptId });
+  }
+
+  throws(() => parseGameFileJson(JSON.stringify(officialV4("notOfficial"))));
+});
+
+
+test("rejects mixed, incomplete, and unknown schema-v4 script-reference arms", () => {
+  const mixed = customV4() as ReturnType<typeof customV4> & {
+    game: ReturnType<typeof customV4>["game"] & { scriptId: string };
+  };
+  mixed.game.scriptId = "troubleBrewing";
+
+  const definition = customV4().game.script.definition;
+  const candidates = [
+    mixed,
+    { ...customV4(), game: { ...customV4().game, script: { type: "official" } } },
+    { ...customV4(), game: { ...customV4().game, script: { type: "custom" } } },
+    {
+      ...customV4(),
+      game: {
+        ...customV4().game,
+        script: { type: "official", scriptId: "troubleBrewing", definition },
+      },
+    },
+    {
+      ...customV4(),
+      game: {
+        ...customV4().game,
+        script: { type: "custom", scriptId: "troubleBrewing", definition },
+      },
+    },
+    {
+      ...customV4(),
+      game: {
+        ...customV4().game,
+        script: { type: "unknown", scriptId: "troubleBrewing" },
+      },
+    },
+  ];
+
+  for (const candidate of candidates) {
+    throws(() => parseGameFileJson(JSON.stringify(candidate)));
+  }
+});
+
+
+function firstNightOrderFor(characterIds: string[]) {
+  const characterActions = [
+    { characterId: "washerwoman", actionId: "learnTownsfolk" },
+    { characterId: "clockmaker", actionId: "learnSteps" },
+  ] as const;
+  return [
+    { kind: "system" as const, actionId: "dusk" as const },
+    ...characterActions
+      .filter(({ characterId }) => characterIds.includes(characterId))
+      .map(({ characterId, actionId }) => ({ kind: "character" as const, characterId, actionId })),
+    { kind: "system" as const, actionId: "minionInfo" as const },
+    { kind: "system" as const, actionId: "demonInfo" as const },
+    { kind: "system" as const, actionId: "dawn" as const },
+  ];
+}

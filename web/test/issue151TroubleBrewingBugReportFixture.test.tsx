@@ -62,8 +62,9 @@ test("builds an importable, replayable, privacy-safe TB fixture from Spy's canon
 
   expect(report.metadata.reportSchemaVersion).toBe(2);
   expect(report.subject).toBe("[Clocktower Trouble Brewing] 버그 제보");
-  expect(report.fixture.schemaVersion).toBe(3);
-  expect(report.fixture.game.scriptId).toBe("troubleBrewing");
+  expect(report.fixture.schemaVersion).toBe(4);
+  if (report.fixture.schemaVersion !== 4) throw new Error("expected canonical v4 fixture");
+  expect(report.fixture.game.script).toEqual({ type: "official", scriptId: "troubleBrewing" });
   expect(report.fixture.game.id).toBe(source.game.id);
   expect(report.fixture.game.name).toBe("Redacted bug report");
   expect(report.fixture.ui).toBeUndefined();

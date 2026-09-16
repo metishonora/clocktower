@@ -1,0 +1,69 @@
+@import './customBmrTheme.css';
+@import './customGrimoireSetup.css';
+@import '../features/phase-control/sectsAndVioletsInformationTask.css';
+.customGrimoirePlay { box-sizing:border-box; }
+.customGrimoirePlay * { box-sizing:border-box; }
+.customGrimoirePlay button:focus-visible,.customGrimoirePlay select:focus-visible,.customGrimoirePlay input:focus-visible { outline:2px solid #e9c36e;outline-offset:3px; }
+.customCurrentTask { min-width:0; }
+.customPhaseOrder { min-width:0; }
+.customEventLog { padding:24px;max-width:1180px;margin:auto;border:1px solid rgba(224,156,164,.22);border-radius:14px; }
+
+.customStepInputs { border:0;margin:0;padding:0;display:grid;gap:20px;min-width:0; }
+.customStepInputs label { display:grid;gap:8px; }
+.customStepInputs label:has(input[type=checkbox]) { display:flex;align-items:center; }
+.customStepInputs select,.customStepInputs input:not([type=checkbox]) { min-height:44px;max-width:100%;padding:10px;color:inherit;background:var(--bmr-input);border:1px solid var(--bmr-line);border-radius:8px;font:inherit; }
+.customChoiceGrid { display:flex; flex-wrap:wrap; gap:8px; }
+.customChoiceGrid button { display:flex;align-items:center;gap:8px;min-height:44px; }
+.customChoiceGrid img { width:36px;height:36px;object-fit:contain; }
+.customTaskActions { display:flex;gap:12px;flex-wrap:wrap;margin-top:20px; }
+.customSaveStatus { max-width:1180px;margin:0 auto 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap; }
+.customSaveStatus:empty { display:none; }
+
+.customEventLog li { display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--bmr-line); }
+.customEventLog ol { padding:0;list-style:none; }
+.customPhaseOrder li[aria-current=step] { color:#e9c36e; }
+.customPhaseOrder small { white-space:nowrap; }
+
+.snvInformationRevealBackdrop:has(.customPublicReveal) { overflow-y:auto; }
+.customPublicReveal .customRevealNumber { display:block;font-size:clamp(100px,20vw,220px);font-weight:700;line-height:1.2; }
+.customRevealCards { display:flex;gap:24px;flex-wrap:wrap;justify-content:center; }
+.customRevealCharacter { display:grid;justify-items:center;gap:10px; }
+.customRevealCharacter img { width:100px;height:100px;object-fit:contain; }
+.customRevealPeople { display:grid;gap:12px;margin:20px 0;font-size:1.5rem; }
+.customSpyGrid { display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px; }
+.customSpyGrid section { border:1px solid rgba(235,177,184,.28);padding:12px; }
+.customSpyGrid span { display:block; }
+.customGrimoireLoading { position:fixed;inset:0;z-index:100;display:grid;align-content:center;justify-items:center;gap:24px;color:#fff5f1;background:#18040a;font:1.3rem Georgia,serif; }
+.customGrimoireLoading > span { font-size:5rem;animation:customLoadingPulse .8s ease-in-out infinite alternate; }
+.customApplicationError { position:fixed;z-index:101;bottom:24px;left:50%;transform:translateX(-50%);width:min(600px,calc(100% - 32px));padding:16px;color:#fff0f2;background:#731227;border:1px solid rgba(235,101,120,.5);border-radius:12px; }
+.customGrimoireApplication [hidden] { display:none!important; }
+@keyframes customLoadingPulse { to { opacity:.45;transform:scale(.95); } }
+@media(max-width:760px){.customEventLog{padding:16px}.customTaskActions>button{flex:1}.customGrimoirePlay .snvSurfaceTabs>button{min-width:0;flex:1;padding-inline:8px}.customRevealCharacter img{width:72px;height:72px}.customRevealPeople{font-size:1.2rem}}
+@media(prefers-reduced-motion:reduce){.customGrimoireLoading > span{animation:none}}
+
+.customGrimoirePlay .productionApplicationHeader h1 { overflow-wrap:anywhere; min-width:0; }
+.customGrimoirePlay .productionApplicationHeader > div { min-width:0; }
+.bmrLunaticIdentityComparison img { width:56px;height:56px;object-fit:contain; }
+
+.customPreparationNotice { color:#e9c36e; font-weight:800; }
+.customPhaseOrder .snvPhaseOverview li { display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center; }
+.customStepInputs .snvInformationValues select { max-width:100%; }
+.customCurrentTask .snvCurrentStepIdentity small { display:block;color:var(--bmr-muted);margin-top:6px; }
+.customGrimoirePlay .snvFirstNightHeader > button:last-child { grid-column:3; justify-self:end; margin-left:auto; }
+.customGrimoireSetup .snvStorageSurface { padding-bottom:40px; }
+
+.customStepInputs h3 { margin:16px 0 12px; font:800 .85rem/1.4 system-ui,sans-serif; }
+.customNightNotifications { grid-column:1 / -1; }
+.customNightNotifications .snvStepActions { margin-top:12px; flex-wrap:wrap; }
+.customGrimoirePlay .snvInformationValues dt { word-break:keep-all; }
+@media (max-width:480px) {
+  .customGrimoirePlay .snvInformationValues > div { grid-template-columns:minmax(0,1fr); gap:8px; }
+  .customGrimoirePlay .snvInformationValues select { width:100%; min-width:0; }
+}
+
+@media (max-width:480px) {
+ .customGrimoirePlay .snvFirstNightHeader { grid-template-columns:auto minmax(0,1fr); gap:12px; }
+ .customGrimoirePlay .snvProgressPhaseHeader { min-width:0; flex-wrap:wrap; justify-content:flex-end; gap:4px 8px; }
+ .customGrimoirePlay .snvProgressPhaseHeader h2 { font-size:1.4rem; margin:0; }
+ .customGrimoirePlay .snvProgressPhaseHeader time { white-space:nowrap; }
+}

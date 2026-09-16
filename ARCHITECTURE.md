@@ -6,6 +6,12 @@ This document records system-level design decisions for the Clocktower Storytell
 
 Requirements stay in `CONTEXT.md`. UX and visual design direction stay in `DESIGN_BRIEF.md`.
 
+Shared domain definitions and state ownership are documented in
+[DOMAIN_MODEL.md](DOMAIN_MODEL.md). Its broader responsibility model remains conceptual outside
+the custom first-night runtime implemented for #206. The custom runtime details below describe
+that implementation; existing official scenario runtimes remain on their current paths and are
+not migrated onto it.
+
 ## Architecture Shape
 
 Use a static iPad-first PWA with a Rust domain core compiled to WebAssembly and a TypeScript UI.
@@ -25,25 +31,143 @@ HTTPS host -> iPad Safari -> Add to Home Screen
 
 Do not require a localhost server during play.
 
+## Custom daytime runtime (#223)
+
+`crates/custom-domain/src/day` owns daytime commands, progress, event-time participant snapshots,
+nomination/vote/execution history and the transition to the next night. TB/SnV character modules
+own daytime eligibility, registration, effects, death consequences and victory conditions.
+`dayConfirmed` events are validated by recomputing their typed result against the exact prefix;
+the UI consumes `ReplayState.day` and never patches canonical player state.
+
+Actual and simulated abilities retain their original source identities. Death records preserve
+the identity, alignment and impairments at death; Barber handoff and Juggler records remain
+available to the following night. Mathematician evidence starts a new window at dawn.
+Execution/death/consequence confirmations share a causal Undo unit. Canonical files and IndexedDB
+store the same events, and failed saves block further live actions until retry succeeds.
+The next-night transition expires day-limited effects; night action execution remains in #204.
+
+### Custom automatic reminders (#223)
+
+Automatic tokens are read-only projections, never reducer inputs or saved facts. The common
+`reminders.rs` dispatcher registers character handlers from `characters/<script>.rs` and invokes
+them with a `ReminderContext` bound to one concrete source. The source comes from the recorded
+ability provenance ledger (including historical instances and acquired grants), or from confirmed
+simulation guidance. The script's character pool alone never admits a handler invocation.
+Historical preparations retain their original simulation source; active guidance is resolved
+separately, without manufacturing an actual ability instance.
+
+Handlers own token kind, target, evidence event and lifetime. Context queries distinguish current
+instances, living owners, matching action occurrences and actual versus simulated sources; no
+universal effectiveness gate is applied. Undertaker requires a living current ability/guidance
+source, while Barber's pending death handoff and durable poison retain their historical source
+through death or identity change. Resolved effect and spent-use formatting are reusable context
+helpers explicitly selected by character registrations. The common dispatcher contains no
+character-name branches and never infers ability ownership from a token or target's character.
+
+`projection::rule_state` and the Spy information handler consume the same dispatcher. The latter
+freezes the result at the confirmed event prefix using the existing reveal snapshot boundary.
+Overlapping observers of the same marker are deduplicated without modifying the underlying facts.
+Production reminder handlers remain disabled in the isolated fixture runtime. New character tokens
+must be registered in their owning script module and tested for source and lifetime boundaries;
+adding a global post-processing token rule in `projection.rs`, day orchestration or TypeScript is
+not supported. GameFile/schema and confirmed events remain unchanged.
+
+## Independent official and custom runtimes (#207)
+
+Official execution lives in `crates/domain`, `crates/wasm` and `web/src/core`.
+Custom execution lives in `crates/custom-domain`, `crates/custom-wasm` and
+`web/src/custom/{core,storage}`, with its session in `web/src/custom/session.ts`.
+Neither runtime imports the other's domain, DTOs, validators, storage helpers or generated WASM.
+The two WASM artifacts have separate adapters and initialization failures. The custom catalog
+is emitted from custom-owned Rust data, including the custom TB/SnV metadata it permits.
+
+Custom SnV rules, information candidates, active effects and causal twin repairs are owned by
+`crates/custom-domain/src/characters/sects_and_violets.rs`. Custom TB registration semantics stay
+in that crate's `characters/trouble_brewing.rs`. `information.rs` validates common input/result
+shapes; it does not import official rule implementations. The scheduler owns progress and stable
+occurrence identity, while handlers own eligibility and typed facts. A simulation refers to a real failed Philosopher choice, initial Drunk identity, or acquired Drunk guidance; it cannot acquire a fictional ability instance.
+
+Custom `effects.rs` resolves character-owned effect candidates against a common fact view.
+`simulation.rs` derives guidance and its usage from real sources and confirmed choices.
+The scheduler owns required preparation and optional candidates separately from ordered progress.
+Preparation records link each delivery to the chosen version; optional events cannot consume ordinary progress.
+Mutant execution uses a typed terminal result and clears all pending actions without entering Day.
+Custom Mathematician audit consumes character-owned malfunction evidence and causes. It retains
+actual delivered information but never requires or emits a replacement computed answer; ordinary
+character information calculations retain their own computed values.
+
+Production registers 18 ordered TB/SnV character actions and seven additional preparation or optional actions; fixture builds separately register only system
+and test handlers. `scripts/check-custom-boundaries.mjs` rejects imports across the boundary,
+including indirect Cargo/TypeScript and source-include dependencies. Run its negative tests with
+`node --test scripts/check-custom-boundaries.test.mjs`.
+
+The separation checkpoint is `ca357fd`. Custom-only changes after this checkpoint run
+`cargo test -p clocktower-custom-domain -p clocktower-custom-wasm`,
+`pnpm build:wasm:custom`, `pnpm --dir web test:custom`, and `pnpm test:custom-runtime`.
+`node scripts/verify-custom-runtime-isolation.mjs` builds and tests custom in a temporary workspace
+with official source and artifacts absent. The optional `--official` checkpoint verification
+runs official TB/SnV/BMR without custom; it is not required again for custom-only behavior changes.
+Release validation still includes `pnpm --dir web build` and PWA verification.
+
+## Custom official Jinx foundation (#213)
+
+`crates/custom-domain/resources/jinxes.json` is a checked-in TPI snapshot at
+`915347e627c3f6cd1f438f82b6001784e11b3e8b`. `jinxes.rs` pairs this metadata with typed
+character-owned registrations. Stable pair IDs use sorted official lowercase IDs;
+resolved metadata retains the exact custom character IDs. This conversion does not
+relax command, definition or import ID validation.
+
+Registry initialization checks the complete published custom character catalog against
+the snapshot. Missing, duplicate, unknown, metadata-only or unverified registrations
+fail with `JINX_REGISTRATION_INVALID` before a resolved script can execute. Off-catalog
+official pairs remain reference data and do not enable unsupported characters.
+`ResolvedScriptContext.related_jinxes()` is a deterministic read-only script query;
+script membership is never a universal rule-effectiveness gate.
+
+Registered callbacks currently serve information registration, succession prevention and
+simulation malfunction causes. Their owning TB/SnV modules decide the conditions using
+current ability provenance, the action occurrence, and before/after facts. New consumers
+can add typed seams without adding character branches to the scheduler or parsing natural
+language rules. Registrations link acceptance evidence; publication changes must pass
+coverage and composed behavior tests.
+
+The Fang Gu/Scarlet Woman rule runs before succession creates an identity or reveal.
+Sage information uses the triggering killer and character-owned Recluse judgments;
+confirmed judgments and delivered information pass the same proposal/replay validation.
+Mathematician evidence retains real Drunk guidance provenance, including acquired Drunk
+abilities and daytime information, without inventing a simulated ability grant. Death,
+impairment and ability ownership remain separate character-owned conditions.
+
+Related metadata and Jinx activity are not separately persisted. Existing events retain
+Storyteller choices and results, and replay derives effects, audit and frozen reveals.
+The source revision identifies the reference snapshot, not a persisted ruleset version.
+Catalog revision, historical ruleset replay and migration remain in #191.
+
 ## Rust and TypeScript Boundary
 
-Keep the WebAssembly boundary small and JSON-based for MVP.
+Keep the WebAssembly boundary small and JSON-based for MVP. The APIs below describe adapter
+capabilities across the app, not one combined WASM export surface. Official WASM accepts only
+official records; custom WASM owns custom catalog, plan, Setup, propose and replay exports.
 
 ```ts
 core.propose(gameFileJson, commandJson) -> proposalJson
 core.replay(gameFileJson) -> stateJson
 core.setupDistribution(requestJson) -> distributionJson
 core.suggestPhaseInput(gameFileJson, requestJson) -> phaseInputSuggestionJson
+core.customScriptCatalog() -> CustomScriptCatalogEntry[]
+core.customFirstNightPlan(requestJson) -> CustomFirstNightPlanResult
+core.customOtherNightPlan(requestJson) -> CustomFirstNightPlanResult
 ```
 
 `propose` checks the schema version, validates a Storyteller command against the current event log, and returns a proposal containing the canonical event, warnings, computed result, and follow-up step hints when relevant.
 
 `replay` checks the schema version and rebuilds the current rules state, visible step overview, and warnings from confirmed events.
 
-`setupDistribution` is a read-only setup draft query. Its request carries the selected `scriptId`,
-player count, and assigned Actual Character IDs. The common layer owns the base player-count table;
-the active script owns modifiers such as Trouble Brewing's Baron adjustment. Keep this API limited
-to deterministic setup guidance that has no confirmed event.
+`setupDistribution` is a read-only setup draft query. Its exact request union carries either an
+official `scriptId` or a complete `customDefinition`, plus the player count and assigned Actual
+Character IDs. The common layer owns the base player-count table; official script modules own their
+modifiers, while a resolved custom roster composes the modifiers of its assigned characters. Keep
+this API limited to deterministic setup guidance that has no confirmed event.
 
 `suggestPhaseInput` is a stateless read-only live-play draft query. Replay identifies the current
 step and its semantic `supportsRandomSuggestion` marker; the active script constructs complete valid
@@ -51,6 +175,21 @@ input combinations and maps a caller-supplied unsigned 32-bit choice token onto 
 pool. The optional current input is used only to exclude a semantically identical complete draft
 when another exists. This query returns `PhaseStepInput` only and never constructs a Command,
 Proposal, Confirmed Event, persisted value, or Reveal payload.
+
+`customScriptCatalog` is a stateless read-only compatibility query exposing only the canonical
+custom-script Character `id` and `kind` pairs. It exists so the TypeScript catalog can be checked
+against the generated Rust/WASM allowlist without maintaining a third fixture. It carries no
+script ownership, Setup modifier, phase order, command routing, or Character-rule metadata.
+
+`customFirstNightPlan` is a stateless read-only authoring query. Its existing wire request shape
+remains `{ customDefinition: ... }`, but that request uses a separate `CustomScriptDefinitionDraft`
+whose `firstNightOrder` is optional. It returns either the draft's declared order or a deterministic
+authoring proposal, together with the source (`definition` or `default`). The proposal is a checked-in
+snapshot of the official global first-night order filtered to the supported TB/S&V action catalog.
+When a new custom definition omits an order, its caller must materialize the returned plan as the
+required canonical `firstNightOrder` before saving the definition or creating a game. Completed
+runtime, import, and stored-session paths never call this query as a fallback. The deterministic
+proposal is available only while authoring a new definition.
 
 Keep the Rust WebAssembly API stateless for MVP. Calls that depend on confirmed game state receive the current `GameFile`; setup draft queries receive only their draft input.
 
@@ -103,9 +242,11 @@ web
 
 ### Rust Domain Module Ownership
 
-Keep the public Rust API limited to the four JSON entrypoints: `replay_json`, `propose_json`,
-`setup_distribution_json`, and `suggest_phase_input_json`. Domain modules and their types stay
-crate-private unless an external Rust consumer is intentionally added.
+Keep the public Rust API limited to six JSON entrypoints: the four existing result-envelope APIs
+(`replay_json`, `propose_json`, `setup_distribution_json`, and `suggest_phase_input_json`), the
+read-only `custom_script_catalog_json` compatibility query, and the result-envelope
+`custom_first_night_plan_json` authoring query. Domain modules and their types stay crate-private unless
+an external Rust consumer is intentionally added.
 
 Organize `crates/domain/src` by cohesive domain responsibility:
 
@@ -126,6 +267,7 @@ night.rs
 messages.rs
 characters/
   mod.rs
+  registry.rs
   trouble_brewing.rs
   sects_and_violets.rs
   sects_and_violets/
@@ -145,17 +287,46 @@ characters/
   deterministic choice-token selection. Script-specific combination pools remain in
   `characters/<script_name>.rs`.
 - `setup.rs`, `phase.rs`, `day.rs`, and `night.rs` own their respective rule and flow logic.
+- `crates/custom-domain/src/game.rs` owns custom-game replay and proposal dispatch. Its event-by-event fold validates
+  each event, calculates facts and first-night progress, and adopts them together only when the
+  whole transition succeeds.
+- `crates/custom-domain/src/state.rs` owns replay-derived `CustomGameState`, `CustomGameFacts`, action-occurrence
+  identity, and `FirstNightProgress`. Completion history and its Step/Reveal snapshots are internal
+  replay values; these types are not persisted.
+- `crates/custom-domain/src/event.rs` owns the finite typed fact-change handoff. `crates/custom-domain/src/first_night/registry.rs`
+  owns `ActionSpec`/handler registration, common provenance, membership, and input validation, and
+  constructs the private `ValidatedCustomEvent` accepted by the reducer and scheduler.
+- `crates/custom-domain/src/reducer.rs` calculates facts only from previous facts and a validated event. `crates/custom-domain/src/rules.rs`
+  supplies read-only facts, ownership, and ability-instance queries; it does not own action behavior
+  or a universal participation predicate.
+- `crates/custom-domain/src/first_night/plan.rs` owns canonical definition-order validation and the authoring-only
+  deterministic default proposal. `crates/custom-domain/src/first_night/runtime.rs` owns `NightScheduler`, which
+  calculates cursor, occurrence completion, exclusion, history, immediate queue, and activation
+  admission; `activation.rs` supplies the pure activation decision boundary. `system.rs` owns the
+  system handlers.
+- `crates/custom-domain/src/projection.rs` derives public `RuleState`, current Step, and phase overview from the
+  replay-derived facts and progress, retaining confirmed Step/Reveal snapshots for completed rows.
 - `messages.rs` owns confirmed-event summaries, reveal and preview messages, compact warnings, and labels.
 - `characters/mod.rs` owns the common script-selection interface. It must not accumulate one branch per character.
+- `characters/registry.rs` resolves an ordered custom definition against the TB/S&V allowlist and
+  exposes roster-scoped membership and canonical `CharacterKind`. The registry does not assign a
+  script owner; custom-owned character modules supply the typed ID/kind projections; official runtime data is not imported.
 - `identity.rs` owns validated event identities used while crossing the import/replay boundary.
 - `characters/sects_and_violets/step_key.rs` owns S&V step-key parsing and semantic classification.
   Reducers and proposal rules consume the typed result instead of repeating string-prefix logic.
 
-`GameFile.game.scriptId` is the canonical rules selector. `replay`, `propose`, and
-`suggestPhaseInput` obtain it from the file; `setupDistribution` receives it in its standalone
-request. Dispatch occurs before a persisted event or command can enter a script-specific reducer.
-Until a script implements an event or command, reject it explicitly rather than falling back to
-another script's rules.
+`GameFile.game.script` is the canonical script reference. Official references carry a `scriptId`;
+custom references carry the complete definition snapshot that owns the Character pool and canonical
+first-night order. Structural parsing first validates the definition shape, exact ID uniqueness,
+and required order. Registry resolution then rejects any ID outside the current TB/S&V allowlist,
+including non-canonical case and all BMR IDs, before replay or proposal can reach a script-specific
+reducer. A successful resolution preserves ordered Character-pool membership and kind lookup.
+`replay` and `suggestPhaseInput` obtain an official selector from that reference;
+`setupDistribution` receives an exact official/custom selector in its standalone request. `propose`
+resolves custom definitions for strict Setup confirmation and routes a custom game into its own
+first-night runtime. Dispatch occurs before a persisted event or command can enter an official
+script-specific reducer, and a custom game never falls back to another script's rules. Custom phases
+after first night remain unavailable until their dedicated runtime issues.
 
 ### Character Script File Convention
 
@@ -173,6 +344,72 @@ Do not reshape Trouble Brewing merely to make both implementations look alike wh
 evolving. After S&V behavior is complete, reassess Trouble Brewing against the proven S&V seams and
 extract only concepts that are genuinely shared. Until then, keep the script-selection interface
 narrow and do not introduce a generic rules DSL or cross-script reducer abstraction.
+
+### Custom Night Action Runtime
+
+A persisted custom definition contains required complete `firstNightOrder` and `otherNightOrder` plans. The plan is ordered
+over stable semantic references rather than over players or current assignments:
+
+```ts
+type FirstNightActionRef =
+  | { kind: "system"; actionId: "dusk" | "minionInfo" | "demonInfo" | "dawn" }
+  | { kind: "character"; characterId: string; actionId: string };
+```
+
+`dusk` must be first and `dawn` last. `minionInfo` and `demonInfo` are ordinary movable entries, so
+the Storyteller can place Character actions before, between, or after them. The plan must contain
+each system entry and each first-night action belonging to the definition's complete Character pool
+exactly once. It is intentionally not reduced to initially assigned Characters: acquired or newly
+introduced abilities must retain a predetermined location.
+
+The definition snapshot owns this order for the lifetime of the custom game. `setupConfirmed` owns
+only the actual roster and seat assignments; it does not carry or alter the first-night order. At
+replay and proposal time, the runtime walks the explicit definition order and filters it through the
+active instances exposed by the current rule service for the current roster and replay state. An
+absent action instance is skipped. If an active ordered action has no registered handler, the runtime
+returns an explicit unsupported-action error; it never delegates to an official script.
+
+The `createGame` command and `setupConfirmed` event payloads reject the removed
+`firstNightOrderPlan` field. There is no migration for an unpublished custom schema-v4 variant that
+moved an order from Setup into the definition.
+
+The active-action projection, generated steps, and progress are transient replay-derived values.
+Progress advances only from confirmed events. Later first-night events persist the confirmed action
+result and its provenance (`actionRef` and `abilityUse`); they do not persist a projected action
+list, step list, or progress projection.
+
+The custom runtime uses an event-by-event pure fold. `crates/custom-domain/src/game.rs` replays the current prefix,
+then `propose_step` invokes the registered handler for the current occurrence and validates the
+candidate through the same boundary used by replay. The candidate facts and progress are discarded
+after proposal; only a later confirmation adds the event to the record.
+
+Runtime composition has explicit roles:
+
+- `ActionSpec` declares a stable action reference plus first-night participation, input kind, and
+  support metadata, prerequisite action references and continuation-source declarations.
+- A pure `ActionHandler` projects an action through read-only rule services and receives the current
+  occurrence and typed input when proposing a result. Character handlers return a typed custom result
+  in an event draft, while system handlers retain their existing system draft; acquired abilities
+  remain distinguished by ability-instance provenance and deterministic ordering.
+- The registry runs common and action-specific validation for the draft and persisted event,
+  including input, result, action, step, actor, instance, and membership checks. It is the only
+  production construction boundary for the private `ValidatedCustomEvent`.
+- The facts reducer is the only component that calculates canonical fact changes. `NightScheduler`
+  separately calculates cursor and occurrence progress from the event and before/after facts; it
+  owns completion, exclusion, immediate queue, and history.
+- The projector derives the public `RuleState`, current Step, and phase overview after a coherent
+  facts/progress pair has been adopted.
+
+The registry rejects duplicate registrations and spec/handler identity mismatches. An active
+ordered Character action with no registered handler returns an explicit unsupported-action error;
+an action with no active instance is skipped after filtering. The canonical Character event envelope
+is `customActionConfirmed` with `stepId`, `actionRef`, `abilityUse`, `input`, and typed `result`;
+system actions retain the existing `phaseStepConfirmed` wire format. Feature-gated fixture handlers
+are available only to the dedicated test/fixture build; production Character implementations are
+not added here. The runtime never delegates to a TB or S&V module. Existing official TB, S&V, and
+BMR execution paths coexist unchanged apart from additive shared-contract plumbing and are not
+migrated onto this runtime. This seam adds no new UI, other-night runtime, or Character-specific
+or acquired-ability rule policy.
 
 Use dependency layers in this order: contracts/models/errors <- character and flow rules <- replay/proposal <- JSON boundary and public entrypoints. Imports point left, toward the foundational layers. Feature modules must not depend back on replay or proposal. This keeps script additions from creating circular dependencies.
 
@@ -641,16 +878,36 @@ Use a small IndexedDB wrapper without a storage dependency for MVP.
 ```text
 database: clocktower
 object store: game
-keys: latest:troubleBrewing, latest:sectsAndViolets
+keys: latest:troubleBrewing, latest:sectsAndViolets, latest:badMoonRising
 value: GameFile
 ```
 
 ```ts
+type CustomScriptDefinition = {
+  id: string;
+  name: string;
+  characterIds: string[];
+  firstNightOrder: FirstNightActionRef[];
+  otherNightOrder: FirstNightActionRef[];
+};
+
+type CustomScriptDefinitionDraft = {
+  id: string;
+  name: string;
+  characterIds: string[];
+  firstNightOrder?: FirstNightActionRef[];
+  otherNightOrder?: FirstNightActionRef[];
+};
+
+type ScriptReference =
+  | { type: "official"; scriptId: ScriptId }
+  | { type: "custom"; definition: CustomScriptDefinition };
+
 type GameFile = {
-  schemaVersion: 3;
+  schemaVersion: 4; // Official files. CustomGameFile uses schemaVersion: 5.
   exportedAt?: string;
   game: {
-    scriptId: "troubleBrewing" | "sectsAndViolets";
+    script: ScriptReference;
     id: string;
     name: string;
     createdAt: string;
@@ -660,17 +917,72 @@ type GameFile = {
 };
 ```
 
-IndexedDB stores one latest `GameFile` per script without `exportedAt`. Script pages bind their
-storage driver to one script key, so navigation cannot replace the other script's latest game.
+IndexedDB stores one latest official `GameFile` per script without `exportedAt`. Official script
+pages bind their storage driver to one script key, so navigation cannot replace another script's
+latest game.
+Existing official Trouble Brewing and Sects & Violets save, load, and legacy-migration behavior
+remains unchanged; the required custom first-night order does not add a field to official game files.
+
+Custom definitions and games use separate namespaced records in the same database and object
+store:
+
+```text
+custom-definition:<encoded-stable-id> -> { version: 1, definition, metadata? }
+session:custom:<encoded-stable-id>     -> { version: 1, customScriptId, savedAt,
+                                            canonical, setupDraft, presentation }
+```
+
+The repository envelope keeps optional author/source metadata outside the runtime definition.
+Saving an existing stable ID atomically replaces its complete definition envelope without touching
+the corresponding game session. Unreadable definition and session records are reported separately
+from missing records and cannot be overwritten by normal saves; only an explicit recovery/new-game
+operation may replace them.
+
+There is one active custom game session per stable ID. Its schema-v4 `GameFile.game.script` embeds
+an immutable copy of the definition used when the game was created. Editing the repository record
+therefore neither mutates nor deletes the active game. Resume is available only when the current
+runtime definition exactly matches that embedded snapshot: stable ID, name, ordered Character IDs,
+and both complete ordered night plans must all match. Repository metadata is excluded from this
+comparison, and reverting the definition exactly restores resume eligibility. Explicitly starting
+a new game replaces the active session for that stable ID.
+
+The canonical definition in a stored custom repository record, session, or completed runtime always
+contains both valid complete night orders. A missing order is invalid on load or resume and is not
+filled from the authoring proposal or repaired by migration.
+
+The definition repository prepares the WASM validator before opening IndexedDB transactions, then
+validates explicit orders synchronously on save, load, list, and recovery. The adapter reuses the
+Rust plan query's explicit-definition validation branch and rejects missing orders before calling
+it; no proposed default is accepted or persisted. TypeScript checks JSON structure but does not
+duplicate the Character action catalog. Validator initialization failures propagate as operational
+errors rather than marking stored records unreadable.
+
+Custom canonical sessions bind the controller, `GameFile`, replay output, game ID, and ordered event
+IDs to the same complete script identity. Setup confirmation waits for a durable session write before
+the live transition is published. Later writes coalesce to the newest meaningful snapshot; a failed
+write keeps the newest canonical state in memory and is not retried until another meaningful change
+is enqueued.
+
+For a custom game, the canonical definition snapshot owns the required first-night order and
+complete Character pool. The `setupConfirmed` event owns only the actual roster and seat
+assignments. Later first-night events own confirmed action results and provenance (`actionRef` and
+`abilityUse`) in the canonical event stream. The action projection, generated steps, and progress
+remain replay-derived and are not copied into setup draft or presentation state. Custom Setup UI
+remains separate UI/runtime work.
 
 Export reads the stored `GameFile`, adds `exportedAt`, and writes JSON.
 
 Import reads a `GameFile`, checks the basic JSON shape, schema version, and expected page script,
 calls Rust `replay` to verify the complete event log, then replaces the script's stored game and
-opens it. A schema-version-2 file without `scriptId` is the only legacy form: it is interpreted as
-Trouble Brewing and normalized to schema version 3 after successful load. Schema version 1,
-script-aware version-2 files, wrong-script files, and invalid logs are rejected as whole files;
-import never installs a successfully replayed prefix or partial state.
+opens it. A schema-version-2 file without `scriptId` is interpreted as Trouble Brewing; schema v3
+requires one known official `scriptId`. TypeScript normalizes both legacy forms to a schema-v4
+official reference. Schema v4 requires exactly one `game.script` arm and rejects legacy
+`game.scriptId`; a custom definition contains a non-blank ID and name plus an ordered, exactly
+unique array of non-blank Character IDs plus both valid complete night orders (custom schema v5). Registry membership
+is checked separately. A custom import with a missing or invalid order is rejected as a whole file;
+import never fills the order from the authoring default, migrates it, or installs a successfully
+replayed prefix or partial state. Schema version 1, script-aware version-2 files, wrong-script
+files, and other invalid logs are rejected as whole files.
 
 For migration, the Trouble Brewing driver checks the old `latest` key only when
 `latest:troubleBrewing` is absent. It writes the normalized file to the new key after replay succeeds
@@ -690,3 +1002,129 @@ Do not create automatic backup copies for MVP.
 - Web Worker for the Rust core. Add only if replay/propose blocks the UI on real iPad hardware.
 - Native wrapper such as Capacitor. Add only if PWA storage or lifecycle behavior becomes a real problem.
 - Generic rules DSL. Out of scope for Trouble Brewing MVP.
+
+## Custom scenario authoring and portable JSON (#197)
+
+The Production landing composes `ScriptLanding.additionalChoice` with a lazy custom authoring
+editor. The composition root owns the approved ink transition; custom components never import
+an official UI helper, catalog, validator, or game runtime. Custom-owned presentation metadata
+supplies labels, descriptions, and paths to static character artwork. Support membership and
+kind still come exclusively from the generated custom catalog.
+
+A portable scenario file is `{ type: "clocktower-custom-scenario", version: 2, scenario: {
+name, characterIds, firstNightOrder, otherNightOrder } }`. This two-order contract is independent
+of GameFile schema and repository versions. It contains neither the local definition ID nor
+metadata, roster, events, or session state. Names and array order are preserved;
+only the suggested download filename is sanitized. Unknown fields, unsupported versions, and
+other file kinds are rejected rather than discarded or converted.
+
+`ScenarioEditorController` owns the in-memory draft and its local ID, navigation, request
+identities, and immutable validation snapshot. File reading produces a separate candidate;
+only a successfully validated, still-current request can replace the draft. New authoring and
+successful file imports use fresh local identities. No file operation reads or writes IndexedDB,
+repository records, or game sessions. The UI does not pretend to start or resume a game; those
+connections and stored-definition management remain #205.
+
+`core/definition.ts` owns the existing definition parser, re-exported from `storage/gameFile.ts`
+for current consumers. Authoring, file import, and existing persistence reuse this parser and
+the existing WASM definition validator. The file codec owns only the envelope and conversion;
+it has no character action catalog, exact-set validator, or automatic order repair. Operational
+initialization failure is distinguished from invalid input. The current draft must have a matching
+successful validation snapshot before serialization, so saving does not repeat domain validation.
+Editing invalidates that snapshot; navigation alone does not. Snapshots and request counters are
+not serialized as revisions.
+
+The authoring query provides initial order, explicit reset, and the baseline for pool reconciliation.
+An as-yet unnamed draft uses a query-only placeholder name; this never fills the draft's actual
+name or permits exporting an unnamed definition. Reconciliation removes obsolete entries, preserves
+survivors' relative order, and inserts each missing default entry before its first available default
+successor. The result passes the same existing validator. Import never invokes this authoring path.
+
+Browser delivery uses an already validated snapshot and a Blob download within the save gesture.
+Feedback reports a requested download, not unobservable completion of a disk write. Failure and
+cancellation preserve the draft. Repeated download and choosing the same file again are supported.
+
+The next test stage covers the approved #197 black-box cases using Production WASM, custom
+controller/file integration, and browser download/upload. Custom test configuration keeps Node
+runtime tests separate from TSX/jsdom UI tests. Official pages, storage, PWA behavior, and custom
+source isolation remain regression boundaries. No new rule-level test matrix is owned by #197.
+
+
+## Custom grimoire presentation and scenario order (#220)
+
+The custom Core owns executable occurrences, preparation dependencies, candidate validity,
+registration judgments, and immutable reveal snapshots. The scenario definition owns regular
+first-night order. Original Setup preparations are admitted at the action that declares them as prerequisites;
+acquired/simulated ability preparations and invalidated preparations retain their causal
+precedence. Replay alone admits an old leading Setup-preparation prefix, validating its original
+source, owner, input and historical snapshot. New proposals cannot use that compatibility path.
+
+`custom/grimoire/firstNightController` owns drafts, raw number text, selection handoff, proposals
+and reveal state. `grimoire-custom/actions/registry` explicitly maps all 29 supported action references to input, selection, completion, reveal and cancellation adapters without scheduling them. `grimoire-custom/taskPresentationModel` adapts that state and Core
+projections to identity, actor, ability, stage, editor, result, warnings and actions. The task and
+board consume this model. Missing candidate contracts block confirmation instead of creating
+raw fallback forms. Setup choices carry the correct reminder owner and registration provenance;
+UI selection narrows those choices without reproducing character rules. Prepared delivery is
+read-only; a Core-projected optional re-preparation reuses the same board editor.
+
+`shared-ui` receives presentation values and callbacks, never official or custom runtime DTOs.
+The official TB setup and scalar editors also consume the extracted setup and treatment controls.
+Production automatic reminders remain character-owned; fixture builds do not call the production
+reminder provider. Current board state and historical Spy payloads remain separate projections.
+
+### Custom action executions and Undo (T13)
+
+`first_night/execution.rs` resolves character-owned preparation/relationship sources and scheduler-recorded
+`RunImmediately` admissions into replay-only execution membership. Matching requires the concrete owner,
+ability instance and simulation source. Preparation consumers declare their prerequisites in `ActionSpec`;
+the catalog contains keys and default order only. A pending consumer preview is an overview value, never
+an executable scheduler admission. Confirmed snapshots freeze the relation at their event prefix.
+Only the latest contiguous execution suffix can continue; an intervening independent event turns an older
+source into a reference. Ordinary `JoinPendingOrder` acquisition does not join its origin's Undo unit.
+
+The read-only DTOs are `PhaseStep.execution`, `ReplayState.actionExecutions` and `latestUndoUnit`.
+The last confirmed event ID identifies an Undo unit, invalidating confirmations made before a child event.
+The browser validates the complete event contents/IDs, game and definition before removing that suffix.
+No execution metadata is persisted. Custom canonical GameFile uses schemaVersion 5; official GameFile remains version 4.
+The controller awaits autosave before continuation or notification. Failed saves retain the confirmed prefix;
+retry can restore a private notification prompt but never opens a public reveal automatically.
+
+The original BMR Undo button is shared by BMR and custom, including its native confirmation and empty state.
+New Scenario retires setup/play/writer/request ownership, remounts an empty authoring instance and clears only
+the navigation marker. Existing save records are preserved until a new game's ordinary save replaces its slot.
+
+
+### Custom repeated nights (#225)
+
+The shared custom scheduler in `first_night/` runs both phases. `game.rs` selects the definition's
+first-night plan during FirstNight and its other-night plan after a confirmed Day `beginNight`.
+The latter admits dusk/dawn only as system boundaries, with the exact ordered/conditional action
+set in `catalog.rs`. Ravenkeeper, Sage, Sweetheart, Scarlet Woman and Pit-Hag/Vigormortis effect
+consequences are event-caused, not editable order entries. Barber is ordered when its opportunity
+already exists, and immediate when a death occurs after its entry has passed.
+
+`customOtherNightPlan` is an authoring-only query with the same explicit/default source contract
+as `customFirstNightPlan`. Complete definitions require both arrays; runtime, import, storage and
+resume never supply either default. The checked-in order and its source revision live together in
+`catalog.rs`. Portable custom scenario files are v2 and custom game files are v5. Old custom formats
+are rejected without migration or replacement of a valid stored session. Official codecs stay unchanged.
+
+Occurrences add a replay-derived night number to semantic action, actual/simulated ability source
+and cause. First-night IDs remain stable; later IDs start `night:<number>:`. New cycles reset cursor,
+queues and completion membership while retaining confirmed history, ability provenance, spent uses
+and rule-owned effects. Instant start-information acquisition may run outside the other-night plan;
+ordinary acquisitions join pending entries or defer to their next eligible night. Demon replacements
+created by an attack cannot attack again that night.
+
+Night deaths retain their event source, original abilities, simulation guidance and impairment
+snapshot. Character handlers decide which parts are frozen and which target eligibility is evaluated
+at resolution. The same typed result is recomputed for proposal and replay validation. Prior reveals
+come from confirmed snapshots; later identity changes never recalculate them. Daytime information
+uses #223 participant/ability records, including their historical registration sources. At dawn,
+existing daytime game-end confirmation handles a resolved win condition and blocks ordinary progress.
+
+The existing execution/Undo calculator combines night history and all day histories in canonical
+stream order. An immediate consequence shares its origin's contiguous Undo unit; a later independent
+entry or new night's use does not. No queue, cycle plan, reveal recomputation policy or Undo grouping
+is implemented in TypeScript. Input projections include legal Barber chooser and Imp successor IDs;
+#222 owns their eventual visible controls and the other-night editor.

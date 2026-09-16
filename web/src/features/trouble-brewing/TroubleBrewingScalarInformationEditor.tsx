@@ -1,3 +1,5 @@
+import {ScalarInformationEditorView,ScalarInformationConstraintView} from '../../shared-ui/InformationResultView';
+import { InformationNumberInput, InformationTreatmentInput } from '../../shared-ui/InformationInputPresentation';
 import {
   isScalarInformationCharacterId,
   scalarInformationUnit,
@@ -37,38 +39,7 @@ export function TroubleBrewingScalarInformationEditor({
   const truth = prompt.computedResult.value;
   const constraint = prompt.numberConstraint;
   if (constraint) {
-    return <dl className="snvInformationValues tbScalarInformationResult" role="group" aria-label="정보 결과">
-      <div><dt>진실</dt><dd>{scalarInformationValueLabel(characterId, truth)}</dd></div>
-      <div>
-        <dt>전달</dt>
-        <dd>
-          <input
-            type="number"
-            min={constraint.min}
-            max={constraint.max}
-            step="1"
-            inputMode="numeric"
-            aria-label="전달할 숫자"
-            value={selectedNumberChoice?.value ?? ""}
-            disabled={busy}
-            onChange={(event) => {
-              const value = Number(event.target.value);
-              const valid = event.target.value !== ""
-                && Number.isSafeInteger(value)
-                && value >= constraint.min
-                && value <= constraint.max
-                && !constraint.excludedValues.includes(value);
-              onNumberChoiceChange(valid ? {
-                value,
-                isComputed: value === truth,
-                registrationJudgments: [],
-              } : undefined);
-            }}
-          />
-          <span>{scalarInformationUnit(characterId)}</span>
-        </dd>
-      </div>
-    </dl>;
+    return <ScalarInformationConstraintView truth={scalarInformationValueLabel(characterId, truth)} unit={scalarInformationUnit(characterId)} input={<InformationNumberInput key={step.id} value={selectedNumberChoice?.value} min={constraint.min} max={constraint.max} excludedValues={constraint.excludedValues} disabled={busy} onChange={value=>onNumberChoiceChange(value===undefined?undefined:{value,isComputed:value===truth,registrationJudgments:[]})}/>}/>;
   }
 
   const candidates = scalarRegistrationCandidates(step, players);
@@ -93,9 +64,7 @@ export function TroubleBrewingScalarInformationEditor({
     ));
   }
 
-  return <div className="tbScalarInformationEditor">
-    {candidates.length ? <div className="tbScalarTreatmentControls">
-      {candidates.map((player) => {
+  return <ScalarInformationEditorView treatments={candidates.length ? candidates.map((player) => {
         const sameCharacterCount = candidates.filter(
           (candidate) => candidate.actualCharacter === player.actualCharacter,
         ).length;
@@ -106,31 +75,12 @@ export function TroubleBrewingScalarInformationEditor({
         const selected = registrationJudgments.find(
           (judgment) => judgment.playerId === player.id,
         )?.registeredAs;
-        return <fieldset className="tbScalarTreatment" key={player.id}>
-          <legend>{legend}</legend>
-          {TEAM_TREATMENT_OPTIONS.map(({ team, label, accessibleLabel, className }) => (
-            <button
-              type="button"
-              className={`${className}${selected === team ? " selected" : ""}`}
-              aria-label={accessibleLabel}
-              aria-pressed={selected === team}
-              disabled={busy}
-              onClick={() => chooseTreatment(player, team)}
-              key={team}
-            >{label}</button>
-          ))}
-        </fieldset>;
-      })}
-    </div> : null}
-    <dl className="snvInformationValues tbScalarInformationResult" role="group" aria-label="정보 결과">
-      <div>
-        <dt>결과</dt>
-        <dd>{displayedChoice
+        return <InformationTreatmentInput key={player.id} label={legend} value={selected} disabled={busy}
+          options={TEAM_TREATMENT_OPTIONS.map(option=>({...option,id:option.team}))}
+          onChange={team=>chooseTreatment(player,team as 'good'|'evil')}/>;
+      }) : undefined}>{displayedChoice
           ? scalarInformationValueLabel(characterId, displayedChoice.value)
-          : "선택 필요"}</dd>
-      </div>
-    </dl>
-  </div>;
+          : "선택 필요"}</ScalarInformationEditorView>;
 }
 
 export function isTroubleBrewingScalarInformationStep(step: PhaseStep): boolean {

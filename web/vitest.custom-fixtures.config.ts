@@ -1,0 +1,3 @@
+import { defineConfig } from "vitest/config"; import { fileURLToPath } from "node:url";
+const artifact = fileURLToPath(new URL("./.codex-tmp/custom-fixture-wasm/clocktower_custom_wasm.js", import.meta.url));
+export default defineConfig({ resolve: { alias: [{ find: "./customActionResultValidation.js", replacement: fileURLToPath(new URL("./test/custom/issue206FixtureCustomActionResultValidation.ts", import.meta.url)) }, { find: "../../generated/clocktower_custom_wasm/clocktower_custom_wasm.js", replacement: artifact }] }, test: { environment: "node", include: ["test/custom/**/*.fixture.test.ts"], setupFiles: ["test/custom/setup.ts"], restoreMocks: true } });

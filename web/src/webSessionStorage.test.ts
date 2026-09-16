@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { IDBFactory } from "fake-indexeddb";
 import type { GameFile } from "./core/types.js";
+import type { ScriptId } from "./core/scripts.js";
 import {
   IndexedDbWebSessionStorageDriver,
   loadWebSession,
@@ -13,13 +14,20 @@ test("web session storage atomically preserves canonical, draft and presentation
   const idb = new IDBFactory();
   const tb = new IndexedDbWebSessionStorageDriver("troubleBrewing", idb);
   const snv = new IndexedDbWebSessionStorageDriver("sectsAndViolets", idb);
+  const bmr = new IndexedDbWebSessionStorageDriver("badMoonRising", idb);
   const tbSession = snapshot("troubleBrewing", { playerCount: 7 }, { activeTab: "roles" });
   const snvSession = snapshot("sectsAndViolets", { playerCount: 9 }, { activeTab: "seating" });
+  const bmrSession = snapshot("badMoonRising", { playerCount: 15 }, { activeTab: "play" });
 
-  await Promise.all([saveWebSession(tbSession, tb), saveWebSession(snvSession, snv)]);
+  await Promise.all([
+    saveWebSession(tbSession, tb),
+    saveWebSession(snvSession, snv),
+    saveWebSession(bmrSession, bmr),
+  ]);
 
   assert.deepEqual(await loadWebSession(tb), tbSession);
   assert.deepEqual(await loadWebSession(snv), snvSession);
+  assert.deepEqual(await loadWebSession(bmr), bmrSession);
 });
 
 test("web session storage replaces one complete snapshot and rejects script mismatch", async () => {
@@ -42,7 +50,7 @@ test("web session storage replaces one complete snapshot and rejects script mism
 });
 
 function snapshot(
-  scriptId: GameFile["game"]["scriptId"],
+  scriptId: ScriptId,
   setupDraft: unknown,
   presentation: unknown,
 ): WebSessionSnapshot {
@@ -52,9 +60,9 @@ function snapshot(
     scriptId,
     savedAt: now,
     canonical: {
-      schemaVersion: 3,
+      schemaVersion: 4,
       game: {
-        scriptId,
+        script: { type: "official", scriptId },
         id: `${scriptId}-game`,
         name: scriptId,
         createdAt: now,

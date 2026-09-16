@@ -27,7 +27,9 @@ export function serializeReplayRequest(gameFile: GameFile): string {
   return JSON.stringify({
     schemaVersion: gameFile.schemaVersion,
     game: {
-      scriptId: gameFile.game.scriptId,
+      ...(gameFile.schemaVersion === 4
+        ? { script: gameFile.game.script }
+        : { scriptId: gameFile.game.scriptId }),
       events: gameFile.game.events,
     },
   });

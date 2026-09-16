@@ -1,8 +1,13 @@
-import { equal } from "node:assert/strict";
+import { deepEqual, equal } from "node:assert/strict";
+
 import test from "node:test";
+
 import type { CoreAdapter } from "./coreAdapter.js";
-import { CanonicalSessionController } from "./canonicalSessionController.js";
+
+import { CanonicalSessionController, replayMatches } from "./canonicalSessionController.js";
+
 import type { GameEvent, GameFile, ReplayState } from "./types.js";
+
 
 test("session controller rejects stale proposals before calling the domain adapter", async () => {
   let proposalCalls = 0;
@@ -21,6 +26,7 @@ test("session controller rejects stale proposals before calling the domain adapt
   equal(proposalCalls, 0);
 });
 
+
 test("session controller rejects duplicate IDs and stale replay results at the apply boundary", async () => {
   const controller = new CanonicalSessionController(
     "sectsAndViolets",
@@ -36,6 +42,7 @@ test("session controller rejects duplicate IDs and stale replay results at the a
   equal(staleReplay.ok, false);
   if (!staleReplay.ok) equal(staleReplay.error.code, "STALE_REPLAY");
 });
+
 
 test("session controller rejects replay script mismatches and explicit stale command versions", async () => {
   let proposalCalls = 0;
@@ -59,6 +66,7 @@ test("session controller rejects replay script mismatches and explicit stale com
   if (!stale.ok) equal(stale.error.code, "STALE_COMMAND");
   equal(proposalCalls, 0);
 });
+
 
 test("session controller executes proposal, append, replay and guarded Undo as one boundary", async () => {
   const proposed = event("two");
@@ -92,6 +100,7 @@ test("session controller executes proposal, append, replay and guarded Undo as o
   }
 });
 
+
 test("session controller rejects a duplicate Proposal event before apply", async () => {
   const duplicate = event("one");
   let replayCalls = 0;
@@ -114,8 +123,9 @@ test("session controller rejects a duplicate Proposal event before apply", async
   equal(replayCalls, 1);
 });
 
+
 function adapter(
-  onPropose: (() => void) | undefined = () => {},
+  onPropose: (() => void) | undefined = () => { },
   replayState: (eventCount: number) => ReplayState = state,
   proposedEvent?: GameEvent,
 ): CoreAdapter {
@@ -142,6 +152,7 @@ function adapter(
   };
 }
 
+
 function file(events: GameEvent[]): GameFile {
   return {
     schemaVersion: 3,
@@ -156,25 +167,27 @@ function file(events: GameEvent[]): GameFile {
   };
 }
 
+
 function event(id: string, type: "setupConfirmed" | "phaseStepConfirmed" = "phaseStepConfirmed"): GameEvent {
   return type === "setupConfirmed"
     ? {
-        id,
-        type,
-        phase: "setup",
-        payload: { players: [] },
-        summary: id,
-        createdAt: "2026-07-27T00:00:00.000Z",
-      }
+      id,
+      type,
+      phase: "setup",
+      payload: { players: [] },
+      summary: id,
+      createdAt: "2026-07-27T00:00:00.000Z",
+    }
     : {
-        id,
-        type,
-        phase: "day",
-        payload: { stepId: "day:discussion", input: null },
-        summary: id,
-        createdAt: "2026-07-27T00:00:00.000Z",
-      };
+      id,
+      type,
+      phase: "day",
+      payload: { stepId: "day:discussion", input: null },
+      summary: id,
+      createdAt: "2026-07-27T00:00:00.000Z",
+    };
 }
+
 
 function state(
   eventCount: number,

@@ -36,29 +36,29 @@ export type BugReportMetadata = {
   [key: string]: unknown;
 };
 
-export type BugReportBuildInput<TContext extends BugReportContext = BugReportContext> = {
-  gameFile: GameFile;
+export type BugReportBuildInput<TContext extends BugReportContext = BugReportContext, TFile = GameFile> = {
+  gameFile: TFile;
   symptom: string;
   environment: BugReportEnvironment;
   reproductionContext: TContext;
   includeOriginalGameFile: boolean;
 };
 
-export type BugReportResult<TContext extends BugReportContext = BugReportContext> = {
+export type BugReportResult<TContext extends BugReportContext = BugReportContext, TFile = GameFile> = {
   subject: string;
   body: string;
   attachmentJson: string;
   metadata: BugReportMetadata;
-  fixture: GameFile;
+  fixture: TFile;
   reproductionContext: TContext & { eventCount: number };
   reportType?: string;
   reportSchemaVersion?: number;
   filename?: string;
 };
 
-export type BugReportBuilder<TContext extends BugReportContext = BugReportContext> = (
-  input: BugReportBuildInput<TContext>,
-) => BugReportResult<TContext>;
+export type BugReportBuilder<TContext extends BugReportContext = BugReportContext, TFile = GameFile> = (
+  input: BugReportBuildInput<TContext, TFile>,
+) => BugReportResult<TContext, TFile>;
 
 /**
  * The prefix is intentionally part of the theme adapter rather than being
@@ -80,14 +80,14 @@ export const troubleBrewingBugReportTheme: BugReportDialogTheme = {
   classPrefix: "tb",
 };
 
-export type GameBugReportDialogProps<TContext extends BugReportContext = BugReportContext> = {
-  gameFile: GameFile;
+export type GameBugReportDialogProps<TContext extends BugReportContext = BugReportContext, TFile = GameFile> = {
+  gameFile: TFile;
   environment: BugReportEnvironment;
   reproductionContext: TContext;
   recipient: string;
   delivery?: BugReportDelivery;
   onClose: () => void;
-  builder: BugReportBuilder<TContext>;
+  builder: BugReportBuilder<TContext, TFile>;
   theme?: BugReportDialogTheme;
   scriptName: string;
   scriptId: string;
@@ -100,7 +100,7 @@ export type GameBugReportDialogProps<TContext extends BugReportContext = BugRepo
   originalFileDescription?: string;
   originalFileLabel?: string;
   previewIncludedLabel?: string;
-  metadataMailto?: (recipient: string, report: BugReportResult<TContext>) => string;
+  metadataMailto?: (recipient: string, report: BugReportResult<TContext, TFile>) => string;
 };
 
 type DeliveryFeedback = "copied" | "copyFailed" | "downloaded" | "downloadFailed" | "emailFailed";
@@ -110,7 +110,7 @@ const DEFAULT_PRIVACY_INCLUDED = "좌석·직업·진영, 확정 이벤트와 �
 const DEFAULT_PRIVACY_EXCLUDED = "플레이어 이름과 Storyteller 메모";
 const DEFAULT_ORIGINAL_FILE_WARNING = "원본에는 플레이어 이름과 메모가 들어 있을 수 있습니다. 직렬화 또는 불러오기 문제를 제보할 때만 선택하세요.";
 
-export function GameBugReportDialog<TContext extends BugReportContext>({
+export function GameBugReportDialog<TContext extends BugReportContext, TFile = GameFile>({
   gameFile,
   environment,
   reproductionContext,
@@ -130,7 +130,7 @@ export function GameBugReportDialog<TContext extends BugReportContext>({
   originalFileLabel = "원본 GameFile JSON도 포함",
   previewIncludedLabel = "원본 포함",
   metadataMailto,
-}: GameBugReportDialogProps<TContext>) {
+}: GameBugReportDialogProps<TContext, TFile>) {
   const [symptom, setSymptom] = useState("");
   const [includeOriginal, setIncludeOriginal] = useState(false);
   const [feedback, setFeedback] = useState<DeliveryFeedback>();
@@ -324,9 +324,9 @@ function RecoveryNotice({ reason, className }: { reason: RecoveryReason; classNa
   );
 }
 
-function defaultMetadataMailto<TContext extends BugReportContext>(
+function defaultMetadataMailto<TContext extends BugReportContext, TFile>(
   recipient: string,
-  report: BugReportResult<TContext>,
+  report: BugReportResult<TContext, TFile>,
   scriptName: string,
 ) {
   const metadata = report.metadata;

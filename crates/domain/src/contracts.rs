@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -12,8 +14,16 @@ pub(crate) use crate::model::AutomaticReminder;
 
 pub(crate) struct GameFile {
     pub(crate) schema_version: u32,
-    pub(crate) script_id: ScriptId,
+    pub(crate) script: ScriptReference,
     pub(crate) game: Game,
+}
+
+impl GameFile {
+    pub(crate) fn official_script_id(&self) -> Result<ScriptId, crate::error::CoreError> {
+        match &self.script {
+            ScriptReference::Official { script_id } => Ok(*script_id),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Copy, Clone, PartialEq, Eq)]
@@ -21,6 +31,19 @@ pub(crate) struct GameFile {
 pub(crate) enum ScriptId {
     TroubleBrewing,
     SectsAndViolets,
+    BadMoonRising,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(tag = "type")]
+pub(crate) enum ScriptReference {
+    #[serde(rename = "official", rename_all = "camelCase")]
+    Official { script_id: ScriptId },
+}
+
+impl ScriptReference {
+    #[cfg(test)]
+    pub(crate) const DISCRIMINATORS: &'static [&'static str] = &["official"];
 }
 
 #[derive(Debug)]
@@ -39,10 +62,10 @@ pub(crate) struct RawGameFile {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RawGame {
-    #[serde(default)]
-    pub(crate) script_id: Option<ScriptId>,
     pub(crate) updated_at: Option<String>,
     pub(crate) events: Vec<Value>,
+    #[serde(flatten)]
+    pub(crate) fields: HashMap<String, Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -247,9 +270,11 @@ pub(crate) struct SetupPlayerInput {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct CreateGamePayload {
     pub(crate) players: Vec<SetupPlayerInput>,
+    #[serde(default)]
+    pub(crate) setup_choice_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -307,8 +332,14 @@ impl Command {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct SetupDistributionRequest {
+#[serde(untagged)]
+pub(crate) enum SetupDistributionRequest {
+    Official(OfficialSetupDistributionRequest),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct OfficialSetupDistributionRequest {
     pub(crate) script_id: ScriptId,
     pub(crate) player_count: usize,
     #[serde(default)]
@@ -340,16 +371,35 @@ pub(crate) struct SetupDistribution {
     pub(crate) demon: usize,
 }
 
+#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+#[serde(untagged)]
+pub(crate) enum SetupDistributionResult {
+    Distribution(SetupDistribution),
+    Options {
+        options: Vec<SetupDistributionOption>,
+    },
+}
+
+#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SetupDistributionOption {
+    pub(crate) id: String,
+    pub(crate) distribution: SetupDistribution,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ReplayState {
     pub(crate) schema_version: u32,
-    pub(crate) script_id: ScriptId,
+    #[serde(flatten)]
+    pub(crate) script_identity: ReplayScriptIdentity,
     pub(crate) event_count: usize,
     pub(crate) phase: Phase,
     pub(crate) players: Vec<Player>,
     pub(crate) current_step: Option<PhaseStep>,
     pub(crate) phase_overview: Vec<PhaseOverviewItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) setup_choice_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) day_state: Option<DayState>,
     pub(crate) warnings: Vec<CoreWarning>,
@@ -373,13 +423,30 @@ pub(crate) struct ReplayState {
     pub(crate) pending_game_end: Option<PendingGameEnd>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+pub(crate) enum ReplayScriptIdentity {
+    Official {
+        #[serde(rename = "scriptId")]
+        script_id: ScriptId,
+    },
+}
+
+impl ReplayScriptIdentity {
+    pub(crate) fn official_script_id(&self) -> Result<ScriptId, crate::error::CoreError> {
+        match self {
+            Self::Official { script_id } => Ok(*script_id),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PendingDeathConsequence {
     pub(crate) step_id: String,
     pub(crate) kind: DeathConsequenceKind,
     pub(crate) source_event_id: String,
-    pub(crate) death_sequence: u8,
+    pub(crate) death_sequence: u32,
     pub(crate) actor_player_id: String,
     pub(crate) source_ability_instance_id: AbilityInstanceId,
     pub(crate) ability_use: AbilityUseRef,
@@ -801,6 +868,10 @@ pub(crate) enum GameEventKind {
     NoExecutionConfirmed { payload: ExecutionEventPayload },
     #[serde(rename = "deathConfirmed")]
     DeathConfirmed { payload: DeathEventPayload },
+    #[serde(rename = "orderedDeathResolved")]
+    OrderedDeathResolved {
+        payload: OrderedDeathResolvedPayload,
+    },
     #[serde(rename = "executionSurvivalConfirmed")]
     ExecutionSurvivalConfirmed {
         payload: ExecutionSurvivalEventPayload,
@@ -883,6 +954,7 @@ impl GameEventKind {
         "executionConfirmed",
         "noExecutionConfirmed",
         "deathConfirmed",
+        "orderedDeathResolved",
         "executionSurvivalConfirmed",
         "redHerringAssigned",
         "nightActionResolved",
@@ -907,10 +979,120 @@ impl GameEventKind {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum OrderedDeathSource {
+    Ability {
+        ability_use: AbilityUseRef,
+        ability_origin: AbilityOrigin,
+    },
+    Execution {
+        execution_event_id: String,
+    },
+    Event {
+        source_event_id: String,
+        cause: OrderedDeathEventCause,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum OrderedDeathEventCause {
+    RulesConsequence,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct OrderedDeathResolvedPayload {
+    pub(crate) source: OrderedDeathSource,
+    pub(crate) resolutions: Vec<OrderedDeathResolution>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct OrderedDeathResolution {
+    pub(crate) sequence: u32,
+    pub(crate) attempt: OrderedDeathAttempt,
+    pub(crate) prevention_checks: Vec<PreventionCheck>,
+    pub(crate) outcome: OrderedDeathOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct OrderedDeathAttempt {
+    pub(crate) target_player_id: String,
+    pub(crate) bypass_policy: DeathBypassPolicy,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) enum DeathBypassPolicy {
+    None,
+    AllTargetProtections,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PreventionCheck {
+    pub(crate) sequence: u32,
+    pub(crate) source: PreventionSource,
+    pub(crate) selection: PreventionSelection,
+    pub(crate) decision: PreventionDecision,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PreventionSource {
+    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) ability_origin: AbilityOrigin,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum PreventionSelection {
+    Deterministic,
+    Storyteller,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum PreventionDecision {
+    Applied,
+    NotApplied,
+    Bypassed,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum OrderedDeathOutcome {
+    Occurred { player_id: String },
+    Prevented { prevention_sequence: u32 },
+    NoEffect { reason: OrderedDeathNoEffectReason },
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum OrderedDeathNoEffectReason {
+    SourceInvalid,
+    ActorImpaired,
+    TargetAlreadyDead,
+    TargetIneligible,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct DeathTriggerRef {
     pub(crate) source_event_id: String,
-    pub(crate) death_sequence: u8,
+    pub(crate) death_sequence: u32,
     pub(crate) player_id: String,
     pub(crate) source_ability_instance_id: AbilityInstanceId,
 }
@@ -1505,8 +1687,11 @@ pub(crate) struct SmokeEventPayload {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct SetupEventPayload {
     pub(crate) players: Vec<SetupPlayerInput>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) setup_choice_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1547,6 +1732,10 @@ pub(crate) enum PhilosopherAbilityOutcome {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PhaseStepEventPayload {
     pub(crate) step_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) action_ref: Option<Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_use: Option<AbilityUseRef>,
     #[serde(default)]
     pub(crate) input: StepInput,
     #[serde(default, skip_serializing_if = "Option::is_none")]

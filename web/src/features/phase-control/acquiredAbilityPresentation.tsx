@@ -1,3 +1,4 @@
+import {AbilityOwnerView,ActingAbilityView} from '../../shared-ui/AbilityIdentityView';
 import type { ReactNode } from "react";
 import type { AbilityOrigin, Player } from "../../core/types";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
@@ -66,19 +67,8 @@ export function AbilityOwnerIdentity({
 }: AbilityOwnerIdentityProps) {
   const character = characterPresentation(actor.actualCharacter);
   const roleName = actorRoleName ?? character?.label ?? actor.actualCharacter;
-  return (
-    <CharacterDetailButton
-      details={character?.details}
-      className={actorIdentityClassName}
-      theme={theme}
-    >
-      {character?.icon ? <img src={character.icon.src} alt={`${roleName} 공식 캐릭터 아이콘`} /> : null}
-      <div>
-        {actorRoleNode ?? <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{roleName}</span>}
-        {actorPlayerNode ?? <strong>{actorPlayerLabel ?? actor.name}</strong>}
-      </div>
-    </CharacterDetailButton>
-  );
+  return <AbilityOwnerView icon={character?.icon?<img src={character.icon.src} alt={`${roleName} 공식 캐릭터 아이콘`}/>:null} role={actorRoleNode ?? <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{roleName}</span>} player={actorPlayerNode ?? <strong>{actorPlayerLabel ?? actor.name}</strong>} wrap={children=><CharacterDetailButton details={character?.details} className={actorIdentityClassName} theme={theme}>{children}</CharacterDetailButton>}/>;
+
 }
 
 type ActingAbilityIdentityProps = Pick<
@@ -122,17 +112,7 @@ export function ActingAbilityIdentity({
   const character = characterPresentation(abilityCharacterId);
   const name = character?.label ?? abilityCharacterId;
   const summary = abilitySummary ?? character?.ability;
-  const identity = (
-    <CharacterDetailButton
-      details={character?.details}
-      className={abilityClassName}
-      theme={theme}
-    >
-      <span>{abilityLabel ?? "획득한 능력"}</span>
-      {character?.icon ? <img src={character.icon.src} alt={`${name} 공식 캐릭터 아이콘`} /> : null}
-      <div>{abilityNameNode ?? <strong>{name}</strong>}{abilityStatusNode}{summary ? <p>{summary}</p> : null}</div>
-    </CharacterDetailButton>
-  );
+  const identity=<ActingAbilityView label={abilityLabel ?? '획득한 능력'} icon={character?.icon?<img src={character.icon.src} alt={`${name} 공식 캐릭터 아이콘`}/>:null} name={abilityNameNode ?? <strong>{name}</strong>} status={abilityStatusNode} summary={summary} wrap={children=><CharacterDetailButton details={character?.details} className={abilityClassName} theme={theme}>{children}</CharacterDetailButton>}/>;
   return abilityRegionLabel ? (
     <section className={abilityRegionClassName} aria-label={`${abilityRegionLabel} · ${name}`}>
       {identity}

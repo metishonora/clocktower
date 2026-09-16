@@ -1,3 +1,4 @@
+import {GrimoireNotificationPrompt} from '../../shared-ui/GrimoireHandoffView';
 import type { PendingIdentityReveal, Player } from "../../core/types";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { SectsAndVioletsReveal } from "../reveal/SectsAndVioletsReveal";
@@ -48,15 +49,5 @@ export function CharacterChangeRevealPrompt({
   total: number;
   onReveal: () => void;
 }) {
-  return (
-    <section
-      className="snakeCharmerRevealPrompt"
-      role="dialog"
-      aria-label={`직업 변경 안내 ${sequence}/${total}`}
-    >
-      <strong>직업이 변경됩니다</strong>
-      <p>{player ? `플레이어 ${player.seat}` : "플레이어"}</p>
-      <button type="button" onClick={onReveal}>공개</button>
-    </section>
-  );
+  return <GrimoireNotificationPrompt kind="characterChange" playerLabel={player?`플레이어 ${player.seat}`:'플레이어'} sequence={sequence} total={total} onReveal={onReveal}/>;
 }

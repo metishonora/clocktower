@@ -18,6 +18,7 @@ import type {
   RevealPayload,
   SeatLayoutState,
   SetupDistribution,
+  SetupDistributionResult,
 } from "./core/types.js";
 import { scriptDisplayName, type ScriptId } from "./core/scripts.js";
 import {
@@ -47,9 +48,9 @@ export function createGameFile(scriptId: ScriptId, events: GameEvent[] = []): Ga
   const now = new Date().toISOString();
 
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     game: {
-      scriptId,
+      script: { type: "official", scriptId },
       id: "local-game",
       name: scriptDisplayName(scriptId),
       createdAt: now,
@@ -212,7 +213,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
   const setupDistributionRequestKey = JSON.stringify(setupDistributionRequest);
   const setupExpectedCounts = useMemo(() => {
     const result = core.setupDistributionSync(setupDistributionRequest);
-    if (result?.ok) return result.value;
+    if (result?.ok && isSingleSetupDistribution(result.value)) return result.value;
     return asyncSetupExpectedCounts?.requestKey === setupDistributionRequestKey
       ? asyncSetupExpectedCounts.counts
       : undefined;
@@ -242,7 +243,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     const requestKey = setupDistributionRequestKey;
     core.setupDistribution(setupDistributionRequest)
       .then((result) => {
-        if (!cancelled && result.ok) {
+        if (!cancelled && result.ok && isSingleSetupDistribution(result.value)) {
           setAsyncSetupExpectedCounts({
             requestKey,
             counts: result.value,
@@ -596,14 +597,14 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
         setUndoReplayPending(false);
       });
     } else {
-      const nextGameFile: GameFile = {
-        schemaVersion: 3,
+      const nextGameFile = {
+        ...gameFile,
         game: {
           ...gameFile.game,
           updatedAt: new Date().toISOString(),
           events: gameFile.game.events.slice(0, -1),
         },
-      };
+      } as GameFile;
       void canonicalSession.replay(nextGameFile).then((result) => {
         if (!result.ok) {
           setLoadError(result.error.messageKo);
@@ -718,6 +719,12 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     importGameFile,
     exportGameFile: () => exportGameFileJson(gameFile),
   };
+}
+
+function isSingleSetupDistribution(
+  result: SetupDistributionResult,
+): result is SetupDistribution {
+  return !("options" in result);
 }
 
 function createTbSessionSnapshot(

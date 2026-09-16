@@ -1,0 +1,60 @@
+- main "커스텀 시나리오 마도서":
+  - text: STORYTELLER CONSOLE
+  - heading "새 마도서 연결 검증" [level=1]
+  - img "밤": ☾
+  - navigation "작업 단계":
+    - button "직업"
+    - button "마도서" [disabled]
+    - button "진행" [disabled]
+  - region "커스텀 게임 설정":
+    - heading "플레이어" [level=2]
+    - button "5명"
+    - button "6명"
+    - button "7명" [pressed]
+    - button "8명"
+    - button "9명"
+    - button "10명"
+    - button "11명"
+    - button "12명"
+    - button "13명"
+    - button "14명"
+    - button "15명"
+    - region "인원 구성":
+      - heading "인원 구성" [level=2]
+      - generic: 마을 주민
+      - strong: 0 / 5
+      - generic: 이방인
+      - strong: 0 / 0
+      - generic: 하수인
+      - strong: 0 / 1
+      - generic: 악마
+      - strong: 0 / 1
+    - region "직업 선택 패널":
+      - article:
+        - heading "마을 주민 · 0/5" [level=2]
+        - button "군인":
+          - generic: 군인
+        - button "시장":
+          - generic: 시장
+        - button "시계공":
+          - generic: 시계공
+        - button "성결자":
+          - generic: 성결자
+        - button "처단자":
+          - generic: 처단자
+      - article:
+        - heading "이방인 · 0/0" [level=2]
+      - article:
+        - heading "하수인 · 0/1" [level=2]
+        - button "독살범":
+          - generic: 독살범
+      - article:
+        - heading "악마 · 0/1" [level=2]
+        - button "임프":
+          - generic: 임프
+  - button "마도서 배치로" [disabled]
+- complementary "검토 도구":
+  - strong: "#220 · 설정 연결 검토"
+  - generic: 실제 커스텀 엔진으로 게임 설정까지 확인합니다. 첫날 밤 조작·저장/재개 화면은 다음 단계입니다. 저장은 이 탭의 메모리에서만 이뤄지며 새로고침하면 초기화됩니다.
+  - button "혼합 시나리오로 설정 열기"
+  - button "시나리오 작성부터"

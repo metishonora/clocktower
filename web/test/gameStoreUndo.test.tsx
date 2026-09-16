@@ -40,8 +40,12 @@ test("store creates a canonical script-bound game and passes script identity to 
 
   await waitFor(() => expect(replay).toHaveBeenCalled());
   expect(result.current.gameFile).toMatchObject({
-    schemaVersion: 3,
-    game: { scriptId: "troubleBrewing", name: "Trouble Brewing", events: [] },
+    schemaVersion: 4,
+    game: {
+      script: { type: "official", scriptId: "troubleBrewing" },
+      name: "Trouble Brewing",
+      events: [],
+    },
   });
   await waitFor(() => expect(core.setupDistribution).toHaveBeenCalledWith(expect.objectContaining({
     scriptId: "troubleBrewing",
@@ -187,6 +191,7 @@ test("an unresolved Undo replay blocks overlap and setup recovery appears only a
   });
   expect(result.current.gameFile.game.events).toHaveLength(1);
   expect(result.current.gameFile.schemaVersion).toBe(3);
+  if (result.current.gameFile.schemaVersion !== 3) throw new Error("expected legacy fixture");
   expect(result.current.gameFile.game.scriptId).toBe("troubleBrewing");
   expect(result.current.canUndoLatestLiveEvent).toBe(false);
   expect(result.current.busy).toBe(true);

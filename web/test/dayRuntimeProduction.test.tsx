@@ -193,7 +193,13 @@ test("successful import of an already-Day game starts a fresh transient runtime"
   vi.spyOn(window, "confirm").mockReturnValue(true);
   await user.upload(fileInput, new File([JSON.stringify(imported)], "day.json", { type: "application/json" }));
 
-  await waitFor(() => expect(vi.mocked(core.replay)).toHaveBeenCalledWith(imported));
+  await waitFor(() => expect(vi.mocked(core.replay)).toHaveBeenCalledWith(expect.objectContaining({
+    schemaVersion: 4,
+    game: expect.objectContaining({
+      id: "imported-day-game",
+      script: { type: "official", scriptId: "troubleBrewing" },
+    }),
+  })));
   await user.click(screen.getByRole("button", { name: "진행" }));
   expect(await screen.findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
 });

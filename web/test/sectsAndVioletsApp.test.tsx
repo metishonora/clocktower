@@ -325,7 +325,11 @@ test("confirms the assigned production roster through the canonical S&V createGa
   await user.click(within(app).getByRole("button", { name: "배치 확정" }));
 
   expect(core.propose).toHaveBeenCalledWith(
-    expect.objectContaining({ game: expect.objectContaining({ scriptId: "sectsAndViolets" }) }),
+    expect.objectContaining({
+      game: expect.objectContaining({
+        script: { type: "official", scriptId: "sectsAndViolets" },
+      }),
+    }),
     {
       type: "createGame",
       payload: {
@@ -461,7 +465,11 @@ test("advances the production first-night step through the canonical phase comma
   expect(await within(app).findByRole("heading", { name: "하수인 정보" })).toBeTruthy();
   await completeCurrentEvilInformation(user, app);
   expect(core.propose).toHaveBeenLastCalledWith(
-    expect.objectContaining({ game: expect.objectContaining({ scriptId: "sectsAndViolets" }) }),
+    expect.objectContaining({
+      game: expect.objectContaining({
+        script: { type: "official", scriptId: "sectsAndViolets" },
+      }),
+    }),
     { type: "confirmStep", payload: { stepId: "firstNight:minionInfo", input: null } },
   );
   expect(await within(app).findByRole("heading", { name: "악마 정보" })).toBeTruthy();
@@ -668,8 +676,11 @@ test("autosaves a meaningful S&V setup choice and reports the completed time", a
 
   await waitFor(() => expect(storage.savedGames).toHaveLength(1));
   expect(storage.savedGames[0]).toMatchObject({
-    schemaVersion: 3,
-    game: { scriptId: "sectsAndViolets", events: [] },
+    schemaVersion: 4,
+    game: {
+      script: { type: "official", scriptId: "sectsAndViolets" },
+      events: [],
+    },
   });
   expect(storage.savedSessions[0]).toMatchObject({
     version: 1,

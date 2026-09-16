@@ -1,0 +1,591 @@
+use crate::{
+    characters::resolve_custom_script,
+    contracts::{
+        Command, GameEvent, GameEventKind, GameFile, PhaseStepCommandPayload, Proposal,
+        ReplayScriptIdentity, ReplayState, RuleState, ScriptReference,
+    },
+    error::{CoreError, ErrorKind},
+    messages::{phase_step_event_summary, phase_step_preview},
+    model::{Phase, PhaseOverviewItem, PhaseStep},
+    setup::{player_from_setup_input_for_custom, validate_setup_inputs_for_custom},
+};
+
+use super::{
+    first_night::{
+        action_registry, activation_rule, plan_for_definition, project_occurrence_step,
+        ActionContext, ActionEventDraft, ActionRegistry, ActivationRule, NightScheduler,
+        ValidatedActionEvent,
+    },
+    projection::{event_reveal, first_night as project_first_night, rule_state},
+    reducer::reduce_custom_facts,
+    rules::CustomRuleService,
+    state::{ActionOccurrence, CompletedActionSnapshot, CustomGameFacts, CustomGameState},
+};
+
+struct ReplayComponents {
+    action_executions: Vec<crate::first_night::execution::ActionExecution>,
+    latest_undo_unit: Option<crate::first_night::execution::LatestUndoUnit>,
+    available_actions: Vec<PhaseStep>,
+    state: CustomGameState,
+    current_step: Option<PhaseStep>,
+    phase_overview: Vec<PhaseOverviewItem>,
+    phase: Phase,
+}
+
+/// Test-only read access to the completed snapshots produced by the real custom replay fold.
+/// Nothing in this view is serialized or exported through WASM; it exists so contract tests can
+/// verify that a historical Reveal remains tied to the facts prefix that confirmed it.
+#[cfg(test)]
+pub(crate) fn completed_snapshots_for_tests(
+    game_file: GameFile,
+) -> Result<Vec<CompletedActionSnapshot>, CoreError> {
+    Ok(replay_components(&game_file)?
+        .state
+        .progress
+        .completed_history
+        .into_iter()
+        .filter_map(|completion| completion.snapshot)
+        .collect())
+}
+
+pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
+    let script = game_file.script.clone();
+    if game_file.game.events.is_empty() {
+        return Ok(ReplayState {
+            night_number: 0,
+            day: None,
+            action_executions: vec![],
+            latest_undo_unit: None,
+            schema_version: game_file.schema_version,
+            script_identity: ReplayScriptIdentity::Custom { script },
+            event_count: 0,
+            phase: Phase::Setup,
+            players: vec![],
+            current_step: None,
+            phase_overview: vec![],
+
+            warnings: vec![],
+            rule_state: RuleState::default(),
+            game_end: None,
+            available_actions: vec![],
+            pending_identity_reveals: vec![],
+            madness_assignments: vec![],
+        });
+    }
+    let components = replay_components(&game_file)?;
+    Ok(ReplayState {
+        night_number: components.state.facts.night_number(),
+        day: crate::day::view(&components.state.facts),
+        action_executions: components.action_executions,
+        latest_undo_unit: components.latest_undo_unit,
+        schema_version: game_file.schema_version,
+        script_identity: ReplayScriptIdentity::Custom { script },
+        event_count: game_file.game.events.len(),
+        phase: components.phase,
+        players: components.state.facts.players.clone(),
+        current_step: components.current_step,
+        phase_overview: components.phase_overview,
+
+        warnings: vec![],
+        rule_state: rule_state(&components.state.facts),
+        game_end: components.state.facts.game_end.clone(),
+        available_actions: components.available_actions,
+        pending_identity_reveals: components.state.facts.pending_identity_reveals.clone(),
+        madness_assignments: components.state.facts.madness_assignments.clone(),
+    })
+}
+
+/// Read the reveal captured during the validated replay fold, never recompute at the current prefix.
+pub(crate) fn confirmed_event_reveal(
+    game_file: GameFile,
+    event_id: &str,
+) -> Result<Option<crate::contracts::RevealPayload>, CoreError> {
+    if !game_file
+        .game
+        .events
+        .iter()
+        .any(|event| event.id == event_id)
+    {
+        return Err(ErrorKind::StaleStep.into_error());
+    }
+    let components = replay_components(&game_file)?;
+    Ok(components
+        .state
+        .progress
+        .completed_history
+        .into_iter()
+        .find(|completion| completion.event_id == event_id)
+        .and_then(|completion| completion.snapshot)
+        .and_then(|snapshot| snapshot.reveal_payload))
+}
+
+pub(crate) fn propose(game_file: &GameFile, command: Command) -> Result<Proposal, CoreError> {
+    match command {
+        Command::CreateGame { payload } => crate::setup::propose_create_game(game_file, payload),
+        Command::ConfirmDay { payload } => {
+            let components = replay_components(game_file)?;
+            let ScriptReference::Custom { definition } = &game_file.script;
+            crate::day::propose(
+                &resolve_custom_script(definition)?,
+                &components.state,
+                payload,
+                game_file.game.events.len(),
+                game_file.game.updated_at.clone().unwrap_or_default(),
+            )
+        }
+        Command::ConfirmStep { payload } => propose_step(game_file, payload),
+    }
+}
+
+fn propose_step(
+    game_file: &GameFile,
+    payload: PhaseStepCommandPayload,
+) -> Result<Proposal, CoreError> {
+    let components = replay_components(game_file)?;
+    if components.current_step.is_none() && components.available_actions.is_empty() {
+        return Err(ErrorKind::NoCurrentStep.into_error());
+    }
+    let current_step = components
+        .current_step
+        .as_ref()
+        .filter(|s| s.id == payload.step_id)
+        .or_else(|| {
+            components
+                .available_actions
+                .iter()
+                .find(|s| s.id == payload.step_id)
+        })
+        .ok_or_else(|| ErrorKind::StaleStep.into_error())?;
+    if payload.step_id != current_step.id {
+        return Err(ErrorKind::StaleStep.into_error());
+    }
+
+    let ScriptReference::Custom { definition } = &game_file.script else {
+        unreachable!()
+    };
+    let context = resolve_custom_script(definition)?;
+    let rules = CustomRuleService::new(&context, &components.state.facts);
+    let event_id = format!("phase-step-{}", game_file.game.events.len() + 1);
+    let action_context = ActionContext {
+        event_id: &event_id,
+        rule_service: &rules,
+    };
+    let registry = action_registry()?;
+    let action_ref = current_step
+        .action_ref
+        .as_ref()
+        .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
+    let occurrence = ActionOccurrence::from_step(current_step)?;
+    registry.validate_input(
+        &occurrence,
+        current_step,
+        &payload.input,
+        &components.state.facts.players,
+    )?;
+    let handler_draft = registry.propose_input(
+        action_ref,
+        &action_context,
+        &occurrence,
+        &crate::first_night::ActionInput {
+            input: payload.input.clone(),
+            delivered_result: payload.delivered_result.clone(),
+            registration_judgments: payload.registration_judgments.clone(),
+        },
+    )?;
+    let summary = phase_step_event_summary(
+        current_step,
+        &components.state.facts.players,
+        &payload.input,
+        None,
+        false,
+    );
+
+    let event = event_from_draft(
+        event_id,
+        current_step.phase,
+        summary,
+        game_file
+            .game
+            .updated_at
+            .clone()
+            .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".to_string()),
+        handler_draft,
+    );
+
+    // Proposal and replay intentionally cross the same event validation/reducer/scheduler fold.
+    // The candidate state is discarded after validation; no proposal path can mint a different
+    // event shape or bypass an atomic reducer/scheduler failure.
+    let plan = cycle_plan(definition, components.state.phase)?;
+    let activation = activation_rule();
+    let candidate = apply_event(
+        &context,
+        &plan,
+        &registry,
+        activation.as_ref(),
+        &components.state,
+        &event,
+        game_file.game.events.len(),
+        false,
+    )?;
+    if matches!(candidate.phase, Phase::FirstNight | Phase::Night) {
+        let candidate_rules = CustomRuleService::new(&context, &candidate.facts);
+        let candidate_context = ActionContext {
+            event_id: "",
+            rule_service: &candidate_rules,
+        };
+        project_first_night(&plan, &registry, &candidate_context, &candidate.progress)?;
+    }
+    let (event_input, custom_result) = match &event.kind {
+        GameEventKind::PhaseStepConfirmed { payload } => (&payload.input, None),
+        GameEventKind::CustomActionConfirmed { payload } => (&payload.input, Some(&payload.result)),
+        _ => return Err(ErrorKind::EventNotSupportedByScript.into_error()),
+    };
+    let reveal_payload = event_reveal(
+        action_ref,
+        &components.state.facts,
+        &context,
+        event_input,
+        custom_result,
+        match &event.kind {
+            GameEventKind::CustomActionConfirmed { payload } => payload
+                .ability_use
+                .as_ref()
+                .map(|s| s.owner_player_id.as_str()),
+            _ => None,
+        },
+    );
+    Ok(Proposal {
+        event,
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: phase_step_preview(false),
+        reveal_payload,
+    })
+}
+
+fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError> {
+    let ScriptReference::Custom { definition } = &game_file.script else {
+        unreachable!()
+    };
+    let context = resolve_custom_script(definition)?;
+    let Some(first) = game_file.game.events.first() else {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    };
+    let GameEventKind::SetupConfirmed { payload } = &first.kind else {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    };
+    if first.phase != Phase::Setup
+        || payload.setup_choice_id.is_some()
+        || game_file
+            .game
+            .events
+            .iter()
+            .skip(1)
+            .any(|event| matches!(event.kind, GameEventKind::SetupConfirmed { .. }))
+    {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    }
+    validate_setup_inputs_for_custom(&context, &payload.players)?;
+    let players = payload
+        .players
+        .iter()
+        .map(|player| player_from_setup_input_for_custom(&context, player))
+        .collect::<Result<Vec<_>, _>>()?;
+    let plan = plan_for_definition(definition)?;
+    let mut facts = CustomGameFacts::from_players(players);
+    facts.prefix_event_id = first.id.clone();
+    crate::effects::resolve_effects(&context, &mut facts)?;
+    let initial_rules = CustomRuleService::new(&context, &facts);
+    let initial_context = ActionContext {
+        event_id: "",
+        rule_service: &initial_rules,
+    };
+    let registry = action_registry()?;
+    let activation = activation_rule();
+    let scheduler = NightScheduler::new(&plan, &registry, activation.as_ref());
+    let progress = scheduler.initial_progress(&initial_context)?;
+    let mut state = CustomGameState::with_first_night(facts, progress);
+
+    for (event_index, event) in game_file.game.events.iter().enumerate().skip(1) {
+        // apply_event returns an entirely new pair. The previous state remains untouched if
+        // validation, reduction, projection, or scheduling rejects this event.
+        let event_plan = cycle_plan(definition, state.phase)?;
+        state = apply_event(
+            &context,
+            &event_plan,
+            &registry,
+            activation.as_ref(),
+            &state,
+            event,
+            event_index,
+            true,
+        )?;
+    }
+
+    let phase = state.phase;
+    let plan = cycle_plan(definition, phase)?;
+    let (current_step, phase_overview, action_executions, latest_undo_unit) =
+        if matches!(phase, Phase::FirstNight | Phase::Night) {
+            let rules = CustomRuleService::new(&context, &state.facts);
+            let action_context = ActionContext {
+                event_id: "",
+                rule_service: &rules,
+            };
+            let projection =
+                project_first_night(&plan, &registry, &action_context, &state.progress)?;
+            (
+                projection.current_step,
+                projection.phase_overview,
+                projection.action_executions,
+                projection.latest_undo_unit,
+            )
+        } else {
+            {
+                let (units, undo) = crate::first_night::execution::units(&state.progress, &[])?;
+                (None, Vec::new(), units, undo)
+            }
+        };
+    let (mut action_executions, _) =
+        crate::day::executions(&state.facts, action_executions, latest_undo_unit);
+    let position = |id: &str| {
+        game_file
+            .game
+            .events
+            .iter()
+            .position(|e| e.id == id)
+            .unwrap_or(usize::MAX)
+    };
+    action_executions.sort_by_key(|u| {
+        u.event_ids
+            .first()
+            .map(|id| position(id))
+            .unwrap_or(usize::MAX)
+    });
+    let latest_undo_unit = action_executions
+        .iter()
+        .filter(|u| !u.event_ids.is_empty())
+        .last()
+        .map(|u| crate::first_night::execution::LatestUndoUnit {
+            id: u.event_ids.last().unwrap().clone(),
+            execution_id: u.id.clone(),
+            event_ids: u.event_ids.clone(),
+            summary_step_id: u.display_step_id.clone(),
+        });
+    let rules = CustomRuleService::new(&context, &state.facts);
+    let action_context = ActionContext {
+        event_id: "",
+        rule_service: &rules,
+    };
+    let available_actions = state
+        .progress
+        .available_occurrences
+        .iter()
+        .map(|o| {
+            let mut step = project_occurrence_step(&registry, &action_context, o)?;
+            registry.enrich_input(&action_context, o, &mut step)?;
+            step.execution = Some(crate::first_night::execution::project(
+                &registry,
+                &action_context,
+                &state.progress,
+                o,
+                &[],
+            )?);
+            Ok(step)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    state.phase = phase;
+    Ok(ReplayComponents {
+        action_executions,
+        latest_undo_unit,
+        available_actions,
+        state,
+        current_step,
+        phase_overview,
+        phase,
+    })
+}
+
+fn apply_event(
+    context: &crate::characters::ResolvedScriptContext,
+    plan: &crate::contracts::FirstNightOrderPlan,
+    registry: &ActionRegistry,
+    activation: &dyn ActivationRule,
+    previous: &CustomGameState,
+    event: &GameEvent,
+    event_index: usize,
+    replay_legacy: bool,
+) -> Result<CustomGameState, CoreError> {
+    if previous.facts.day.is_some() && matches!(event.kind, GameEventKind::DayConfirmed { .. }) {
+        let mut next = crate::day::apply(context, previous, event)?;
+        if previous.phase == Phase::Day && next.phase == Phase::Night {
+            let rules = CustomRuleService::new(context, &next.facts);
+            let action_context = ActionContext {
+                event_id: &event.id,
+                rule_service: &rules,
+            };
+            let mut progress = NightScheduler::new(plan, registry, activation)
+                .initial_progress(&action_context)?;
+            progress.completed_history = previous.progress.completed_history.clone();
+            next.progress = progress;
+        }
+        return Ok(next);
+    }
+    if !matches!(previous.phase, Phase::FirstNight | Phase::Night)
+        || previous.progress.ended
+        || previous.facts.game_end.is_some()
+    {
+        return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+    }
+    let event_step_id = match &event.kind {
+        GameEventKind::CustomActionConfirmed { payload } => &payload.step_id,
+        GameEventKind::PhaseStepConfirmed { payload } => &payload.step_id,
+        _ => return Err(ErrorKind::EventNotSupportedByScript.into_error()),
+    };
+    let previous_rules = CustomRuleService::new(context, &previous.facts);
+    let previous_context = ActionContext {
+        event_id: &event.id,
+        rule_service: &previous_rules,
+    };
+    let scheduler = NightScheduler::new(plan, registry, activation);
+    let normal = previous
+        .progress
+        .next_occurrence()
+        .into_iter()
+        .chain(previous.progress.available_occurrences.iter())
+        .find(|o| o.step_id().is_ok_and(|id| id == *event_step_id))
+        .cloned();
+    let legacy = if normal.is_none() && replay_legacy {
+        scheduler
+            .legacy_initial_candidate(&previous_context, &previous.progress)?
+            .filter(|o| o.step_id().is_ok_and(|id| id == *event_step_id))
+            .or(scheduler
+                .legacy_ordered_preparation_candidate(&previous_context, &previous.progress)?
+                .filter(|o| o.step_id().is_ok_and(|id| id == *event_step_id)))
+    } else {
+        None
+    };
+    let legacy_admitted = legacy.is_some();
+    let occurrence = normal
+        .or(legacy)
+        .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
+    let validated = registry.validate_event(&occurrence, &previous_context, event)?;
+    let mut expected_step = project_occurrence_step(registry, &previous_context, &occurrence)?;
+    let mut pending = previous
+        .progress
+        .required_queue
+        .iter()
+        .chain(&previous.progress.immediate_queue)
+        .chain(&previous.progress.current_occurrences)
+        .cloned()
+        .collect::<Vec<_>>();
+    if !pending.contains(&occurrence) {
+        pending.push(occurrence.clone());
+    }
+    if let Some(consumer) = registry.pending_consumer(&previous_context, &occurrence)? {
+        let consumer = ActionOccurrence::from_step(&consumer)?;
+        if !pending.contains(&consumer) {
+            pending.push(consumer);
+        }
+    }
+    expected_step.execution = Some(crate::first_night::execution::project(
+        registry,
+        &previous_context,
+        &previous.progress,
+        &occurrence,
+        &pending,
+    )?);
+    let event_input = validated.input();
+    registry.validate_input(
+        &occurrence,
+        &expected_step,
+        event_input,
+        &previous.facts.players,
+    )?;
+
+    // Both pure transitions are calculated from the same pre-event prefix. Nothing is adopted
+    // until both values and the historical snapshot have been computed successfully.
+    let mut next_facts = match &validated {
+        ValidatedActionEvent::System(_) => previous.facts.clone(),
+        ValidatedActionEvent::Custom(custom) => {
+            reduce_custom_facts(context, &previous.facts, custom)?
+        }
+    };
+    next_facts.prefix_event_id = event.id.clone();
+    next_facts.canonical_event_index = Some(event_index);
+    let next_rules = CustomRuleService::new(context, &next_facts);
+    let next_context = ActionContext {
+        event_id: "",
+        rule_service: &next_rules,
+    };
+    let snapshot = CompletedActionSnapshot {
+        step: expected_step,
+        reveal_payload: event_reveal(
+            &occurrence.action_ref,
+            &previous.facts,
+            context,
+            event_input,
+            match &validated {
+                ValidatedActionEvent::Custom(custom) => Some(&custom.payload().result),
+                ValidatedActionEvent::System(_) => None,
+            },
+            occurrence.actor_player_id(),
+        ),
+    };
+    let scheduler = if legacy_admitted {
+        scheduler.with_legacy_initial()
+    } else {
+        scheduler
+    };
+    let next_progress = scheduler.advance_with_snapshot(
+        &previous.progress,
+        &previous_context,
+        &next_context,
+        &validated,
+        Some(snapshot),
+    )?;
+    let ended = next_progress.ended;
+    if ended && next_facts.game_end.is_none() {
+        let day = next_facts.night_number();
+        if previous.phase == Phase::Night {
+            crate::day::enter_after_night(context, &mut next_facts, day, &event.id);
+        } else {
+            crate::day::enter(&mut next_facts, day);
+        }
+    }
+    Ok(CustomGameState {
+        phase: if ended { Phase::Day } else { previous.phase },
+        facts: next_facts,
+        progress: next_progress,
+    })
+}
+
+fn event_from_draft(
+    id: String,
+    phase: Phase,
+    summary: String,
+    created_at: String,
+    draft: ActionEventDraft,
+) -> GameEvent {
+    GameEvent {
+        id,
+        kind: draft.into_event_kind(),
+        phase,
+        summary,
+        created_at,
+    }
+}
+
+fn cycle_plan(
+    definition: &crate::contracts::CustomScriptDefinition,
+    phase: Phase,
+) -> Result<crate::contracts::FirstNightOrderPlan, CoreError> {
+    // Both phase wrappers have already passed exact validation. The scheduler consumes
+    // semantic entries; it does not invent a fallback order.
+    if phase == Phase::FirstNight || phase == Phase::Setup {
+        plan_for_definition(definition)
+    } else {
+        Ok(crate::contracts::FirstNightOrderPlan(
+            definition.other_night_order.0.clone(),
+        ))
+    }
+}

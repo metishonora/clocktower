@@ -11,6 +11,14 @@ pub(crate) struct CoreError {
 pub(crate) enum ErrorKind {
     MalformedGameFile,
     UnsupportedSchemaVersion,
+    MalformedCustomScriptDefinition,
+    DuplicateCustomScriptCharacter,
+    UnsupportedCustomScriptCharacter,
+    CustomScriptNotResolved,
+    InvalidFirstNightOrderPlan,
+    FirstNightActionRegistrationInvalid,
+    FirstNightActionHandlerUnavailable,
+    InvalidFirstNightActionProvenance,
     MalformedCommand,
     UnsupportedCommand,
     MalformedEvent,
@@ -19,11 +27,18 @@ pub(crate) enum ErrorKind {
     EventNotSupportedByScript,
     DuplicateEventId,
     InvalidEventReference,
+    InvalidDeathResolution,
     MalformedRequest,
     InvalidPlayerCount,
     InvalidPlayer,
     UnknownCharacter,
+    CharacterNotInScript,
     InvalidDrunkShownCharacter,
+    InvalidLunaticShownCharacter,
+    InvalidSetupChoice,
+    InsufficientSetupRoster,
+    InvalidSetupDistribution,
+    DuplicateActualCharacter,
     InvalidSeating,
     ReplayFailed,
     InvalidStepInput,
@@ -77,6 +92,38 @@ impl ErrorKind {
                 "UNSUPPORTED_SCHEMA_VERSION",
                 "지원하지 않는 게임 파일 버전입니다.",
             ),
+            Self::MalformedCustomScriptDefinition => (
+                "MALFORMED_CUSTOM_SCRIPT_DEFINITION",
+                "커스텀 시나리오 정의가 올바르지 않습니다.",
+            ),
+            Self::DuplicateCustomScriptCharacter => (
+                "DUPLICATE_CUSTOM_SCRIPT_CHARACTER",
+                "커스텀 시나리오에 중복된 캐릭터가 있습니다.",
+            ),
+            Self::UnsupportedCustomScriptCharacter => (
+                "UNSUPPORTED_CUSTOM_SCRIPT_CHARACTER",
+                "커스텀 시나리오에서 지원하지 않는 캐릭터입니다.",
+            ),
+            Self::CustomScriptNotResolved => (
+                "CUSTOM_SCRIPT_NOT_RESOLVED",
+                "커스텀 시나리오 규칙을 아직 해석할 수 없습니다.",
+            ),
+            Self::InvalidFirstNightOrderPlan => (
+                "INVALID_FIRST_NIGHT_ORDER_PLAN",
+                "첫날 밤 행동 순서가 올바르지 않습니다.",
+            ),
+            Self::FirstNightActionRegistrationInvalid => (
+                "FIRST_NIGHT_ACTION_REGISTRATION_INVALID",
+                "첫날 밤 행동 등록이 올바르지 않습니다.",
+            ),
+            Self::FirstNightActionHandlerUnavailable => (
+                "FIRST_NIGHT_ACTION_HANDLER_UNAVAILABLE",
+                "첫날 밤 행동을 처리할 수 없습니다.",
+            ),
+            Self::InvalidFirstNightActionProvenance => (
+                "INVALID_FIRST_NIGHT_ACTION_PROVENANCE",
+                "첫날 밤 행동 출처가 올바르지 않습니다.",
+            ),
             Self::MalformedCommand => ("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."),
             Self::UnsupportedCommand => ("UNSUPPORTED_COMMAND", "지원하지 않는 명령입니다."),
             Self::MalformedEvent => ("MALFORMED_EVENT", "이벤트 형식이 올바르지 않습니다."),
@@ -97,6 +144,10 @@ impl ErrorKind {
                 "INVALID_EVENT_REFERENCE",
                 "이벤트가 존재하지 않거나 올바르지 않은 원본 이벤트를 참조합니다.",
             ),
+            Self::InvalidDeathResolution => (
+                "INVALID_DEATH_RESOLUTION",
+                "순차 사망 판정이 올바르지 않습니다.",
+            ),
             Self::MalformedRequest => ("MALFORMED_REQUEST", "요청 형식이 올바르지 않습니다."),
             Self::InvalidPlayerCount => (
                 "INVALID_PLAYER_COUNT",
@@ -104,9 +155,33 @@ impl ErrorKind {
             ),
             Self::InvalidPlayer => ("INVALID_PLAYER", "플레이어 이름을 입력해야 합니다."),
             Self::UnknownCharacter => ("UNKNOWN_CHARACTER", "지원하지 않는 캐릭터입니다."),
+            Self::CharacterNotInScript => (
+                "CHARACTER_NOT_IN_SCRIPT",
+                "선택한 캐릭터가 현재 시나리오에 없습니다.",
+            ),
             Self::InvalidDrunkShownCharacter => (
                 "INVALID_DRUNK_SHOWN_CHARACTER",
                 "주정뱅이에게 보여준 캐릭터는 주민이어야 합니다.",
+            ),
+            Self::InvalidLunaticShownCharacter => (
+                "INVALID_LUNATIC_SHOWN_CHARACTER",
+                "미치광이에게 보여준 캐릭터는 피로 물든 달의 악마여야 합니다.",
+            ),
+            Self::InvalidSetupChoice => (
+                "INVALID_SETUP_CHOICE",
+                "현재 구성에서 선택할 수 없는 설정 변경입니다.",
+            ),
+            Self::InsufficientSetupRoster => (
+                "INSUFFICIENT_SETUP_ROSTER",
+                "현재 시나리오에는 필요한 유형의 캐릭터가 부족합니다.",
+            ),
+            Self::InvalidSetupDistribution => (
+                "INVALID_SETUP_DISTRIBUTION",
+                "실제 캐릭터 구성이 필요한 유형별 인원수와 일치하지 않습니다.",
+            ),
+            Self::DuplicateActualCharacter => (
+                "DUPLICATE_ACTUAL_CHARACTER",
+                "실제 캐릭터를 중복해서 배정할 수 없습니다.",
             ),
             Self::InvalidSeating => (
                 "INVALID_SEATING",

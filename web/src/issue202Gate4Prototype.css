@@ -1,0 +1,362 @@
+.issue202Gate4Prototype {
+  --gate4-gold: #d4b47f;
+  --gate4-line: rgba(205, 164, 105, .24);
+}
+
+.issue202Gate4Sheet {
+  position: absolute;
+  z-index: 4;
+  top: clamp(18px, 3vh, 30px);
+  right: max(22px, calc((100% - 1120px) / 2));
+  bottom: clamp(14px, 2.4vh, 26px);
+  left: max(22px, calc((100% - 1120px) / 2));
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+  padding: 20px 28px 14px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  color: #f4e7d2;
+  border: 1px solid rgba(211, 171, 111, .66);
+  background:
+    linear-gradient(90deg, rgba(29, 20, 17, .65), rgba(14, 13, 14, .54) 24% 76%, rgba(29, 20, 17, .65)),
+    radial-gradient(ellipse at center, rgba(16, 13, 13, .66), rgba(16, 13, 13, .32) 68%, transparent);
+  box-shadow: 0 24px 66px rgba(0, 0, 0, .54), inset 0 1px rgba(255, 225, 177, .14);
+}
+.issue202Gate4Sheet::before { position: absolute; inset: 8px; border: 1px solid rgba(218, 177, 115, .25); content: ""; pointer-events: none; }
+
+.issue202Gate4Header { display: flex; min-width: 0; padding: 1px 5px 12px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gate4-line); }
+.issue202Gate4Header > div { display: flex; min-width: 0; align-items: center; gap: 13px; }
+.issue202Gate4Header small { display: grid; width: 36px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(201, 155, 94, .42); border-radius: 50%; color: #cfa86f; font: 700 .72rem/1 Georgia, serif; }
+.issue202Gate4Header h1 { margin: 0; color: var(--gate4-gold); font: 700 clamp(1.18rem, 1.8vw, 1.5rem)/1.1 Georgia, "AppleMyungjo", "Noto Serif KR", serif; letter-spacing: .14em; }
+.issue202Gate4Header p { margin: 5px 0 0; color: rgba(239, 222, 197, .76); font: 700 .76rem/1 Georgia, "Noto Serif KR", serif; }
+.issue202Gate4State { flex: none; padding: 6px 11px; border: 1px solid rgba(203, 161, 103, .36); color: #e3c697; background: rgba(77, 52, 32, .38); font-size: .64rem; font-weight: 800; }
+
+.issue202Gate4ReviewScroll {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.issue202Gate4Content { display: grid; min-height: 0; overflow: auto; padding: 2px 5px; grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); gap: 14px; scrollbar-color: rgba(194, 147, 91, .38) transparent; }
+.issue202Gate4Characters,
+.issue202Gate4Orders { min-width: 0; padding: 14px; border: 1px solid rgba(204, 162, 105, .2); background: rgba(8, 9, 10, .32); }
+.issue202Gate4SummaryHeading { display: flex; min-height: 33px; align-items: start; justify-content: space-between; gap: 12px; }
+.issue202Gate4SummaryHeading > div { display: flex; align-items: baseline; gap: 8px; }
+.issue202Gate4SummaryHeading h2 { margin: 0; color: #f0d9b5; font: 700 .8rem/1 Georgia, "Noto Serif KR", serif; }
+.issue202Gate4SummaryHeading span { color: rgba(220, 196, 162, .5); font-size: .49rem; font-weight: 800; }
+.issue202Gate4SummaryHeading button { min-width: 72px; min-height: 44px; margin-top: -7px; padding: 2px 5px 5px; border: 0; border-bottom: 1px solid rgba(201, 156, 94, .42); color: #d7b57f; background: transparent; font-size: .53rem; font-weight: 800; }
+
+.issue202Gate4TeamCounts { display: grid; margin: 9px 0 14px; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid rgba(204, 162, 105, .16); }
+.issue202Gate4TeamCounts > div { padding: 9px 6px; text-align: center; }
+.issue202Gate4TeamCounts > div + div { border-left: 1px solid rgba(204, 162, 105, .13); }
+.issue202Gate4TeamCounts dt { color: rgba(225, 205, 178, .54); font-size: .46rem; font-weight: 800; }
+.issue202Gate4TeamCounts dd { margin: 4px 0 0; color: #f0d9b4; font: 700 .82rem/1 Georgia, serif; }
+.issue202Gate4Tokens { display: grid; margin: 0; padding: 5px 3px; grid-template-columns: repeat(5, 42px); justify-content: center; gap: 10px; list-style: none; }
+.issue202Gate4Tokens li { display: grid; width: 42px; aspect-ratio: 1; place-items: center; overflow: hidden; border: 1px solid rgba(198, 153, 93, .35); border-radius: 50%; color: #d9b77e; background: rgba(9, 12, 14, .78); box-shadow: 0 4px 8px rgba(0, 0, 0, .38); }
+.issue202Gate4Tokens img { width: 39px; height: 39px; object-fit: contain; }
+.issue202Gate4SrOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+
+.issue202Gate4Orders { display: grid; align-content: start; gap: 11px; }
+.issue202Gate4Order { padding: 11px 13px 13px; border: 1px solid rgba(192, 145, 86, .24); background: linear-gradient(95deg, rgba(61, 38, 25, .58), rgba(25, 20, 18, .56)); }
+.issue202Gate4Order.is-invalid { border-color: rgba(188, 75, 80, .72); background: rgba(100, 29, 34, .24); }
+.issue202Gate4Order header { display: flex; align-items: center; gap: 8px; }
+.issue202Gate4Order header strong { color: #eed4ad; font: 700 .7rem/1 Georgia, "Noto Serif KR", serif; }
+.issue202Gate4Order header span { color: rgba(219, 195, 163, .46); font: 700 .47rem/1 Georgia, serif; text-transform: uppercase; }
+.issue202Gate4Order header em { margin-left: auto; color: #d89571; font-size: .47rem; font-style: normal; font-weight: 800; }
+.issue202Gate4Order.is-invalid header em { color: #f0a4a1; }
+.issue202Gate4Order ol { display: flex; min-width: 0; margin: 11px 0 0; padding: 0; align-items: center; gap: 5px; list-style: none; }
+.issue202Gate4Order li { display: flex; min-width: 0; align-items: center; color: rgba(243, 226, 201, .76); font-size: .53rem; white-space: nowrap; }
+.issue202Gate4Order li:not(:last-child)::after { margin-left: 5px; color: rgba(185, 58, 65, .72); content: "›"; }
+
+.issue202Gate4Notice { display: flex; min-height: 40px; margin: 0 5px; padding: 7px 11px; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid rgba(190, 146, 88, .25); color: rgba(239, 221, 196, .72); background: rgba(50, 34, 25, .3); font-size: .55rem; }
+.issue202Gate4Notice strong { margin-right: 5px; color: #f4ddba; }
+.issue202Gate4Notice button { flex: none; min-height: 44px; padding: 5px 10px; border: 1px solid currentColor; color: inherit; background: transparent; font-size: .52rem; font-weight: 800; }
+.issue202Gate4Notice.is-info { border-color: rgba(80, 137, 154, .4); color: #acd3dc; background: rgba(24, 68, 82, .23); }
+.issue202Gate4Notice.is-warning { border-color: rgba(183, 119, 58, .46); color: #e6ba81; background: rgba(94, 55, 22, .25); }
+.issue202Gate4Notice.is-error { border-color: rgba(188, 75, 80, .58); color: #efadab; background: rgba(105, 29, 36, .25); }
+.issue202Gate4Notice.is-success { border-color: rgba(83, 145, 112, .42); color: #add6bd; background: rgba(27, 75, 49, .24); }
+
+.issue202Gate4Footer { display: flex; min-height: 43px; padding: 0 5px; align-items: center; justify-content: space-between; gap: 18px; border-top: 1px solid var(--gate4-line); }
+.issue202Gate4Actions { display: flex; align-items: center; gap: 9px; }
+.issue202Gate4Back,
+.issue202Gate4Save,
+.issue202Gate4NewGame { min-height: 44px; padding: 4px 10px; border: 0; color: rgba(236, 220, 197, .66); background: transparent; font: 700 .67rem/1 Georgia, "Noto Serif KR", serif; }
+.issue202Gate4Save { border: 1px solid rgba(202, 158, 98, .35); }
+.issue202Gate4NewGame { color: #ecd4ad; border-bottom: 1px solid rgba(201, 157, 96, .48); }
+.issue202Gate4Save:disabled { cursor: default; opacity: .36; }
+.issue202Gate4Footer .issue202AltPrimaryAction:disabled { cursor: not-allowed; opacity: .35; }
+.issue202Gate4Footer .issue202AltPrimaryAction { min-height: 44px; }
+
+.issue202Gate4Destination { position: absolute; z-index: 4; top: 50%; left: 50%; display: grid; width: min(520px, calc(100% - 34px)); min-height: 270px; padding: 38px; place-items: center; align-content: center; border: 1px solid rgba(211, 171, 111, .6); color: #ead8bc; background: rgba(18, 15, 15, .82); box-shadow: 0 24px 60px rgba(0, 0, 0, .56); transform: translate(-50%, -50%); text-align: center; }
+.issue202Gate4Destination small { color: #bd343d; font: 700 .64rem/1 Georgia, serif; letter-spacing: .18em; }
+.issue202Gate4Destination h1 { margin: 13px 0 0; color: #d4b47f; font: 700 1.18rem/1.2 Georgia, "Noto Serif KR", serif; }
+.issue202Gate4Destination p { margin: 10px 0 18px; color: rgba(229, 211, 185, .64); font-size: .61rem; }
+.issue202Gate4ReviewDock .issue202AltReviewControls { grid-template-columns: minmax(190px, 1fr); }
+.issue202Gate4ReviewDock .issue202AltSceneSwitch a { display: grid; width: 38px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(153, 163, 171, .32); border-radius: 50%; color: #b9c1c6; background: rgba(16, 20, 23, .72); font-weight: 800; text-decoration: none; }
+.issue202Gate4ReviewDock .issue202AltSceneSwitch button:disabled { cursor: default; opacity: .35; }
+
+@media (max-width: 900px) {
+  .issue202Gate4Content { grid-template-columns: 1fr; }
+  .issue202Gate4Tokens { grid-template-columns: repeat(8, 38px); gap: 8px; }
+  .issue202Gate4Tokens li { width: 38px; }
+  .issue202Gate4Tokens img { width: 35px; height: 35px; }
+}
+
+@media (max-width: 760px) {
+  .issue202Gate4Prototype { --review-height: 132px; }
+  .issue202Gate4Sheet { top: 7px; right: 7px; bottom: 7px; left: 7px; padding: 13px 10px 7px; gap: 8px; }
+  .issue202Gate4Header { padding: 0 3px 8px; }
+  .issue202Gate4Header small { width: 30px; }
+  .issue202Gate4Header h1 { font-size: .94rem; }
+  .issue202Gate4Header p { font-size: .58rem; }
+  .issue202Gate4ReviewScroll { gap: 8px; }
+  .issue202Gate4State { padding: 4px 7px; font-size: .48rem; }
+  .issue202Gate4Content { padding-inline: 3px; gap: 8px; }
+  .issue202Gate4Characters,
+  .issue202Gate4Orders { padding: 10px; }
+  .issue202Gate4TeamCounts { margin-block: 5px 8px; }
+  .issue202Gate4TeamCounts > div { padding: 6px 2px; }
+  .issue202Gate4TeamCounts dt { font-size: .42rem; }
+  .issue202Gate4Tokens { grid-template-columns: repeat(8, 32px); gap: 6px; }
+  .issue202Gate4Tokens li { width: 32px; }
+  .issue202Gate4Tokens img { width: 30px; height: 30px; }
+  .issue202Gate4Orders { gap: 7px; }
+  .issue202Gate4Order { padding: 8px 9px 10px; }
+  .issue202Gate4Order ol { overflow: hidden; margin-top: 8px; }
+  .issue202Gate4Order li { font-size: .48rem; }
+  .issue202Gate4Order li:nth-child(n+5):not(:last-child) { display: none; }
+  .issue202Gate4Notice { min-height: 36px; margin-inline: 3px; padding: 5px 7px; font-size: .49rem; }
+  .issue202Gate4Notice span { display: grid; gap: 2px; }
+  .issue202Gate4Notice strong { margin: 0; }
+  .issue202Gate4Footer { min-height: 41px; padding-inline: 3px; gap: 7px; }
+  .issue202Gate4Back,
+  .issue202Gate4Save,
+  .issue202Gate4NewGame { min-height: 44px; padding-inline: 6px; font-size: .57rem; }
+  .issue202Gate4Footer .issue202AltPrimaryAction { min-width: 98px; min-height: 44px; font-size: .68rem; }
+  .issue202Gate4ReviewDock { grid-template-rows: 38px 74px; }
+  .issue202Gate4ReviewDock .issue202AltReviewControls { grid-template-columns: minmax(150px, 1fr); }
+}
+
+@media (min-width: 761px) and (max-height: 690px) {
+  .issue202Gate4Sheet { top: 8px; bottom: 8px; padding-block: 12px 8px; gap: 7px; }
+  .issue202Gate4Characters,
+  .issue202Gate4Orders { padding-block: 10px; }
+  .issue202Gate4Tokens { grid-template-columns: repeat(8, 34px); gap: 7px; }
+  .issue202Gate4Tokens li { width: 34px; }
+  .issue202Gate4Tokens img { width: 31px; height: 31px; }
+}
+
+/* Approved review direction: composition + named roster + large outcome actions. */
+.issue202Gate4Composition {
+  display: grid;
+  margin: 0 5px;
+  padding: 0;
+  grid-template-columns: minmax(150px, 1.8fr) repeat(5, minmax(58px, .62fr));
+  border: 1px solid rgba(204, 162, 105, .2);
+  background: rgba(8, 9, 10, .32);
+}
+.issue202Gate4Composition > div { min-width: 0; padding: 8px 10px; border-left: 1px solid rgba(204, 162, 105, .14); }
+.issue202Gate4Composition > div:first-child { border-left: 0; }
+.issue202Gate4Composition dt { color: rgba(225, 203, 172, .62); font-size: .54rem; font-weight: 800; }
+.issue202Gate4Composition dd { overflow: hidden; margin: 5px 0 0; color: #f2dcb9; font: 700 .78rem/1.1 Georgia, "Noto Serif KR", serif; text-overflow: ellipsis; white-space: nowrap; }
+.issue202Gate4Composition input {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 0 4px;
+  border: 0;
+  border-bottom: 1px solid rgba(209, 169, 109, .42);
+  outline: 0;
+  color: #fff0d6;
+  background: transparent;
+  font: inherit;
+}
+.issue202Gate4Composition input:focus { border-bottom-color: #e1b875; box-shadow: 0 2px rgba(187, 49, 57, .58); }
+.issue202Gate4Composition input[aria-invalid="true"] { border-bottom-color: #d15a5f; }
+.issue202Gate4Composition input::placeholder { color: rgba(231, 207, 172, .38); }
+
+.issue202Gate4Content {
+  grid-template-columns: minmax(0, 1fr) 252px;
+  gap: 12px;
+  overflow: hidden;
+}
+.issue202Gate4Roster {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px 15px;
+  border: 1px solid rgba(204, 162, 105, .2);
+  background: rgba(8, 9, 10, .32);
+  scrollbar-color: rgba(194, 147, 91, .38) transparent;
+}
+.issue202Gate4Roster > header { display: flex; margin-bottom: 10px; align-items: baseline; gap: 8px; }
+.issue202Gate4Roster > header h2 { margin: 0; color: #f0d9b5; font: 700 .92rem/1 Georgia, "Noto Serif KR", serif; }
+.issue202Gate4Roster > header span { color: rgba(226, 204, 174, .62); font-size: .58rem; font-weight: 800; }
+.issue202Gate4RosterGroups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 12px; }
+.issue202Gate4RosterGroups > section { min-width: 0; }
+.issue202Gate4RosterGroups h3 { margin: 0 0 6px; padding-bottom: 5px; color: #dfc28f; border-bottom: 1px solid rgba(199, 154, 94, .2); font: 700 .69rem/1 Georgia, "Noto Serif KR", serif; }
+.issue202Gate4RosterGroups h3 small { margin-left: 6px; color: rgba(226, 204, 174, .58); font-size: .52rem; }
+.issue202Gate4RosterGroups ul { display: grid; margin: 0; padding: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; list-style: none; }
+.issue202Gate4RosterGroups li { display: grid; min-width: 0; min-height: 42px; padding: 3px 6px; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 6px; border: 1px solid rgba(198, 153, 93, .16); background: rgba(25, 21, 20, .5); }
+.issue202Gate4RosterGroups li > span { display: grid; width: 32px; aspect-ratio: 1; place-items: center; overflow: hidden; border: 1px solid rgba(198, 153, 93, .28); border-radius: 50%; color: #d9b77e; background: rgba(9, 12, 14, .78); }
+.issue202Gate4RosterGroups li img { width: 30px; height: 30px; object-fit: contain; }
+.issue202Gate4RosterGroups li strong { overflow: hidden; color: #f5e4c9; font: 700 .68rem/1.2 Georgia, "Noto Serif KR", serif; text-overflow: ellipsis; white-space: nowrap; }
+
+.issue202Gate4ActionPanel {
+  display: grid;
+  min-width: 0;
+  padding: 12px;
+  align-content: center;
+  gap: 10px;
+  border: 1px solid rgba(204, 162, 105, .2);
+  background: rgba(8, 9, 10, .42);
+}
+.issue202Gate4ActionPanel > button {
+  position: relative;
+  min-height: 66px;
+  padding: 10px 12px 14px;
+  border: 1px solid rgba(202, 158, 98, .3);
+  color: #e7cfaa;
+  background: linear-gradient(100deg, rgba(60, 42, 30, .5), rgba(31, 25, 23, .58));
+  font: 700 .88rem/1.25 Georgia, "AppleMyungjo", "Noto Serif KR", serif;
+  text-align: center;
+}
+.issue202Gate4ActionPanel > button.is-primary { color: #fff0d8; border-color: rgba(204, 155, 94, .56); background: linear-gradient(100deg, rgba(91, 54, 30, .66), rgba(43, 27, 23, .7)); }
+.issue202Gate4ActionPanel > button.is-primary::after { position: absolute; right: 14px; bottom: 8px; left: 14px; height: 4px; background: linear-gradient(90deg, transparent, #bd343d 8%, #df4a4a 50%, #a51e29 92%, transparent); clip-path: polygon(0 44%, 18% 30%, 42% 55%, 65% 28%, 100% 48%, 98% 74%, 62% 68%, 39% 80%, 16% 66%, 1% 72%); content: ""; }
+.issue202Gate4ActionPanel > button:disabled { cursor: default; color: rgba(220, 202, 178, .28); border-color: rgba(202, 158, 98, .12); background: rgba(27, 24, 23, .34); }
+.issue202Gate4ActionPanel > button:disabled::after { display: none; }
+.issue202Gate4ResumePanel { padding: 11px; border: 1px solid rgba(93, 143, 157, .42); background: linear-gradient(100deg, rgba(27, 67, 78, .28), rgba(25, 29, 31, .5)); }
+.issue202Gate4ResumePanel header { display: grid; gap: 4px; }
+.issue202Gate4ResumePanel header span { color: #a9d1d8; font-size: .56rem; font-weight: 800; }
+.issue202Gate4ResumePanel header strong { overflow: hidden; color: #eadbc2; font: 700 .72rem/1.2 Georgia, "Noto Serif KR", serif; text-overflow: ellipsis; white-space: nowrap; }
+.issue202Gate4ResumePanel dl { display: grid; margin: 9px 0 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.issue202Gate4ResumePanel dl > div { padding: 0 6px; border-left: 1px solid rgba(122, 169, 178, .2); }
+.issue202Gate4ResumePanel dl > div:first-child { padding-left: 0; border-left: 0; }
+.issue202Gate4ResumePanel dt { color: rgba(184, 216, 220, .68); font-size: .5rem; }
+.issue202Gate4ResumePanel dd { margin: 4px 0 0; color: #d0e4e6; font: 700 .65rem/1 Georgia, serif; }
+.issue202Gate4Recommendation {
+  display: grid;
+  padding: 10px 11px;
+  gap: 5px;
+  border: 1px solid rgba(197, 132, 64, .5);
+  color: #e8c18e;
+  background: rgba(91, 53, 22, .32);
+}
+.issue202Gate4Recommendation strong { font: 800 .68rem/1.25 Georgia, "Noto Serif KR", serif; }
+.issue202Gate4Recommendation ul { display: grid; margin: 0; padding: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; list-style: none; }
+.issue202Gate4Recommendation li { display: flex; min-width: 0; justify-content: space-between; gap: 5px; color: rgba(239, 210, 170, .78); font-size: .56rem; font-weight: 700; line-height: 1.45; }
+.issue202Gate4Recommendation li b { color: #f0c993; }
+.issue202Gate4Footer { min-height: 35px; }
+.issue202Gate4Footer .issue202Gate4Back { min-height: 44px; font-size: .76rem; }
+.issue202Gate4ErrorReason {
+  position: absolute;
+  z-index: 6;
+  bottom: 62px;
+  left: 50%;
+  display: grid;
+  width: min(520px, calc(100% - 40px));
+  min-height: 54px;
+  padding: 10px 16px;
+  place-items: center;
+  gap: 4px;
+  border: 1px solid rgba(205, 78, 82, .72);
+  color: #efb4b1;
+  background: rgba(83, 20, 27, .94);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .62), inset 0 1px rgba(255, 191, 185, .12);
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+.issue202Gate4ErrorReason strong { color: #ffd8d2; font: 800 .72rem/1.2 Georgia, "Noto Serif KR", serif; }
+.issue202Gate4ErrorReason span { font-size: .59rem; font-weight: 700; }
+
+@media (min-width: 681px) and (max-width: 900px) {
+  .issue202Gate4Content { grid-template-columns: minmax(0, 1fr) 218px; }
+  .issue202Gate4Composition { grid-template-columns: minmax(130px, 1.5fr) repeat(5, minmax(45px, .6fr)); }
+  .issue202Gate4Composition > div { padding-inline: 7px; }
+  .issue202Gate4RosterGroups { gap: 9px; }
+  .issue202Gate4RosterGroups li { grid-template-columns: 31px minmax(0, 1fr); padding-inline: 4px; gap: 4px; }
+  .issue202Gate4RosterGroups li > span { width: 29px; }
+  .issue202Gate4RosterGroups li img { width: 27px; height: 27px; }
+}
+
+@media (max-width: 680px) {
+  .issue202Gate4Sheet { grid-template-rows: auto minmax(0, 1fr); }
+  .issue202Gate4Header p { display: none; }
+  .issue202Gate4ReviewScroll {
+    display: block;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0 3px 12px;
+    scrollbar-color: rgba(194, 147, 91, .48) transparent;
+    overscroll-behavior: contain;
+  }
+  .issue202Gate4Sheet.is-invalid .issue202Gate4ReviewScroll { padding-bottom: 124px; }
+  .issue202Gate4Composition { margin: 0 0 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .issue202Gate4Composition .is-name { grid-column: span 3; }
+  .issue202Gate4Composition > div { padding: 6px; border-bottom: 1px solid rgba(204, 162, 105, .13); }
+  .issue202Gate4Composition > div:nth-child(n+3) { border-bottom: 0; }
+  .issue202Gate4Content { min-height: auto; padding: 0; grid-template-columns: 1fr; grid-template-rows: auto auto; overflow: visible; }
+  .issue202Gate4Roster { min-height: auto; overflow: visible; padding: 9px; }
+  .issue202Gate4RosterGroups { grid-template-columns: 1fr; gap: 9px; }
+  .issue202Gate4RosterGroups ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .issue202Gate4ActionPanel { padding: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .issue202Gate4ActionPanel > button { min-height: 58px; padding: 7px 5px 11px; font-size: .69rem; }
+  .issue202Gate4ResumePanel { grid-column: 1 / -1; display: grid; padding: 7px 9px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .issue202Gate4ResumePanel dl { min-width: 168px; margin: 0; }
+  .issue202Gate4Recommendation { grid-column: 1 / -1; padding: 7px 9px; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; }
+  .issue202Gate4Recommendation strong { font-size: .61rem; white-space: nowrap; }
+  .issue202Gate4Recommendation li { font-size: .5rem; }
+  .issue202Gate4Footer { min-height: 31px; }
+  .issue202Gate4ErrorReason { bottom: 62px; left: 50%; width: min(520px, calc(100% - 40px)); min-height: 58px; padding: 9px 12px; }
+  .issue202Gate4ErrorReason strong { font-size: .68rem; }
+  .issue202Gate4ErrorReason span { font-size: .55rem; }
+}
+
+/* Tablet review: prioritize legibility over desktop density. */
+@media (min-width: 681px) and (max-width: 1180px) {
+  .issue202Gate4Sheet { padding: 22px 24px 16px; gap: 14px; }
+  .issue202Gate4Header { padding-bottom: 14px; }
+  .issue202Gate4Header small { width: 42px; font-size: .84rem; }
+  .issue202Gate4Header h1 { font-size: 1.55rem; }
+  .issue202Gate4Header p { margin-top: 7px; font-size: .94rem; }
+
+  .issue202Gate4Composition { grid-template-columns: minmax(170px, 1.65fr) repeat(5, minmax(58px, .62fr)); }
+  .issue202Gate4Composition > div { padding: 11px 10px; }
+  .issue202Gate4Composition dt { font-size: .75rem; }
+  .issue202Gate4Composition dd { margin-top: 7px; font-size: 1rem; }
+
+  .issue202Gate4Content { grid-template-columns: minmax(0, 1fr) 250px; gap: 14px; }
+  .issue202Gate4Roster { padding: 16px; }
+  .issue202Gate4Roster > header { margin-bottom: 14px; }
+  .issue202Gate4Roster > header h2 { font-size: 1.18rem; }
+  .issue202Gate4Roster > header span { font-size: .76rem; }
+  .issue202Gate4RosterGroups { gap: 15px 12px; }
+  .issue202Gate4RosterGroups { grid-template-columns: 1fr; }
+  .issue202Gate4RosterGroups h3 { margin-bottom: 8px; padding-bottom: 7px; font-size: .9rem; }
+  .issue202Gate4RosterGroups h3 small { font-size: .7rem; }
+  .issue202Gate4RosterGroups ul { grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 7px; }
+  .issue202Gate4RosterGroups li { min-height: 52px; padding: 4px 6px; grid-template-columns: 38px minmax(0, 1fr); gap: 7px; }
+  .issue202Gate4RosterGroups li > span { width: 38px; }
+  .issue202Gate4RosterGroups li img { width: 36px; height: 36px; }
+  .issue202Gate4RosterGroups li strong { font-size: .9rem; }
+
+  .issue202Gate4ActionPanel { padding: 14px; gap: 12px; }
+  .issue202Gate4ActionPanel > button { min-height: 78px; font-size: 1.08rem; }
+  .issue202Gate4ResumePanel { padding: 13px; }
+  .issue202Gate4ResumePanel header span { font-size: .74rem; }
+  .issue202Gate4ResumePanel header strong { font-size: .9rem; }
+  .issue202Gate4ResumePanel dt { font-size: .68rem; }
+  .issue202Gate4ResumePanel dd { font-size: .84rem; }
+  .issue202Gate4Recommendation { padding: 12px 13px; gap: 7px; }
+  .issue202Gate4Recommendation strong { font-size: .86rem; }
+  .issue202Gate4Recommendation li { font-size: .72rem; }
+
+  .issue202Gate4Footer { min-height: 44px; }
+  .issue202Gate4Footer .issue202Gate4Back { font-size: .95rem; }
+  .issue202Gate4ErrorReason { min-height: 62px; }
+  .issue202Gate4ErrorReason strong { font-size: .9rem; }
+}

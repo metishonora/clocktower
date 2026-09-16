@@ -37,7 +37,7 @@ export function exportLatestSectsAndVioletsCheckpoint(
       ...gameFile.game,
       events: gameFile.game.events.slice(0, eventCount),
     },
-  };
+  } as GameFile;
 }
 
 export function latestUndoableSectsAndVioletsCheckpoint(
@@ -65,7 +65,7 @@ export function removeLatestSectsAndVioletsPhaseCheckpoint(
   const removed = checkpoints[removeIndex];
   const previousEventCount = checkpoints[removeIndex - 1]?.eventCount ?? 0;
   const removedEventIds = removed.eventIds ? new Set(removed.eventIds) : undefined;
-  const nextGameFile: GameFile = {
+  const nextGameFile = {
     ...gameFile,
     game: {
       ...gameFile.game,
@@ -74,7 +74,7 @@ export function removeLatestSectsAndVioletsPhaseCheckpoint(
         ? gameFile.game.events.filter((event) => !removedEventIds.has(event.id))
         : gameFile.game.events.slice(0, previousEventCount),
     },
-  };
+  } as GameFile;
   return {
     removed,
     gameFile: nextGameFile,

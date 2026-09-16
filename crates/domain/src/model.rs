@@ -404,7 +404,7 @@ pub(crate) enum SetupInfoKind {
 
 pub(crate) type StepInput = Option<StepInputFields>;
 
-#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct StepInputFields {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -705,13 +705,18 @@ pub(crate) struct AbilityInstance {
     pub(crate) source_event_id: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 #[serde(transparent)]
 pub(crate) struct AbilityInstanceId(String);
 
 impl AbilityInstanceId {
     pub(crate) fn new(source_event_id: &str, player_id: &str) -> Self {
         Self(format!("{source_event_id}:{player_id}"))
+    }
+
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(crate) fn as_str(&self) -> &str {
+        &self.0
     }
 }
 
@@ -726,14 +731,15 @@ pub(crate) struct AbilityUseRef {
     pub(crate) ability_instance_id: AbilityInstanceId,
 }
 
-/// Replay-derived provenance for an acting ability. This is deliberately not
-/// part of persisted events: old schema-v3 files keep their existing shape,
-/// while projections no longer need to infer ownership from character IDs.
-#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+/// Replay-derived provenance for an acting ability. Existing schema-v3 events
+/// keep their historical shape; the ordered Death contract persists the same
+/// provenance explicitly when auditing a source or prevention candidate.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
-    rename_all_fields = "camelCase"
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
 )]
 pub(crate) enum AbilityOrigin {
     IdentityBound,

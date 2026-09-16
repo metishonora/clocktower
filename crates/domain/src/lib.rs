@@ -3,6 +3,7 @@ mod boundary;
 mod characters;
 mod contracts;
 mod day;
+mod death;
 mod error;
 mod identity;
 mod information;

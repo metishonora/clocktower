@@ -6,7 +6,8 @@ use serde_json::Value;
 use crate::{
     contracts::{
         Command, Discriminator, Game, GameEvent, GameEventKind, GameFile,
-        PhaseInputSuggestionRequest, RawGameFile, SetupDistributionRequest,
+        PhaseInputSuggestionRequest, RawGameFile, ScriptId, ScriptReference,
+        SetupDistributionRequest,
     },
     error::{CoreError, ErrorKind},
     identity::EventId,
@@ -53,13 +54,21 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
     let raw: RawGameFile =
         serde_json::from_str(json).map_err(|_| ErrorKind::MalformedGameFile.into_error())?;
 
-    let script_id = match raw.schema_version {
-        2 if raw.game.script_id.is_none() => crate::contracts::ScriptId::TroubleBrewing,
+    let has_legacy_script_id = raw.game.fields.contains_key("scriptId");
+    let has_script_reference = raw.game.fields.contains_key("script");
+    let script = match raw.schema_version {
+        2 if !has_legacy_script_id && !has_script_reference => ScriptReference::Official {
+            script_id: ScriptId::TroubleBrewing,
+        },
         2 => return Err(ErrorKind::MalformedGameFile.into_error()),
-        3 => raw
-            .game
-            .script_id
-            .ok_or_else(|| ErrorKind::MalformedGameFile.into_error())?,
+        3 if has_legacy_script_id && !has_script_reference => ScriptReference::Official {
+            script_id: parse_official_script_id(&raw.game.fields["scriptId"])?,
+        },
+        3 => return Err(ErrorKind::MalformedGameFile.into_error()),
+        4 if !has_legacy_script_id && has_script_reference => {
+            parse_script_reference(&raw.game.fields["script"])?
+        }
+        4 => return Err(ErrorKind::MalformedGameFile.into_error()),
         _ => return Err(ErrorKind::UnsupportedSchemaVersion.into_error()),
     };
 
@@ -70,16 +79,42 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
         .map(parse_event)
         .collect::<Result<Vec<_>, _>>()?;
     validate_event_references(&events)?;
-    crate::characters::rules(script_id).validate_replay_events(&events)?;
+    if let ScriptReference::Official { script_id } = &script {
+        crate::characters::rules(*script_id).validate_replay_events(&events)?;
+    }
 
     Ok(GameFile {
         schema_version: raw.schema_version,
-        script_id,
+        script,
         game: Game {
             updated_at: raw.game.updated_at,
             events,
         },
     })
+}
+
+fn parse_official_script_id(value: &Value) -> Result<ScriptId, CoreError> {
+    serde_json::from_value(value.clone()).map_err(|_| ErrorKind::MalformedGameFile.into_error())
+}
+
+fn parse_script_reference(value: &Value) -> Result<ScriptReference, CoreError> {
+    let object = value
+        .as_object()
+        .ok_or_else(|| ErrorKind::MalformedGameFile.into_error())?;
+    let kind = object
+        .get("type")
+        .and_then(Value::as_str)
+        .ok_or_else(|| ErrorKind::MalformedGameFile.into_error())?;
+
+    match kind {
+        "official" if object.len() == 2 && object.contains_key("scriptId") => {
+            Ok(ScriptReference::Official {
+                script_id: parse_official_script_id(&object["scriptId"])?,
+            })
+        }
+
+        _ => Err(ErrorKind::MalformedGameFile.into_error()),
+    }
 }
 
 fn validate_event_references(events: &[GameEvent]) -> Result<(), CoreError> {
@@ -98,6 +133,40 @@ fn validate_event_references(events: &[GameEvent]) -> Result<(), CoreError> {
                 .map(|_| ())
         };
         match &event.kind {
+            GameEventKind::OrderedDeathResolved { payload } => {
+                crate::death::validate_contract(payload)?;
+                match &payload.source {
+                    crate::contracts::OrderedDeathSource::Ability { .. } => {}
+                    crate::contracts::OrderedDeathSource::Execution { execution_event_id } => {
+                        let execution_id = EventId::parse(execution_event_id)
+                            .map_err(|_| ErrorKind::InvalidEventReference.into_error())?;
+                        let Some(GameEventKind::ExecutionConfirmed { payload: execution }) =
+                            prior_by_id.get(&execution_id).copied()
+                        else {
+                            return Err(ErrorKind::InvalidEventReference.into_error());
+                        };
+                        let attempted_player = payload
+                            .resolutions
+                            .first()
+                            .map(|resolution| resolution.attempt.target_player_id.as_str());
+                        if payload.resolutions.len() != 1
+                            || !execution.input.execute
+                            || execution.input.player_id.as_deref() != attempted_player
+                        {
+                            return Err(ErrorKind::InvalidEventReference.into_error());
+                        }
+                    }
+                    crate::contracts::OrderedDeathSource::Event {
+                        source_event_id, ..
+                    } => {
+                        let source_id = EventId::parse(source_event_id)
+                            .map_err(|_| ErrorKind::InvalidEventReference.into_error())?;
+                        if !prior_by_id.contains_key(&source_id) {
+                            return Err(ErrorKind::InvalidEventReference.into_error());
+                        }
+                    }
+                }
+            }
             GameEventKind::NominationVoteConfirmed { payload } => {
                 if let Some(event_id) = payload.nomination_event_id.as_deref() {
                     require_prior(event_id, |kind| {
@@ -204,6 +273,7 @@ fn is_death_source_event(kind: &GameEventKind) -> bool {
     matches!(
         kind,
         GameEventKind::DeathConfirmed { .. }
+            | GameEventKind::OrderedDeathResolved { .. }
             | GameEventKind::NightActionResolved { .. }
             | GameEventKind::PitHagArbitraryDeathsConfirmed { .. }
     )
@@ -223,10 +293,16 @@ pub(crate) fn parse_command(json: &str) -> Result<Command, CoreError> {
 pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
     let discriminator: Discriminator = serde_json::from_value(value.clone())
         .map_err(|_| ErrorKind::MalformedEvent.into_error())?;
+    if discriminator.kind == "customActionConfirmed" {
+        return Err(ErrorKind::EventNotSupportedByScript.into_error());
+    }
     if !GameEventKind::DISCRIMINATORS.contains(&discriminator.kind.as_str()) {
         return Err(ErrorKind::UnsupportedEvent.into_error());
     }
-    serde_json::from_value(value).map_err(|_| ErrorKind::MalformedEvent.into_error())
+
+    let event: GameEvent =
+        serde_json::from_value(value).map_err(|_| ErrorKind::MalformedEvent.into_error())?;
+    Ok(event)
 }
 
 pub(crate) fn to_json<T: Serialize>(result: Result<T, CoreError>) -> String {

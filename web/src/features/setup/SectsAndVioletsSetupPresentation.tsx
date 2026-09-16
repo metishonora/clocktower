@@ -1,3 +1,4 @@
+import { SetupControls, SetupRoleDetail } from '../../shared-ui/SetupControls';
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { RoleCatalog, SetupPresentation } from "../../shared-ui/SetupPresentation";
@@ -59,44 +60,15 @@ export function SectsAndVioletsSetupPresentation({
     <SetupPresentation
       className="snvSetupSurface snvTabPanel"
       ariaLabel="S&V 설정 검토"
-      controls={<div className="snvSetupControls">
-        <section className="snvControlCard">
-          <span>플레이어</span>
-          <div className="snvChoiceRow">
-            {Object.keys(sectsAndVioletsBaseDistribution).map((count) => (
-              <button
-                key={count}
-                type="button"
-                aria-pressed={playerCount === Number(count)}
-                disabled={storageLoading || rosterConfirmed}
-                onClick={() => onPlayerCountSelect(Number(count))}
-              >{count}명</button>
-            ))}
-          </div>
-        </section>
-        <section className="snvControlCard">
-          <span>악마 선택</span>
-          <div className="snvChoiceRow">
-            {sectsAndVioletsDemonChoices.map((choice) => (
-              <button
-                key={choice.id}
-                type="button"
-                aria-pressed={demon === choice.id}
-                disabled={storageLoading || rosterConfirmed}
-                onClick={() => onDemonSelect(choice.id)}
-              >{choice.name}</button>
-            ))}
-          </div>
-        </section>
-        <section className="snvDistributionFlow" aria-label="인원 구성">
-          <DistributionValues values={distribution.final} />
-          <p className="snvModifierNote">
-            {distribution.delta[0] === 0 && distribution.delta[1] === 0
-              ? `${selectedDemon.name} · 인원 보정 없음`
-              : `${selectedDemon.name} 보정 · 마을 주민 ${signed(distribution.delta[0])} · 외부인 ${signed(distribution.delta[1])}`}
-          </p>
-        </section>
-      </div>}
+      controls={<SetupControls playerCount={playerCount} counts={Object.keys(sectsAndVioletsBaseDistribution).map(Number)}
+        disabled={storageLoading || rosterConfirmed} onPlayerCountSelect={onPlayerCountSelect}
+        choices={<section className="snvControlCard"><span>악마 선택</span><div className="snvChoiceRow">
+          {sectsAndVioletsDemonChoices.map(choice => <button key={choice.id} type="button" aria-pressed={demon === choice.id}
+            disabled={storageLoading || rosterConfirmed} onClick={() => onDemonSelect(choice.id)}>{choice.name}</button>)}
+        </div></section>}
+        distribution={sectsAndVioletsKindOrder.map((kind,index) => ({label:sectsAndVioletsKindLabels[kind],value:distribution.final[index]}))}
+        note={distribution.delta[0] === 0 && distribution.delta[1] === 0 ? `${selectedDemon.name} · 인원 보정 없음`
+          : `${selectedDemon.name} 보정 · 마을 주민 ${signed(distribution.delta[0])} · 외부인 ${signed(distribution.delta[1])}`} />}
       catalog={<RoleCatalog
         className={`snvCatalogPreview${rosterConfirmed ? " rosterConfirmed" : ""}`}
         groupsClassName="snvCatalogGroups"
@@ -133,7 +105,7 @@ export function SectsAndVioletsSetupPresentation({
           <span>{role.label}</span>
         </>}
       />}
-      detail={<aside className="snvRoleDetail fixed floatingAction" aria-label="직업 설명">
+      detail={<SetupRoleDetail disabled={storageLoading || rosterConfirmed || !rosterComplete} onConfirm={onConfirmRoster} identity={
         <CharacterDetailButton
           details={sectsAndVioletsCharacterDetail(activeCharacter.id)}
           className="snvRoleDetailIdentity"
@@ -152,37 +124,8 @@ export function SectsAndVioletsSetupPresentation({
             <p>{activeCharacter.ability}</p>
           </div>
         </CharacterDetailButton>
-        <div className="snvRoleDetailActions">
-          <button
-            type="button"
-            className="snvConfirmRoster snvStageForward prominent"
-            disabled={storageLoading || rosterConfirmed || !rosterComplete}
-            onClick={onConfirmRoster}
-          >
-            <span>직업 선택 확정</span><small aria-hidden="true">마도서 →</small>
-          </button>
-        </div>
-      </aside>}
+      } />}
     />
-  );
-}
-
-function DistributionValues({ values }: { values: [number, number, number, number] }) {
-  return (
-    <div className="snvDistributionCard emphasized">
-      <h2>인원 구성</h2>
-      <div className="snvDistributionValues">
-        {values.map((value, index) => (
-          <div
-            key={sectsAndVioletsKindOrder[index]}
-            aria-label={`인원 구성 ${sectsAndVioletsKindLabels[sectsAndVioletsKindOrder[index]]} ${value}명`}
-          >
-            <strong>{value}</strong>
-            <span>{sectsAndVioletsKindLabels[sectsAndVioletsKindOrder[index]]}</span>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 

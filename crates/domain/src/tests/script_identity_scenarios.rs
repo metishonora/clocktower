@@ -164,3 +164,29 @@ fn setup_distribution_requires_script_and_keeps_script_specific_behavior_separat
     assert_eq!(sv_character["value"]["Townsfolk"], 5);
     assert_eq!(sv_character["value"]["Outsider"], 0);
 }
+
+#[test]
+fn bmr_setup_choice_cannot_be_imported_as_another_script() {
+    let setup = json!({
+        "id": "setup-bmr-choice",
+        "type": "setupConfirmed",
+        "payload": {
+            "setupChoiceId": "addOutsider",
+            "players": []
+        },
+        "phase": "setup",
+        "summary": "setup",
+        "createdAt": "2026-08-24T00:00:00.000Z"
+    });
+
+    for script_id in ["troubleBrewing", "sectsAndViolets"] {
+        let actual: Value = serde_json::from_str(&replay_json(
+            &game(3, Some(script_id), json!([setup.clone()])).to_string(),
+        ))
+        .unwrap();
+        assert_eq!(
+            actual["error"]["code"], "EVENT_NOT_SUPPORTED_BY_SCRIPT",
+            "{script_id}: {actual}"
+        );
+    }
+}

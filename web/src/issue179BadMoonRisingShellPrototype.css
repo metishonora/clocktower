@@ -1,0 +1,705 @@
+.issue179ReviewRoot {
+  min-height: 100vh;
+  background: #111317;
+}
+
+.issue179ReviewControls {
+  position: relative;
+  z-index: 220;
+  display: grid;
+  min-height: 54px;
+  box-sizing: border-box;
+  padding: 9px max(14px, env(safe-area-inset-right)) 9px max(14px, env(safe-area-inset-left));
+  grid-template-columns: minmax(190px, .8fr) minmax(380px, 1.4fr) auto;
+  gap: 12px;
+  align-items: center;
+  color: #e5e7eb;
+  border-bottom: 1px solid #343840;
+  background: #1a1d22;
+  font-family: Inter, Pretendard, system-ui, sans-serif;
+}
+
+.issue179ReviewControls > div,
+.issue179ReviewControls > [role="group"] {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.issue179ReviewIdentity {
+  display: grid !important;
+  gap: 2px !important;
+}
+
+.issue179ReviewIdentity strong {
+  font-size: .72rem;
+  letter-spacing: .04em;
+}
+
+.issue179ReviewIdentity span {
+  color: #8f96a3;
+  font-size: .62rem;
+}
+
+.issue179ReviewControls button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid #454a54;
+  border-radius: 999px;
+  color: #d6dae1;
+  background: #252930;
+  font: inherit;
+  font-size: .68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.issue179ReviewControls button[aria-pressed="true"] {
+  border-color: #aeb4c0;
+  color: #17191d;
+  background: #e1e4e9;
+}
+
+.issue179ProductFrame {
+  position: relative;
+  margin: 0 auto;
+  border: 1px solid #2b2f36;
+  border-top: 0;
+  background: #09090b;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .42);
+}
+
+.issue179BmrShell {
+  --bmr-night-deep: #100609;
+  --bmr-night: #200b11;
+  --bmr-oxblood: #5d1421;
+  --bmr-crimson: #a62d3f;
+  --bmr-moon: #cb4654;
+  --bmr-gold: #d9b46c;
+  --bmr-bone: #eadfd6;
+  --bmr-ink: #2b171a;
+  min-height: calc(100vh - 55px);
+  color: #f7ece9;
+  background:
+    radial-gradient(circle at 86% 4%, rgba(201, 43, 61, .24), transparent 25%),
+    radial-gradient(circle at 11% 44%, rgba(122, 30, 42, .2), transparent 28%),
+    linear-gradient(145deg, #0c0507 0%, #251017 50%, #100709 100%);
+}
+
+.issue179BmrShell::before {
+  background:
+    radial-gradient(circle at 86% 4%, rgba(176, 97, 71, .22), transparent 24%),
+    radial-gradient(circle at 12% 35%, rgba(116, 54, 45, .12), transparent 32%),
+    linear-gradient(145deg, #dacac0 0%, #f0e5dc 48%, #cbb8ad 100%);
+}
+
+.issue179BmrShell .productionApplicationEyebrow,
+.issue179BmrShell .snvControlCard > span,
+.issue179BmrShell .roleCatalog h2,
+.issue179BmrShell .snvDistributionCard h2,
+.issue179BmrShell .snvDistributionCard span {
+  color: #d8a9a9;
+}
+
+.issue179BmrShell .productionApplicationHeader p {
+  color: #c9aeb0;
+}
+
+.issue179BmrShell .productionApplicationHeader h1 {
+  max-width: 720px;
+  color: #fff7f4;
+  text-shadow: 0 3px 30px rgba(117, 15, 31, .52);
+}
+
+.issue179SkyDisc {
+  position: absolute;
+  z-index: -1;
+  top: clamp(24px, 4vw, 56px);
+  right: max(260px, calc((100vw - 1180px) / 2 + 200px));
+  display: block;
+  width: 116px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #b9585d;
+  box-shadow:
+    0 0 26px rgba(218, 73, 84, .58),
+    0 0 86px 24px rgba(126, 25, 40, .42);
+  opacity: .88;
+  pointer-events: none;
+  transition: background-color .72s ease, box-shadow .72s ease;
+}
+
+.issue179SkyDisc.day {
+  background: #d6a34c;
+  box-shadow:
+    0 0 26px rgba(246, 196, 91, .58),
+    0 0 84px 22px rgba(198, 141, 46, .34);
+}
+
+.issue179BmrShell .snvGlobalUndo {
+  border-color: rgba(178, 74, 87, .46);
+  color: #d98c95;
+  background: rgba(79, 18, 29, .5);
+}
+
+.issue179BmrShell :is(.productionApplicationUtilities, .productionApplicationStages) button[aria-current="page"],
+.issue179BmrShell .snvChoiceRow button[aria-pressed="true"] {
+  border-color: #c45765;
+  color: #fff7f5;
+  background: linear-gradient(135deg, #7b1b2c, #a83243);
+  box-shadow: 0 8px 26px rgba(76, 8, 21, .42);
+}
+
+.issue179BmrShell :is(.productionApplicationUtilities, .productionApplicationStages) button:focus-visible,
+.issue179BmrShell button:focus-visible {
+  outline: 3px solid rgba(225, 183, 100, .72);
+  outline-offset: 3px;
+}
+
+.issue179BmrShell :is(.snvSetupControls, .roleCatalog) {
+  border-color: rgba(211, 136, 142, .16);
+  background: rgba(18, 6, 10, .7);
+  box-shadow: 0 22px 70px rgba(4, 0, 2, .4);
+}
+
+.issue179PlayerCounts {
+  max-height: 96px;
+  overflow: auto;
+}
+
+.issue179DemonChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.issue179DemonChoices button {
+  display: flex;
+  min-height: 58px;
+  padding: 7px 10px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(211, 136, 142, .16);
+  border-radius: 14px;
+  color: #e9d8d8;
+  background: rgba(255, 255, 255, .035);
+  font: inherit;
+  cursor: pointer;
+}
+
+.issue179DemonChoices button[aria-pressed="true"] {
+  border-color: #cf6874;
+  color: #fff9f7;
+  background: linear-gradient(135deg, rgba(120, 25, 42, .94), rgba(78, 17, 29, .8));
+  box-shadow: inset 0 0 0 1px rgba(255, 194, 190, .08), 0 10px 26px rgba(71, 5, 18, .3);
+}
+
+.issue179DemonChoices strong {
+  font-size: .78rem;
+}
+
+.issue179SetupChoiceReveal {
+  display: grid;
+  margin-top: 0;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows .42s cubic-bezier(.22, .8, .24, 1),
+    margin-top .42s cubic-bezier(.22, .8, .24, 1), opacity .22s ease;
+}
+
+.issue179SetupChoiceReveal.visible {
+  margin-top: 24px;
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.issue179SetupChoiceReveal > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.issue179SetupChoice {
+  display: grid;
+  padding: 16px;
+  gap: 12px;
+  border: 1px solid rgba(213, 157, 161, .18);
+  border-radius: 20px;
+  background: rgba(95, 18, 32, .14);
+}
+
+.issue179SetupChoice > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.issue179SetupChoice > div:first-child span {
+  color: #ba8f94;
+  font-size: .66rem;
+  font-weight: 850;
+  letter-spacing: .08em;
+}
+
+.issue179SetupChoice > div:first-child strong {
+  font-size: .92rem;
+}
+
+.issue179SetupChoiceOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.issue179SetupChoiceOptions button {
+  display: grid;
+  min-height: 66px;
+  padding: 9px 10px;
+  place-content: center;
+  gap: 3px;
+  border: 1px solid rgba(213, 157, 161, .2);
+  border-radius: 14px;
+  color: #ddc7c8;
+  background: rgba(255, 255, 255, .035);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.issue179SetupChoiceOptions button[aria-pressed="true"] {
+  border-color: var(--bmr-gold);
+  color: #fff8e8;
+  background: linear-gradient(135deg, rgba(111, 26, 40, .94), rgba(138, 75, 39, .62));
+  box-shadow: 0 0 0 2px rgba(217, 180, 108, .12);
+}
+
+.issue179SetupChoiceOptions button strong {
+  font-size: .78rem;
+}
+
+.issue179SetupChoiceOptions button span {
+  color: inherit;
+  font-size: .66rem;
+  opacity: .75;
+}
+
+.issue179BmrShell .snvDistributionCard.emphasized {
+  border-color: rgba(203, 92, 104, .42);
+  background: rgba(104, 23, 38, .24);
+}
+
+.issue179BmrShell .snvDistributionValues > div {
+  background: rgba(255, 245, 241, .045);
+}
+
+.issue179Catalog article button {
+  min-width: 118px;
+}
+
+.issue179Catalog article button[aria-pressed="true"] {
+  border-color: rgba(217, 180, 108, .72);
+  background: linear-gradient(135deg, rgba(104, 23, 38, .88), rgba(112, 62, 37, .58));
+  box-shadow: inset 0 0 0 1px rgba(255, 234, 190, .1);
+}
+
+.issue179Catalog article button:disabled {
+  cursor: default;
+}
+
+.issue179CharacterMedallion {
+  position: relative;
+  display: grid;
+  width: 68px;
+  height: 68px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 2px solid var(--kind-accent, #bc7881);
+  border-radius: 50%;
+  color: #fff7f3;
+  background:
+    radial-gradient(circle at 36% 28%, rgba(255, 255, 255, .17), transparent 24%),
+    radial-gradient(circle, #712033 0%, #3a111d 66%, #18080d 100%);
+  box-shadow: 0 7px 18px rgba(17, 1, 6, .38), inset 0 0 0 4px rgba(255, 255, 255, .035);
+  font-family: Georgia, "Noto Serif KR", serif;
+}
+
+.issue179CharacterMedallion::after {
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(255, 228, 219, .18);
+  border-radius: 50%;
+  content: "";
+}
+
+.issue179CharacterMedallion > span {
+  position: relative;
+  z-index: 1;
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-shadow: 0 2px 8px #160408;
+}
+
+.issue179CharacterMedallion.compact {
+  width: 32px;
+  height: 32px;
+  border-width: 1px;
+}
+
+.issue179CharacterMedallion.compact::after {
+  inset: 3px;
+}
+
+.issue179CharacterMedallion.compact > span {
+  font-size: .74rem;
+}
+
+.issue179CharacterMedallion.kind-townsfolk { --kind-accent: #72a8bd; }
+.issue179CharacterMedallion.kind-outsider { --kind-accent: #a688c2; }
+.issue179CharacterMedallion.kind-minion { --kind-accent: #d18a58; }
+.issue179CharacterMedallion.kind-demon { --kind-accent: #e35c6b; }
+
+.issue179RoleDetail {
+  border-color: rgba(217, 180, 108, .4);
+  background: linear-gradient(135deg, rgba(71, 13, 24, .96), rgba(33, 9, 14, .96));
+}
+
+.issue179MobileGodfatherAdjustment {
+  display: none;
+}
+
+.issue179RoleIdentity {
+  display: grid;
+  min-width: 0;
+  padding: 8px;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.issue179RoleIdentity > .snvRoleDetailCopy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.issue179RoleIdentity > .snvRoleDetailCopy > span {
+  color: #d3a9aa;
+  font-size: .68rem;
+  font-weight: 850;
+}
+
+.issue179RoleIdentity > .snvRoleDetailCopy > strong {
+  color: #fff8f5;
+  font: 1.7rem Georgia, "Noto Serif KR", serif;
+}
+
+.issue179RoleIdentity > .snvRoleDetailCopy > small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #d8c3c3;
+  font-size: .78rem;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.issue179BmrShell .snvConfirmRoster.prominent:not(:disabled) {
+  border-color: #e6c47d;
+  color: #2b170d;
+  background: linear-gradient(135deg, #f0d79b, #cf9b4d);
+  box-shadow: 0 14px 34px rgba(164, 104, 36, .28);
+}
+
+.issue179BmrShell[data-theme="day"] {
+  color: #321c20;
+}
+
+.issue179BmrShell[data-theme="day"] .productionApplicationHeader h1 {
+  color: #35191f;
+  text-shadow: none;
+}
+
+.issue179BmrShell[data-theme="day"] .productionApplicationEyebrow,
+.issue179BmrShell[data-theme="day"] .snvControlCard > span,
+.issue179BmrShell[data-theme="day"] .roleCatalog h2,
+.issue179BmrShell[data-theme="day"] .snvDistributionCard h2,
+.issue179BmrShell[data-theme="day"] .snvDistributionCard span {
+  color: #77535a;
+}
+
+.issue179BmrShell[data-theme="day"] .productionApplicationHeader p {
+  color: #765d61;
+}
+
+.issue179BmrShell[data-theme="day"] :is(.snvSetupControls, .roleCatalog) {
+  border-color: rgba(93, 20, 33, .14);
+  background: rgba(255, 250, 246, .7);
+  box-shadow: 0 22px 70px rgba(74, 34, 35, .14);
+}
+
+.issue179BmrShell[data-theme="day"] .issue179DemonChoices button,
+.issue179BmrShell[data-theme="day"] .issue179SetupChoiceOptions button {
+  border-color: rgba(93, 20, 33, .16);
+  color: #4c3035;
+  background: rgba(255, 255, 255, .45);
+}
+
+.issue179BmrShell[data-theme="day"] .issue179DemonChoices button[aria-pressed="true"],
+.issue179BmrShell[data-theme="day"] .issue179SetupChoiceOptions button[aria-pressed="true"] {
+  border-color: #82283a;
+  color: #fff8f4;
+  background: linear-gradient(135deg, #7b1b2d, #a63d49);
+}
+
+.issue179BmrShell[data-theme="day"] .issue179SetupChoice {
+  border-color: rgba(93, 20, 33, .13);
+  background: rgba(117, 38, 48, .07);
+}
+
+.issue179BmrShell[data-theme="day"] .issue179SetupChoice > div:first-child span,
+.issue179BmrShell[data-theme="day"] .issue179RoleIdentity > .snvRoleDetailCopy > span {
+  color: #7a5960;
+}
+
+.issue179BmrShell[data-theme="day"] .snvDistributionCard.emphasized {
+  border-color: rgba(113, 35, 48, .25);
+  background: rgba(133, 55, 64, .09);
+}
+
+.issue179BmrShell[data-theme="day"] .snvDistributionValues > div {
+  color: #421e26;
+  background: rgba(255, 255, 255, .5);
+}
+
+.issue179BmrShell[data-theme="day"] .issue179Catalog article button[aria-pressed="true"] {
+  border-color: #8f3948;
+  color: #fff8f5;
+  background: linear-gradient(135deg, #7a2434, #9b4d49);
+}
+
+.issue179BmrShell[data-theme="day"] .issue179RoleDetail {
+  border-color: rgba(102, 31, 43, .26);
+  background: linear-gradient(135deg, rgba(255, 249, 244, .97), rgba(225, 199, 192, .97));
+}
+
+.issue179BmrShell[data-theme="day"] .issue179MobileGodfatherAdjustment {
+  border-color: rgba(105, 35, 46, .18);
+  color: #6e3540;
+  background: rgba(117, 38, 48, .08);
+}
+
+.issue179BmrShell[data-theme="day"] .issue179MobileGodfatherAdjustment button {
+  border-color: rgba(105, 35, 46, .18);
+  color: #68313b;
+  background: rgba(255, 255, 255, .5);
+}
+
+.issue179BmrShell[data-theme="day"] .issue179MobileGodfatherAdjustment button[aria-pressed="true"] {
+  border-color: #8a3342;
+  color: #fff8f4;
+  background: #8f3545;
+}
+
+.issue179BmrShell[data-theme="day"] .issue179RoleIdentity > .snvRoleDetailCopy > strong {
+  color: #34191f;
+}
+
+.issue179BmrShell[data-theme="day"] .issue179RoleIdentity > .snvRoleDetailCopy > small {
+  color: #6e5459;
+}
+
+@media (max-width: 1040px) {
+  .issue179ReviewControls {
+    grid-template-columns: 1fr auto;
+  }
+
+  .issue179ReviewIdentity {
+    display: none !important;
+  }
+}
+
+@media (max-width: 780px) {
+  .issue179ReviewControls {
+    position: relative;
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .issue179ReviewControls > [role="group"] {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .issue179ReviewControls > [role="group"]::-webkit-scrollbar {
+    display: none;
+  }
+
+  .issue179ReviewControls button {
+    flex: 0 0 auto;
+  }
+
+  .issue179ProductFrame {
+    border-right: 0;
+    border-left: 0;
+  }
+
+  .issue179BmrShell {
+    min-height: calc(100vh - 94px);
+    padding-right: 16px;
+    padding-left: 16px;
+    background:
+      radial-gradient(circle at 88% 4%, rgba(201, 43, 61, .24), transparent 24%),
+      linear-gradient(155deg, #0c0507 0%, #251017 54%, #100709 100%);
+  }
+
+  .issue179SkyDisc {
+    top: 32px;
+    right: 82px;
+    width: 78px;
+  }
+
+  .issue179SetupSurface {
+    padding-bottom: 112px !important;
+  }
+
+  .issue179SetupSurface.hasGodfatherAdjustment {
+    padding-bottom: 166px !important;
+  }
+
+  .issue179SetupChoiceReveal {
+    display: none;
+  }
+
+  .issue179DemonChoices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .issue179RoleDetail {
+    row-gap: 8px;
+    grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  }
+
+  .issue179MobileGodfatherAdjustment {
+    display: flex;
+    min-width: 0;
+    min-height: 38px;
+    padding: 5px 7px 5px 10px;
+    grid-column: 1 / -1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px solid rgba(217, 180, 108, .24);
+    border-radius: 12px;
+    color: #e9c9ca;
+    background: rgba(117, 27, 43, .28);
+  }
+
+  .issue179MobileGodfatherAdjustment > span {
+    flex: 0 0 auto;
+    font-size: .68rem;
+    font-weight: 900;
+    letter-spacing: .04em;
+  }
+
+  .issue179MobileGodfatherAdjustment > div {
+    display: flex;
+    min-width: 0;
+    justify-content: flex-end;
+    gap: 5px;
+  }
+
+  .issue179MobileGodfatherAdjustment button {
+    min-width: 58px;
+    min-height: 30px;
+    padding: 5px 9px;
+    border: 1px solid rgba(217, 180, 108, .24);
+    border-radius: 999px;
+    color: #f2dfe0;
+    background: rgba(255, 255, 255, .045);
+    font: inherit;
+    font-size: .69rem;
+    font-weight: 900;
+  }
+
+  .issue179MobileGodfatherAdjustment button[aria-pressed="true"] {
+    border-color: #e3c277;
+    color: #2b170d;
+    background: #e4c275;
+  }
+
+  .issue179MobileGodfatherAdjustment button:disabled {
+    opacity: .64;
+  }
+
+  .issue179RoleIdentity {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 8px;
+    padding: 4px;
+  }
+
+  .issue179RoleIdentity .issue179CharacterMedallion {
+    width: 46px;
+    height: 46px;
+  }
+
+  .issue179RoleIdentity > .snvRoleDetailCopy > span,
+  .issue179RoleIdentity > .snvRoleDetailCopy > small {
+    display: none;
+  }
+
+  .issue179RoleIdentity > .snvRoleDetailCopy > strong {
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .issue179ReviewControls {
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+
+  .issue179BmrShell {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .issue179DemonChoices {
+    grid-template-columns: 1fr;
+  }
+
+  .issue179SetupChoiceOptions {
+    grid-template-columns: 1fr;
+  }
+
+  .issue179Catalog article button {
+    min-width: 104px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1100px) {
+  .issue179SkyDisc {
+    right: clamp(150px, 22vw, 240px);
+  }
+}
+
+@media (max-width: 370px) {
+  .issue179BmrShell .productionApplicationHeader h1 {
+    font-size: 1.8rem;
+    white-space: nowrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issue179BmrShell,
+  .issue179BmrShell::before,
+  .issue179BmrShell * {
+    transition-duration: 0s !important;
+  }
+}

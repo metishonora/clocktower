@@ -1,0 +1,8 @@
+import type {ReactNode} from 'react';
+/** Original SnV information task layout; runtime adapters supply its role-specific content. */
+export function RoleInformationTaskView({className='',ariaLabel,identity,needsTargets,busy,chooseLabel='대상 선택',onChooseTargets,onSkip,children,actionsClassName='',revealed,onReveal,onContinue,canReveal=true,revealLabel='정보 공개',influence='',actions}:{className?:string;ariaLabel:string;identity:ReactNode;needsTargets:boolean;busy:boolean;chooseLabel?:string;onChooseTargets?:()=>void;onSkip?:()=>void;children?:ReactNode;actionsClassName?:string;revealed:boolean;onReveal:()=>void;onContinue?:()=>void;canReveal?:boolean;revealLabel?:string;influence?:string;actions?:ReactNode}) {
+ return <article className={`snvCurrentStep snvInformationTask${needsTargets?' snvInformationTaskPending':''} ${className}`} aria-label={ariaLabel}>
+ {needsTargets?<p className="snvCurrentStepLabel">현재 할 일</p>:null}{identity}
+ {needsTargets?<div className="snvStepActions snvInformationTargetActions"><button type="button" className="prominent" disabled={busy} onClick={onChooseTargets}>{chooseLabel}</button>{onSkip?<button type="button" className="secondary" disabled={busy} onClick={onSkip}>오늘 사용하지 않음</button>:null}</div>:<>{children}{actions ?? <div className={`snvStepActions snvInformationActions${actionsClassName}`}><button type="button" className={`informationReveal ${revealed?'':'prominent'} ${influence}`} disabled={busy||!canReveal} onClick={onReveal}>{revealLabel}</button>{revealed&&onContinue?<button type="button" className="prominent" disabled={busy} onClick={onContinue}>다음 단계</button>:null}</div>}</>}
+ </article>;
+}

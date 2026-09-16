@@ -1,0 +1,15 @@
+import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
+for(const width of [390,1366])test(`Mayor decisions use board seats at ${width}`,async({page},info)=>{
+ const file=JSON.parse(await readFile(new URL('../../../fixtures/acceptance/custom-first-night/compatibility/day.game.json',import.meta.url),'utf8'));file.game.events=file.game.events.slice(0,1);
+ file.game.events[0].payload.players=['mayor','monk','ravenkeeper','virgin','slayer','scarletWoman','imp'].map((id,i)=>({id:`p${i+1}`,seat:i+1,name:`P${i+1}`,actualCharacter:id,shownCharacter:id}));
+ await page.setViewportSize({width,height:1000});await page.goto('./');await page.getByRole('button',{name:'Custom Scenario 선택'}).click();await page.getByRole('button',{name:'JSON에서 불러온다'}).click();await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'mayor.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(file))});await page.getByRole('button',{name:'마도서 이어 쓰기',exact:true}).click();
+ for(const name of ['군인','성자','은둔자'])await page.getByRole('button',{name:`${name} 속임수 선택`,exact:true}).click();
+ for(let i=0;i<2;i++){await page.getByRole('button',{name:/정보 공개$/}).click();await page.getByRole('button',{name:'확인했으면 눈을 감으세요',exact:true}).click();await page.getByRole('button',{name:/^(다음으로|다음 단계)$/}).click();}
+ for(const name of ['낮 시작','발표 완료','공개 토론으로','지명 및 투표로','지명 종료','확정','다음 밤으로'])await page.getByRole('button',{name,exact:true}).click();
+ await page.getByRole('button',{name:'보호 대상 선택',exact:true}).click();await page.getByRole('button',{name:/^4번 P4,/}).click();await page.getByRole('button',{name:'선택 확정',exact:true}).click();
+ await page.getByRole('button',{name:'공격 대상 선택',exact:true}).click();await page.getByRole('button',{name:/^1번 P1,/}).click();await expect(page.getByRole('combobox',{name:'시장 판단'})).toHaveCount(0);await expect(page.getByRole('button',{name:'선택 확정',exact:true})).toBeDisabled();await page.screenshot({path:info.outputPath('mayor-decision.png'),fullPage:true});
+ await page.getByRole('button',{name:'다른 플레이어가 대신 사망',exact:true}).click();await expect(page.getByRole('heading',{name:'시장 능력'})).toBeVisible();await expect(page.getByRole('button',{name:/^1번 P1,/})).toBeDisabled();await page.getByRole('button',{name:/^3번 P3,/}).click();await page.screenshot({path:info.outputPath('mayor-bounce.png'),fullPage:true});await page.getByRole('button',{name:'선택 확정',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'악마 공격 결과'})).toBeVisible();await expect(page.getByText('3번 P3 사망',{exact:true})).toBeVisible();await expect(page.getByText('1번 P1',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:/최근 행동 되돌리기:/}).click();await page.getByRole('button',{name:'되돌리기',exact:true}).click();await page.getByRole('button',{name:'공격 대상 선택',exact:true}).click();await page.getByRole('button',{name:/^1번 P1,/}).click();await page.getByRole('button',{name:'시장이 사망',exact:true}).click();await page.getByRole('button',{name:'선택 확정',exact:true}).click();await expect(page.getByText('1번 P1 사망',{exact:true})).toBeVisible();
+});

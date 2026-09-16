@@ -1,0 +1,1103 @@
+use std::{collections::HashMap, fmt};
+
+use crate::{
+    contracts::{
+        CustomActionConfirmedPayload, FirstNightActionRef, FirstNightOrderPlan, GameEvent,
+        GameEventKind, PhaseStepEventPayload,
+    },
+    error::{CoreError, ErrorKind},
+    event::{self, CustomActionEventDraft, CustomFactChanges},
+    model::{
+        AbilityOrigin, AbilityUseRef, PhaseStep, PhaseStepSupport, RequiredInputKind, StepInput,
+    },
+    state::{ActionOccurrence, CustomGameFacts},
+};
+
+use super::system;
+
+/// Stable declaration for one first-night action. Character-specific handlers own the meaning of
+/// the required input and result kinds; the registry owns shared identity and registration checks.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ActionSpec {
+    pub(crate) prerequisites: Vec<FirstNightActionRef>,
+    pub(crate) continuation_sources: Vec<super::execution::DependencySource>,
+    pub(crate) action_ref: FirstNightActionRef,
+    pub(crate) participates_in_first_night: bool,
+    pub(crate) required_input_kind: RequiredInputKind,
+    pub(crate) support: PhaseStepSupport,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(not(test), allow(dead_code))]
+pub(crate) struct ActiveAbilityInstance {
+    pub(crate) seat: u8,
+    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) ability_origin: AbilityOrigin,
+}
+
+/// Read-only facts needed by first-night handlers. Participation and effectiveness stay as
+/// separate decisions in the handler that owns an action; this trait has no universal
+/// `alive && !impaired` policy.
+pub(crate) trait FirstNightRuleService {
+    #[cfg_attr(not(test), allow(dead_code))]
+    fn active_instances(&self, action_ref: &FirstNightActionRef) -> Vec<ActiveAbilityInstance>;
+    fn try_active_instances(
+        &self,
+        action_ref: &FirstNightActionRef,
+    ) -> Result<Vec<ActiveAbilityInstance>, CoreError>;
+    /// Return all currently owned instances, independently of whether the action participates
+    /// under a Character-specific condition.  The default keeps older rule fixtures source
+    /// compatible; custom production rules override it with their provenance-aware ownership
+    /// query so activation can distinguish a new instance from a participation change.
+    fn try_owned_instances(
+        &self,
+        action_ref: &FirstNightActionRef,
+    ) -> Result<Vec<ActiveAbilityInstance>, CoreError> {
+        self.try_active_instances(action_ref)
+    }
+    /// Expose the backing facts when a rule service has them.  Older synthetic rule fixtures only
+    /// implement instance queries, so the scheduler treats `None` as an unavailable optional view
+    /// rather than forcing those fixtures to invent a second facts store.
+    fn facts(&self) -> Option<&CustomGameFacts> {
+        None
+    }
+    fn definition(&self) -> Option<&crate::characters::ResolvedScriptContext> {
+        None
+    }
+    fn simulation_occurrences(
+        &self,
+        _action_ref: &FirstNightActionRef,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        Ok(vec![])
+    }
+    fn has_minion(&self) -> bool;
+    fn has_demon(&self) -> bool;
+    fn legal_demon_bluff_character_ids(&self) -> Vec<String>;
+
+    /// Validate membership in the resolved custom definition. Implementations must return the
+    /// stable membership error rather than silently accepting an out-of-pool Character.
+    fn validate_character_membership(&self, character_id: &str) -> Result<(), CoreError>;
+}
+
+pub(crate) use FirstNightRuleService as CustomRuleService;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ActionInput {
+    pub(crate) input: StepInput,
+    pub(crate) delivered_result: Option<crate::model::InformationResult>,
+    pub(crate) registration_judgments: Vec<crate::model::RegistrationJudgment>,
+}
+
+impl ActionContext<'_> {
+    pub(crate) fn night_number(&self) -> u32 {
+        self.rule_service
+            .facts()
+            .map(|f| f.night_number())
+            .unwrap_or(1)
+    }
+    fn stamp(&self, mut step: PhaseStep) -> Result<PhaseStep, CoreError> {
+        let occurrence = ActionOccurrence::from_step(&step)?.in_night(self.night_number());
+        step.id = occurrence.step_id()?;
+        step.phase = if occurrence.night == 1 {
+            crate::model::Phase::FirstNight
+        } else {
+            crate::model::Phase::Night
+        };
+        Ok(step)
+    }
+}
+pub(crate) struct ActionContext<'a> {
+    pub(crate) rule_service: &'a dyn FirstNightRuleService,
+    pub(crate) event_id: &'a str,
+}
+
+/// Event facts after custom-envelope, occurrence, membership, ownership, and handler validation.
+///
+/// This type is owned by the registry rather than the wire-contract module so its constructor is
+/// private to the semantic validation boundary.  Action handlers can return drafts, but they
+/// cannot construct this value or its `Custom` enum variant.  The event module re-exports the
+/// type for reducer consumers without exposing a construction path.
+#[derive(Debug, Clone)]
+pub(crate) struct ValidatedCustomEvent {
+    id: String,
+    phase: crate::model::Phase,
+    summary: String,
+    created_at: String,
+    payload: CustomActionConfirmedPayload,
+    fact_changes: event::CustomFactChanges,
+}
+
+impl ValidatedCustomEvent {
+    fn new(
+        event: GameEvent,
+        payload: CustomActionConfirmedPayload,
+        fact_changes: event::CustomFactChanges,
+    ) -> Self {
+        Self {
+            id: event.id,
+            phase: event.phase,
+            summary: event.summary,
+            created_at: event.created_at,
+            payload,
+            fact_changes,
+        }
+    }
+
+    pub(crate) fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub(crate) fn phase(&self) -> crate::model::Phase {
+        self.phase
+    }
+
+    pub(crate) fn summary(&self) -> &str {
+        &self.summary
+    }
+
+    pub(crate) fn created_at(&self) -> &str {
+        &self.created_at
+    }
+
+    pub(crate) fn payload(&self) -> &CustomActionConfirmedPayload {
+        &self.payload
+    }
+
+    pub(crate) fn action_ref(&self) -> &FirstNightActionRef {
+        &self.payload.action_ref
+    }
+
+    pub(crate) fn occurrence(&self) -> Result<ActionOccurrence, CoreError> {
+        ActionOccurrence::from_all_parts(
+            self.payload.action_ref.clone(),
+            self.payload.ability_use.clone(),
+            self.payload.simulation_source.clone(),
+            self.payload.follow_up_cause.clone(),
+            self.payload.action_cause.clone(),
+        )
+        .and_then(|o| o.with_step_id(&self.payload.step_id))
+    }
+
+    pub(crate) fn step_id(&self) -> &str {
+        &self.payload.step_id
+    }
+
+    pub(crate) fn fact_changes(&self) -> &event::CustomFactChanges {
+        &self.fact_changes
+    }
+
+    /// Construct a validated event for reducer contract tests only. Production code must use the
+    /// registry's semantic validation boundary; this test-only seam keeps fixture fact reducers
+    /// independently verifiable without adding a production trust bypass.
+    #[cfg(test)]
+    pub(crate) fn for_tests(
+        event: GameEvent,
+        payload: CustomActionConfirmedPayload,
+        fact_changes: event::CustomFactChanges,
+    ) -> Self {
+        Self::new(event, payload, fact_changes)
+    }
+}
+
+/// A candidate event proposed by a handler. System actions retain their existing
+/// `phaseStepConfirmed` wire shape; Character actions use the canonical custom envelope.
+#[derive(Debug, Clone)]
+pub(crate) enum ActionEventDraft {
+    System(SystemActionEventDraft),
+    Custom(CustomActionEventDraft),
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct SystemActionEventDraft {
+    pub(crate) action_ref: FirstNightActionRef,
+    pub(crate) step_id: String,
+    pub(crate) input: StepInput,
+}
+
+impl ActionEventDraft {
+    pub(crate) fn action_ref(&self) -> &FirstNightActionRef {
+        match self {
+            Self::System(draft) => &draft.action_ref,
+            Self::Custom(draft) => &draft.action_ref,
+        }
+    }
+
+    pub(crate) fn step_id(&self) -> &str {
+        match self {
+            Self::System(draft) => &draft.step_id,
+            Self::Custom(draft) => &draft.step_id,
+        }
+    }
+
+    pub(crate) fn input(&self) -> &StepInput {
+        match self {
+            Self::System(draft) => &draft.input,
+            Self::Custom(draft) => &draft.input,
+        }
+    }
+
+    /// Convert a handler-owned draft into the canonical wire event kind. Keeping this conversion
+    /// beside the draft means the runtime only supplies event metadata; it cannot assemble a
+    /// system payload with a different shape than replay validation accepts.
+    pub(crate) fn into_event_kind(self) -> GameEventKind {
+        match self {
+            Self::System(draft) => GameEventKind::PhaseStepConfirmed {
+                payload: Box::new(PhaseStepEventPayload {
+                    step_id: draft.step_id,
+                    action_ref: Some(draft.action_ref),
+                    ability_use: None,
+                    input: draft.input,
+                    information: None,
+                }),
+            },
+            Self::Custom(draft) => GameEventKind::CustomActionConfirmed {
+                payload: draft.into_payload(),
+            },
+        }
+    }
+}
+
+/// Result of common validation. A custom event is only constructible after the registry boundary;
+/// neither handlers nor wire deserializers can mint a `ValidatedCustomEvent`.
+#[derive(Debug, Clone)]
+pub(crate) enum ValidatedActionEvent {
+    System(ValidatedSystemActionEvent),
+    Custom(ValidatedCustomEvent),
+}
+
+/// Trusted system event data after common validation. Its fields are private so callers cannot
+/// manufacture a validated value by constructing the enum variant directly.
+#[derive(Debug, Clone)]
+pub(crate) struct ValidatedSystemActionEvent {
+    event_id: String,
+    action_ref: FirstNightActionRef,
+    step_id: String,
+    input: StepInput,
+}
+
+impl ValidatedSystemActionEvent {
+    fn new(event_id: String, draft: SystemActionEventDraft) -> Self {
+        Self {
+            event_id,
+            action_ref: draft.action_ref,
+            step_id: draft.step_id,
+            input: draft.input,
+        }
+    }
+
+    pub(crate) fn event_id(&self) -> &str {
+        &self.event_id
+    }
+
+    pub(crate) fn action_ref(&self) -> &FirstNightActionRef {
+        &self.action_ref
+    }
+
+    pub(crate) fn step_id(&self) -> &str {
+        &self.step_id
+    }
+
+    pub(crate) fn input(&self) -> &StepInput {
+        &self.input
+    }
+}
+
+impl ValidatedActionEvent {
+    pub(crate) fn event_id(&self) -> &str {
+        match self {
+            Self::System(event) => event.event_id(),
+            Self::Custom(event) => event.id(),
+        }
+    }
+
+    pub(crate) fn occurrence(&self) -> Result<ActionOccurrence, CoreError> {
+        match self {
+            Self::System(event) => ActionOccurrence::system(event.action_ref.clone())
+                .and_then(|o| o.with_step_id(event.step_id())),
+            Self::Custom(event) => event.occurrence(),
+        }
+    }
+
+    pub(crate) fn step_id(&self) -> &str {
+        match self {
+            Self::System(draft) => draft.step_id(),
+            Self::Custom(event) => event.step_id(),
+        }
+    }
+
+    pub(crate) fn action_ref(&self) -> &FirstNightActionRef {
+        match self {
+            Self::System(draft) => draft.action_ref(),
+            Self::Custom(event) => event.action_ref(),
+        }
+    }
+
+    pub(crate) fn input(&self) -> &StepInput {
+        match self {
+            Self::System(event) => event.input(),
+            Self::Custom(event) => &event.payload.input,
+        }
+    }
+}
+
+/// A handler is pure: it receives a concrete occurrence, read-only facts and the command's typed
+/// input, then returns a canonical draft. It never receives mutable game state, a cursor, or a
+/// queue.
+pub(crate) trait ActionHandler {
+    fn required_occurrences(
+        &self,
+        _context: &ActionContext<'_>,
+        _progress: &crate::state::FirstNightProgress,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        Ok(vec![])
+    }
+    fn optional_occurrences(
+        &self,
+        _context: &ActionContext<'_>,
+        _progress: &crate::state::FirstNightProgress,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        Ok(vec![])
+    }
+
+    /// Character-owned resolution of the persisted source, independent of presentation order.
+    fn dependency_event(
+        &self,
+        _context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+    ) -> Result<Option<String>, CoreError> {
+        Ok(match &occurrence.action_cause {
+            Some(crate::contracts::ActionCause::Delivery {
+                preparation_event_id,
+            }) => Some(preparation_event_id.clone()),
+            _ => None,
+        })
+    }
+    /// Preview the consumer while its declared prerequisite is pending. This is overview-only;
+    /// scheduler eligibility and command validation still require the prepared facts.
+    fn pending_after_prerequisite(
+        &self,
+        _context: &ActionContext<'_>,
+        _predecessor: &ActionOccurrence,
+    ) -> Result<Option<PhaseStep>, CoreError> {
+        Ok(None)
+    }
+    /// A script handler may authorize a frozen trigger source after ownership changes.
+    fn historical_source(
+        &self,
+        _context: &ActionContext<'_>,
+        _occurrence: &ActionOccurrence,
+    ) -> bool {
+        false
+    }
+    fn permits_defer(&self) -> bool {
+        false
+    }
+    fn follow_up_rule(&self) -> Option<&dyn super::activation::FollowUpRule> {
+        None
+    }
+    fn action_ref(&self) -> &FirstNightActionRef;
+    fn project(
+        &self,
+        spec: &ActionSpec,
+        context: &ActionContext<'_>,
+    ) -> Result<Vec<PhaseStep>, CoreError>;
+    /// Expensive legal editor choices are needed only for selectable tasks, not order rows.
+    fn enrich_input(
+        &self,
+        _context: &ActionContext<'_>,
+        _occurrence: &ActionOccurrence,
+        _step: &mut PhaseStep,
+    ) -> Result<(), CoreError> {
+        Ok(())
+    }
+    fn propose(
+        &self,
+        spec: &ActionSpec,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        input: &StepInput,
+    ) -> Result<ActionEventDraft, CoreError>;
+    fn propose_input(
+        &self,
+        spec: &ActionSpec,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        input: &ActionInput,
+    ) -> Result<ActionEventDraft, CoreError> {
+        if input.delivered_result.is_some() || !input.registration_judgments.is_empty() {
+            return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
+        }
+        self.propose(spec, context, occurrence, &input.input)
+    }
+    fn project_occurrence(
+        &self,
+        spec: &ActionSpec,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+    ) -> Result<Option<PhaseStep>, CoreError> {
+        Ok(self.project(spec, context)?.into_iter().find(|step| {
+            ActionOccurrence::from_step(step).is_ok_and(|candidate| candidate == *occurrence)
+        }))
+    }
+
+    fn validate_event(
+        &self,
+        spec: &ActionSpec,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        draft: &ActionEventDraft,
+    ) -> Result<CustomFactChanges, CoreError>;
+
+    /// Validate a draft with the confirmed event identity available.  Existing handlers keep the
+    /// four argument method as their compatibility seam; fixture handlers that establish
+    /// source-event provenance may override this method.  The event ID is never accepted from a
+    /// command payload or used to bypass the common validation above.
+    fn validate_event_with_id(
+        &self,
+        spec: &ActionSpec,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        draft: &ActionEventDraft,
+        _event_id: &str,
+    ) -> Result<CustomFactChanges, CoreError> {
+        if let ActionEventDraft::Custom(draft) = draft {
+            if draft.delivered_result.is_some() || !draft.registration_judgments.is_empty() {
+                return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
+            }
+        }
+        self.validate_event(spec, context, occurrence, draft)
+    }
+}
+
+pub(crate) struct RegisteredAction {
+    pub(crate) spec: ActionSpec,
+    pub(crate) handler: Box<dyn ActionHandler>,
+}
+
+impl fmt::Debug for RegisteredAction {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("RegisteredAction")
+            .field("spec", &self.spec)
+            .field("handler_action_ref", self.handler.action_ref())
+            .finish()
+    }
+}
+
+pub(crate) struct ActionRegistry {
+    entries: HashMap<FirstNightActionRef, RegisteredAction>,
+}
+
+impl fmt::Debug for ActionRegistry {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("ActionRegistry")
+            .field("action_refs", &self.entries.keys().collect::<Vec<_>>())
+            .finish()
+    }
+}
+
+impl ActionRegistry {
+    pub(crate) fn additional_candidates(
+        &self,
+        plan: &FirstNightOrderPlan,
+        context: &ActionContext<'_>,
+        progress: &crate::state::FirstNightProgress,
+        optional: bool,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        if context.rule_service.facts().is_none() {
+            return Ok(vec![]);
+        }
+        let mut candidates = vec![];
+        for entry in self.entries.values() {
+            if let FirstNightActionRef::Character { character_id, .. } = &entry.spec.action_ref {
+                if context
+                    .rule_service
+                    .definition()
+                    .is_some_and(|d| !d.contains(character_id))
+                {
+                    continue;
+                }
+            }
+            for occurrence in if optional {
+                entry.handler.optional_occurrences(context, progress)?
+            } else {
+                entry.handler.required_occurrences(context, progress)?
+            } {
+                let occurrence = occurrence.in_night(context.night_number());
+                if occurrence.action_ref != entry.spec.action_ref {
+                    return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+                }
+                if !progress.is_terminal(&occurrence) && !candidates.contains(&occurrence) {
+                    candidates.push(occurrence);
+                }
+            }
+        }
+        super::runtime::sort_additional_occurrences(plan, self, context, &mut candidates);
+        Ok(candidates)
+    }
+
+    pub(crate) fn new(entries: Vec<RegisteredAction>) -> Result<Self, CoreError> {
+        let mut registry = Self {
+            entries: HashMap::with_capacity(entries.len()),
+        };
+        for entry in entries {
+            registry.register(entry)?;
+        }
+        for entry in registry.entries.values() {
+            let kinds = entry
+                .spec
+                .continuation_sources
+                .iter()
+                .filter(|source| **source != super::execution::DependencySource::ImmediateOrigin)
+                .count();
+            if (!entry.spec.prerequisites.is_empty() && kinds != 1)
+                || entry.spec.prerequisites.len() > 1
+            {
+                return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
+            }
+            for parent in &entry.spec.prerequisites {
+                if *parent == entry.spec.action_ref
+                    || !registry.entries.contains_key(parent)
+                    || registry
+                        .entries
+                        .values()
+                        .filter(|e| e.spec.prerequisites.contains(parent))
+                        .count()
+                        != 1
+                {
+                    return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
+                }
+            }
+        }
+        Ok(registry)
+    }
+
+    /// Validate the full production catalog separately from partial and fixture registries.
+    #[cfg_attr(feature = "custom-runtime-fixtures", allow(dead_code))]
+    pub(crate) fn validate_production_completeness(&self) -> Result<(), CoreError> {
+        let mut expected = HashMap::new();
+        for (action_ref, ordered) in super::catalog::production_actions() {
+            if expected.insert(action_ref, ordered).is_some() {
+                return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
+            }
+        }
+        for (action_ref, entry) in &self.entries {
+            if expected.get(action_ref) != Some(&entry.spec.participates_in_first_night)
+                || action_ref != &entry.spec.action_ref
+                || action_ref != entry.handler.action_ref()
+            {
+                return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
+            }
+        }
+        for action_ref in expected.keys() {
+            self.lookup(action_ref)?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn register(&mut self, entry: RegisteredAction) -> Result<(), CoreError> {
+        if entry.spec.action_ref != *entry.handler.action_ref()
+            || (!entry.spec.participates_in_first_night
+                && !super::catalog::is_additional(&entry.spec.action_ref)
+                && !super::catalog::is_other_or_trigger(&entry.spec.action_ref))
+            || self.entries.contains_key(&entry.spec.action_ref)
+        {
+            return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
+        }
+        self.entries.insert(entry.spec.action_ref.clone(), entry);
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn remove_for_tests(&mut self, action: &FirstNightActionRef) {
+        self.entries.remove(action);
+    }
+    pub(crate) fn lookup(
+        &self,
+        action_ref: &FirstNightActionRef,
+    ) -> Result<&RegisteredAction, CoreError> {
+        self.entries
+            .get(action_ref)
+            .ok_or_else(|| ErrorKind::FirstNightActionHandlerUnavailable.into_error())
+    }
+
+    /// Scheduling placement comes from the consumer's declaration, never a second pair table.
+    pub(crate) fn linked_action(
+        &self,
+        action: &FirstNightActionRef,
+    ) -> Option<FirstNightActionRef> {
+        self.entries
+            .values()
+            .find(|entry| entry.spec.prerequisites.contains(action))
+            .map(|entry| entry.spec.action_ref.clone())
+            .or_else(|| {
+                self.entries
+                    .get(action)
+                    .filter(|e| e.spec.participates_in_first_night)
+                    .map(|_| action.clone())
+            })
+    }
+
+    pub(crate) fn pending_consumer(
+        &self,
+        context: &ActionContext<'_>,
+        predecessor: &ActionOccurrence,
+    ) -> Result<Option<PhaseStep>, CoreError> {
+        let consumers: Vec<_> = self
+            .entries
+            .values()
+            .filter(|e| e.spec.prerequisites.contains(&predecessor.action_ref))
+            .collect();
+        if consumers.len() > 1 {
+            return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
+        }
+        match consumers.first() {
+            Some(entry) => {
+                if let Some(step) = entry
+                    .handler
+                    .pending_after_prerequisite(context, predecessor)?
+                {
+                    return Ok(Some(context.stamp(step)?));
+                }
+                Ok(entry
+                    .handler
+                    .project(&entry.spec, context)?
+                    .into_iter()
+                    .find(|step| {
+                        ActionOccurrence::from_step(step)
+                            .is_ok_and(|consumer| consumer.source() == predecessor.source())
+                    })
+                    .map(|s| context.stamp(s))
+                    .transpose()?)
+            }
+            None => Ok(None),
+        }
+    }
+    /// Propose a draft and immediately run the same common plus action-specific validation that
+    /// replay uses. This keeps a handler from returning a draft that could never be confirmed.
+    pub(crate) fn propose(
+        &self,
+        action_ref: &FirstNightActionRef,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        input: &StepInput,
+    ) -> Result<ActionEventDraft, CoreError> {
+        let entry = self.lookup(action_ref)?;
+        validate_occurrence_reference(action_ref, occurrence)?;
+        let draft = entry
+            .handler
+            .propose(&entry.spec, context, occurrence, input)?;
+        if draft.input() != input {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        self.validate_draft(entry, context, occurrence, &draft)?;
+        let _fact_changes =
+            entry
+                .handler
+                .validate_event(&entry.spec, context, occurrence, &draft)?;
+        Ok(draft)
+    }
+
+    pub(crate) fn propose_input(
+        &self,
+        action_ref: &FirstNightActionRef,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        input: &ActionInput,
+    ) -> Result<ActionEventDraft, CoreError> {
+        let entry = self.lookup(action_ref)?;
+        validate_occurrence_reference(action_ref, occurrence)?;
+        let draft = entry
+            .handler
+            .propose_input(&entry.spec, context, occurrence, input)?;
+        if draft.input() != &input.input {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        if let ActionEventDraft::Custom(draft) = &draft {
+            if draft.delivered_result != input.delivered_result
+                || draft.registration_judgments != input.registration_judgments
+            {
+                return Err(ErrorKind::InvalidStepInput.into_error());
+            }
+        }
+        self.validate_draft(entry, context, occurrence, &draft)?;
+        entry.handler.validate_event_with_id(
+            &entry.spec,
+            context,
+            occurrence,
+            &draft,
+            context.event_id,
+        )?;
+        Ok(draft)
+    }
+
+    pub(crate) fn validate_input(
+        &self,
+        occurrence: &ActionOccurrence,
+        step: &PhaseStep,
+        input: &StepInput,
+        players: &[crate::model::Player],
+    ) -> Result<(), CoreError> {
+        if input
+            .as_ref()
+            .is_some_and(|fields| fields.madness_check.is_some())
+            && !matches!(&occurrence.action_ref, FirstNightActionRef::Character { character_id, action_id }
+                if character_id == "mutant" && action_id == "resolveMadnessExecution")
+        {
+            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+        }
+        if input.is_none() && self.lookup(&occurrence.action_ref)?.handler.permits_defer() {
+            return Ok(());
+        }
+        crate::input::validate_required_input(&step.required_input, input, players)
+    }
+
+    pub(crate) fn follow_up_candidates(
+        &self,
+        plan: &FirstNightOrderPlan,
+        context: &super::activation::FollowUpContext<'_>,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        let mut result = vec![];
+        let mut refs = plan.0.clone();
+        for (action, _) in super::catalog::production_actions() {
+            if !refs.contains(&action) {
+                refs.push(action);
+            }
+        }
+        for action_ref in &refs {
+            let Some(entry) = self.entries.get(action_ref) else {
+                continue;
+            };
+            let Some(rule) = entry.handler.follow_up_rule() else {
+                continue;
+            };
+            for occurrence in rule.candidates(context)? {
+                let occurrence = occurrence.in_night(context.next_facts.night_number());
+                if occurrence.action_ref != *action_ref
+                    || (occurrence.follow_up_cause.is_none() && occurrence.action_cause.is_none())
+                {
+                    return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+                }
+                if !result.contains(&occurrence) {
+                    result.push(occurrence);
+                }
+            }
+        }
+        Ok(result)
+    }
+
+    pub(crate) fn project_occurrence(
+        &self,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+    ) -> Result<Option<PhaseStep>, CoreError> {
+        let entry = self.lookup(&occurrence.action_ref)?;
+        if occurrence.night != context.night_number() {
+            return Ok(None);
+        }
+        let semantic = occurrence.clone().in_night(1);
+        let step = entry
+            .handler
+            .project_occurrence(&entry.spec, context, &semantic)?
+            .map(|step| context.stamp(step))
+            .transpose()?;
+        if let Some(step) = &step {
+            if ActionOccurrence::from_step(step)? != *occurrence {
+                return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+            }
+        }
+        Ok(step)
+    }
+
+    pub(crate) fn enrich_input(
+        &self,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        step: &mut PhaseStep,
+    ) -> Result<(), CoreError> {
+        self.lookup(&occurrence.action_ref)?
+            .handler
+            .enrich_input(context, occurrence, step)
+    }
+
+    /// Validate a persisted event against the preceding occurrence. The returned custom event is
+    /// the only trusted value accepted by a reducer; malformed or mismatched wire values never
+    /// cross this boundary.
+    pub(crate) fn validate_event(
+        &self,
+        occurrence: &ActionOccurrence,
+        context: &ActionContext<'_>,
+        event: &GameEvent,
+    ) -> Result<ValidatedActionEvent, CoreError> {
+        let action_ref = &occurrence.action_ref;
+        let entry = self.lookup(action_ref)?;
+        if occurrence.night != context.night_number()
+            || event.phase
+                != if occurrence.night == 1 {
+                    crate::model::Phase::FirstNight
+                } else {
+                    crate::model::Phase::Night
+                }
+        {
+            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+        }
+        let draft = draft_from_wire_event(event)?;
+        self.validate_draft(entry, context, occurrence, &draft)?;
+        let fact_changes = entry.handler.validate_event_with_id(
+            &entry.spec,
+            context,
+            occurrence,
+            &draft,
+            &event.id,
+        )?;
+
+        match draft {
+            ActionEventDraft::System(draft) => Ok(ValidatedActionEvent::System(
+                ValidatedSystemActionEvent::new(event.id.clone(), draft),
+            )),
+            ActionEventDraft::Custom(_) => Ok(ValidatedActionEvent::Custom(validate_custom_event(
+                event,
+                fact_changes,
+            )?)),
+        }
+    }
+
+    fn validate_draft(
+        &self,
+        entry: &RegisteredAction,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        draft: &ActionEventDraft,
+    ) -> Result<(), CoreError> {
+        validate_occurrence_reference(&entry.spec.action_ref, occurrence)?;
+        if draft.action_ref() != &entry.spec.action_ref
+            || draft.step_id().trim().is_empty()
+            || draft.step_id() != occurrence.step_id()?.as_str()
+        {
+            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+        }
+
+        if let ActionEventDraft::Custom(custom) = draft {
+            let source = ActionOccurrence::from_all_parts(
+                custom.action_ref.clone(),
+                custom.ability_use.clone(),
+                custom.simulation_source.clone(),
+                custom.follow_up_cause.clone(),
+                custom.action_cause.clone(),
+            )?
+            .with_step_id(&custom.step_id)?;
+            if source.identity() != occurrence.identity() {
+                return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+            }
+        }
+
+        match (
+            &entry.spec.action_ref,
+            occurrence.ability_use.as_ref(),
+            draft,
+        ) {
+            (FirstNightActionRef::System { .. }, None, ActionEventDraft::System(_)) => {}
+            (
+                FirstNightActionRef::Character { character_id, .. },
+                Some(expected_ability),
+                ActionEventDraft::Custom(custom),
+            ) => {
+                context
+                    .rule_service
+                    .validate_character_membership(character_id)?;
+                context
+                    .rule_service
+                    .validate_character_membership(&expected_ability.character_id)?;
+                if expected_ability.character_id != *character_id
+                    || custom.ability_use.as_ref() != Some(expected_ability)
+                    || custom.action_ref != entry.spec.action_ref
+                    || (!context
+                        .rule_service
+                        .try_active_instances(&entry.spec.action_ref)?
+                        .iter()
+                        .any(|instance| instance.ability_use == *expected_ability)
+                        && !entry.handler.historical_source(context, occurrence))
+                {
+                    return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+                }
+            }
+            (
+                FirstNightActionRef::Character { character_id, .. },
+                None,
+                ActionEventDraft::Custom(_),
+            ) => {
+                context
+                    .rule_service
+                    .validate_character_membership(character_id)?;
+                if !context
+                    .rule_service
+                    .simulation_occurrences(&entry.spec.action_ref)?
+                    .iter()
+                    .any(|candidate| {
+                        candidate.action_ref == occurrence.action_ref
+                            && candidate.simulation_source == occurrence.simulation_source
+                    })
+                    && !entry.handler.historical_source(context, occurrence)
+                {
+                    return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+                }
+            }
+            _ => return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error()),
+        }
+        if self.project_occurrence(context, occurrence)?.is_none() {
+            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+        }
+        Ok(())
+    }
+
+    pub(crate) fn project(
+        &self,
+        action_ref: &FirstNightActionRef,
+        context: &ActionContext<'_>,
+    ) -> Result<Vec<PhaseStep>, CoreError> {
+        let entry = self.lookup(action_ref)?;
+        let steps = entry
+            .handler
+            .project(&entry.spec, context)?
+            .into_iter()
+            .map(|s| context.stamp(s))
+            .collect::<Result<Vec<_>, _>>()?;
+        for step in &steps {
+            let Some(step_action_ref) = step.action_ref.as_ref() else {
+                return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+            };
+            if step_action_ref != action_ref {
+                return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+            }
+            let occurrence = occurrence_from_step(step)?;
+            if occurrence.action_ref != *action_ref {
+                return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+            }
+        }
+        Ok(steps)
+    }
+}
+
+fn validate_occurrence_reference(
+    action_ref: &FirstNightActionRef,
+    occurrence: &ActionOccurrence,
+) -> Result<(), CoreError> {
+    if occurrence.action_ref != *action_ref {
+        return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+    }
+    ActionOccurrence::from_all_parts(
+        occurrence.action_ref.clone(),
+        occurrence.ability_use.clone(),
+        occurrence.simulation_source.clone(),
+        occurrence.follow_up_cause.clone(),
+        occurrence.action_cause.clone(),
+    )?;
+    Ok(())
+}
+
+fn occurrence_from_step(step: &PhaseStep) -> Result<ActionOccurrence, CoreError> {
+    ActionOccurrence::from_step(step)
+}
+
+fn draft_from_wire_event(event: &GameEvent) -> Result<ActionEventDraft, CoreError> {
+    if event.id.trim().is_empty()
+        || !matches!(
+            event.phase,
+            crate::model::Phase::FirstNight | crate::model::Phase::Night
+        )
+    {
+        return Err(ErrorKind::MalformedEvent.into_error());
+    }
+    match &event.kind {
+        GameEventKind::PhaseStepConfirmed { payload } => {
+            let action_ref = payload
+                .action_ref
+                .clone()
+                .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
+            if payload.ability_use.is_some() || payload.information.is_some() {
+                return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+            }
+            Ok(ActionEventDraft::System(SystemActionEventDraft {
+                action_ref,
+                step_id: payload.step_id.clone(),
+                input: payload.input.clone(),
+            }))
+        }
+        GameEventKind::CustomActionConfirmed { payload } => {
+            Ok(ActionEventDraft::Custom(CustomActionEventDraft {
+                simulation_source: payload.simulation_source.clone(),
+                follow_up_cause: payload.follow_up_cause.clone(),
+                action_cause: payload.action_cause.clone(),
+                delivered_result: payload.delivered_result.clone(),
+                registration_judgments: payload.registration_judgments.clone(),
+                step_id: payload.step_id.clone(),
+                action_ref: payload.action_ref.clone(),
+                ability_use: payload.ability_use.clone(),
+                input: payload.input.clone(),
+                result: payload.result.clone(),
+            }))
+        }
+        _ => Err(ErrorKind::EventNotSupportedByScript.into_error()),
+    }
+}
+
+/// Build and validate the complete production system + TB + S&V registry. The fixture feature
+/// selects a separate system + fixture composition and never adds fixture handlers to production.
+pub(crate) fn action_registry() -> Result<ActionRegistry, CoreError> {
+    #[allow(unused_mut)]
+    let mut entries = system::registrations();
+    #[cfg(not(feature = "custom-runtime-fixtures"))]
+    {
+        entries.extend(crate::characters::sects_and_violets::registrations());
+        entries.extend(crate::characters::trouble_brewing::registrations());
+    }
+    #[cfg(feature = "custom-runtime-fixtures")]
+    entries.extend(super::fixtures::registrations());
+    let registry = ActionRegistry::new(entries)?;
+    #[cfg(not(feature = "custom-runtime-fixtures"))]
+    registry.validate_production_completeness()?;
+    Ok(registry)
+}
+
+fn validate_custom_event(
+    event: &GameEvent,
+    fact_changes: CustomFactChanges,
+) -> Result<ValidatedCustomEvent, CoreError> {
+    let GameEventKind::CustomActionConfirmed { payload } = &event.kind else {
+        return Err(ErrorKind::EventNotSupportedByScript.into_error());
+    };
+    event::validate_custom_event_shape(event)?;
+    Ok(ValidatedCustomEvent::new(
+        event.clone(),
+        payload.clone(),
+        fact_changes,
+    ))
+}
+
+/// Test setup may opt into fixture handlers without changing existing system-only scenarios. The
+/// explicit opt-in mirrors the feature-gated generated-WASM build.
+#[cfg(test)]
+pub(crate) fn fixture_action_registry() -> Result<ActionRegistry, CoreError> {
+    #[allow(unused_mut)]
+    let mut entries = system::registrations();
+    entries.extend(super::fixtures::registrations());
+    ActionRegistry::new(entries)
+}
+
+/// Historical alias for the composed builder. It follows the feature flag, so production
+/// callers never gain fixture behavior accidentally.
+pub(crate) fn system_action_registry() -> Result<ActionRegistry, CoreError> {
+    action_registry()
+}
+
+#[allow(dead_code)]
+pub(crate) fn registry_supports_plan(
+    registry: &ActionRegistry,
+    plan: &FirstNightOrderPlan,
+) -> Result<(), CoreError> {
+    for action_ref in &plan.0 {
+        registry.lookup(action_ref)?;
+    }
+    Ok(())
+}

@@ -1,0 +1,13 @@
+.customGrimoireSetup { box-sizing: border-box; }
+.customGrimoireSetup *, .customGrimoireSetup *::before, .customGrimoireSetup *::after { box-sizing: border-box; }
+.customGrimoireSetup .productionApplicationUtilities:empty { display: none; }
+.customGrimoireSetup .productionApplicationHeader h1 { overflow-wrap: anywhere; word-break: keep-all; min-width: 0; }
+.customGrimoireSetup .productionApplicationHeader > div { min-width: 0; }
+.customGrimoireSetup .snvPhaseMark { flex-shrink: 0; }
+.customSetupError { max-width: 1180px; margin: 16px auto; color: #ffc3c8; }
+.customShownCharacter { display: grid; gap: 8px; margin-bottom: 12px; }
+.customShownCharacter select { min-height: 44px; padding: 8px; color: inherit; background: var(--bmr-input, #300b15); border: 1px solid var(--bmr-line, rgba(224,156,164,.22)); border-radius: 8px; font: inherit; }
+@media (max-width: 600px) {
+  .customGrimoireSetup .snvSurfaceTabs { gap: 8px; }
+  .customGrimoireSetup .snvSurfaceTabs > button { flex: 1; min-width: 0; padding-inline: 8px; }
+}

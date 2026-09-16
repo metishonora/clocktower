@@ -60,31 +60,73 @@ fn create_game(script_id: &str, character_ids: &[&str]) -> Value {
 
 #[test]
 fn sects_and_violets_accepts_exactly_the_official_twenty_five_character_ids() {
-    let base = [
-        "clockmaker",
-        "dreamer",
-        "snakeCharmer",
-        "mathematician",
-        "flowergirl",
-        "witch",
-        "vortox",
-    ];
-
-    for (kind, ids, slot) in [
-        ("Townsfolk", TOWNSFOLK.as_slice(), 0),
-        ("Outsider", OUTSIDERS.as_slice(), 0),
-        ("Minion", MINIONS.as_slice(), 5),
-        ("Demon", DEMONS.as_slice(), 6),
-    ] {
-        for character_id in ids {
-            let mut characters = base;
-            characters[slot] = character_id;
-            let actual = create_game("sectsAndViolets", &characters);
-            assert_eq!(
-                actual["ok"], true,
-                "{kind} {character_id} should belong to S&V: {actual}"
-            );
-        }
+    for character_id in TOWNSFOLK {
+        let mut characters = vec![character_id];
+        characters.extend(
+            TOWNSFOLK
+                .iter()
+                .copied()
+                .filter(|candidate| *candidate != character_id)
+                .take(4),
+        );
+        characters.extend(["witch", "vortox"]);
+        let actual = create_game("sectsAndViolets", &characters);
+        assert_eq!(actual["ok"], true, "Townsfolk {character_id}: {actual}");
+    }
+    for character_id in OUTSIDERS {
+        let actual = create_game(
+            "sectsAndViolets",
+            &[
+                "clockmaker",
+                "dreamer",
+                "snakeCharmer",
+                "mathematician",
+                character_id,
+                "witch",
+                "fangGu",
+            ],
+        );
+        assert_eq!(actual["ok"], true, "Outsider {character_id}: {actual}");
+    }
+    for character_id in MINIONS {
+        let actual = create_game(
+            "sectsAndViolets",
+            &[
+                "clockmaker",
+                "dreamer",
+                "snakeCharmer",
+                "mathematician",
+                "flowergirl",
+                character_id,
+                "vortox",
+            ],
+        );
+        assert_eq!(actual["ok"], true, "Minion {character_id}: {actual}");
+    }
+    for character_id in DEMONS {
+        let characters = if character_id == "fangGu" {
+            [
+                "clockmaker",
+                "dreamer",
+                "snakeCharmer",
+                "mathematician",
+                "mutant",
+                "witch",
+                character_id,
+            ]
+        } else {
+            [
+                "clockmaker",
+                "dreamer",
+                "snakeCharmer",
+                "mathematician",
+                "flowergirl",
+                "witch",
+                character_id,
+            ]
+        };
+        let actual = create_game("sectsAndViolets", &characters);
+        assert_eq!(actual["ok"], true, "Demon {character_id}: {actual}");
     }
 
     let unknown = create_game(

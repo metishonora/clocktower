@@ -14,6 +14,7 @@ test("uses official script logos and enters Trouble Brewing through its permanen
   const selection = screen.getByRole("region", { name: "스크립트 선택" });
   const troubleBrewing = within(selection).getByRole("button", { name: "Trouble Brewing 선택" });
   const sectsAndViolets = within(selection).getByRole("button", { name: "Sects & Violets 선택" });
+  expect(within(selection).queryByRole("button", { name: "Bad Moon Rising 선택" })).toBeNull();
   expect(within(troubleBrewing).getByRole("img", { name: "Trouble Brewing" }).getAttribute("src"))
     .toBe("/clocktower/assets/scripts/trouble-brewing.png");
   expect(within(sectsAndViolets).getByRole("img", { name: "Sects & Violets" }).getAttribute("src"))

@@ -17,7 +17,7 @@ const privatePlayerNames = [
 ];
 const privateNotes = "private storyteller note: clockmaker trusts noDashii";
 
-test("builds an importable, replayable, privacy-safe schema-v3 S&V fixture", async () => {
+test("builds an importable, replayable, privacy-safe schema-v4 S&V fixture", async () => {
   const source = collisionGameFile();
   const report = buildSectsAndVioletsBugReport({
     gameFile: source,
@@ -44,9 +44,9 @@ test("builds an importable, replayable, privacy-safe schema-v3 S&V fixture", asy
   expect(report.body).not.toContain("[게임 구성]");
   expect(report.body).not.toContain("[확정 이벤트]");
 
-  expect(fixtureFromBody.schemaVersion).toBe(3);
+  expect(fixtureFromBody.schemaVersion).toBe(4);
   expect(fixtureFromBody.game).toMatchObject({
-    scriptId: "sectsAndViolets",
+    script: { type: "official", scriptId: "sectsAndViolets" },
     id: source.game.id,
     name: "Redacted bug report",
     createdAt: source.game.createdAt,

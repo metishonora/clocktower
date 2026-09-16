@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
-import { ScriptLanding } from "./features/script-selection/ScriptLanding";
+import { CustomScenarioLanding } from "./customScenarioLanding";
 import {
   isPublishedPromoCardSampleRequest,
   resolveActivePromoCardProductionRoute,
@@ -17,6 +17,13 @@ const PromoCardPrototypeEntry = React.lazy(async () => {
   const module = await import("./promoCardPrototype");
   return { default: module.PromoCardPrototype };
 });
+
+const DevIssue200CustomScriptPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue200CustomScriptPrototype");
+      return { default: module.Issue200CustomScriptPrototype };
+    })
+  : undefined;
 
 const ExpiredInvitationPrototypeEntry = React.lazy(async () => {
   const module = await import("./expiredInvitationPrototype");
@@ -49,6 +56,9 @@ const promoCardDesign = promoCardRoute === "trouble-brewing"
     : promoCardRoute === "sects-and-violets"
       ? "vellum"
     : undefined;
+const issue200PrototypeRequested =
+  import.meta.env.DEV &&
+  new URLSearchParams(window.location.search).get("prototype") === "issue-200-custom-script";
 const promoCardRequested = Boolean(
   publishedSampleRequested || activeProductionPromoCardRoute || devPromoCardRoute,
 );
@@ -70,7 +80,11 @@ const promoCardDateOverride = is260923Invitation
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {expiredInvitationRoute ? (
+    {issue200PrototypeRequested && DevIssue200CustomScriptPrototype ? (
+      <React.Suspense fallback={null}>
+        <DevIssue200CustomScriptPrototype />
+      </React.Suspense>
+    ) : expiredInvitationRoute ? (
       <React.Suspense fallback={null}>
         <ExpiredInvitationPrototypeEntry variant={expiredInvitationRoute} />
       </React.Suspense>
@@ -108,7 +122,7 @@ createRoot(document.getElementById("root")!).render(
         />
       </React.Suspense>
     ) : (
-      <ScriptLanding />
+      <CustomScenarioLanding />
     )}
   </React.StrictMode>,
 );

@@ -1,0 +1,399 @@
+.issue179ConfirmedSurface {
+  padding-bottom: 28px !important;
+}
+
+.issue179ConfirmedLabel {
+  display: inline-flex;
+  min-height: 38px;
+  padding: 0 13px;
+  align-items: center;
+  border: 1px solid rgba(217, 180, 108, .26);
+  border-radius: 999px;
+  color: #ead8bb;
+  background: rgba(117, 49, 28, .2);
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.issue179BmrDetailBackdrop {
+  background: rgba(10, 1, 4, .66);
+}
+
+.issue179BmrDetailDialog {
+  border-left-color: rgba(211, 136, 142, .26);
+  color: #fff5f1;
+  background: linear-gradient(160deg, #250a12, #3b111c);
+  box-shadow: -24px 0 70px rgba(7, 0, 2, .58);
+}
+
+.issue179BmrDetailDialog > header {
+  border-bottom-color: rgba(211, 136, 142, .14);
+}
+
+.issue179BmrDetailIdentity {
+  cursor: default;
+}
+
+.issue179BmrDetailIdentity .issue179CharacterMedallion {
+  width: 68px;
+  height: 68px;
+}
+
+.issue179BmrDetailIdentity > strong,
+.issue179BmrDetailDialog > header strong {
+  color: #e1b8bc;
+}
+
+.issue179BmrDetailDialog > header span,
+.issue179BmrDetailDialog .playerTokenCharacterSummary > span {
+  color: #c49ca0;
+}
+
+.issue179BmrDetailDialog .playerTokenCharacterSummary p {
+  color: #e2ced0;
+}
+
+.issue179BmrDetailDialog > header .playerTokenDetailClose {
+  border-color: rgba(211, 136, 142, .24);
+  color: #fff5f1;
+  background: rgba(255, 255, 255, .045);
+}
+
+.issue179LunaticIdentityComparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.issue179LunaticIdentityComparison article {
+  display: grid;
+  min-width: 0;
+  padding: 12px;
+  gap: 10px;
+  border: 1px solid rgba(211, 136, 142, .18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.issue179LunaticIdentityComparison article.actual {
+  border-color: rgba(117, 174, 191, .3);
+  background: rgba(57, 105, 117, .12);
+}
+
+.issue179LunaticIdentityComparison article.shown {
+  border-color: rgba(220, 88, 105, .3);
+  background: rgba(126, 33, 49, .17);
+}
+
+.issue179LunaticIdentityComparison article > span {
+  color: #bc9195;
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+}
+
+.issue179LunaticIdentityComparison article > div {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+}
+
+.issue179LunaticIdentityComparison .issue179CharacterMedallion {
+  width: 48px;
+  height: 48px;
+}
+
+.issue179LunaticIdentityComparison .issue179CharacterMedallion > span {
+  font-size: .72rem;
+  white-space: nowrap;
+}
+
+.issue179LunaticIdentityComparison p {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  gap: 3px;
+}
+
+.issue179LunaticIdentityComparison p strong {
+  overflow: hidden;
+  color: #fff5f1;
+  font: 1rem Georgia, "Noto Serif KR", serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issue179LunaticIdentityComparison p small {
+  color: #b99094;
+  font-size: .58rem;
+  font-weight: 800;
+}
+
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button.issue179ApparentDeadSeat,
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button.issue179ApparentDeadSeat.selected,
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button.issue179ApparentDeadSeat[aria-pressed="true"] {
+  border-color: #a5a7ac;
+  color: #f8f8f9;
+  background: linear-gradient(145deg, #65676d, #45474c);
+  box-shadow: 0 0 0 3px rgba(226, 189, 114, .15), 0 9px 24px rgba(6, 0, 2, .38);
+}
+
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button.issue179ApparentDeadSeat .issue179CharacterMedallion {
+  filter: grayscale(.72) contrast(.9);
+  opacity: .68;
+}
+
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button.issue179ApparentDeadSeat :is(.snvSeatNumber, .snvSeatPlayerName) {
+  color: #fafafb;
+}
+
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button.issue179ApparentDeadSeat small {
+  color: #d7d8db;
+}
+
+.issue179BmrTokenPlaceholder {
+  display: grid;
+  min-height: 180px;
+  place-content: center;
+  justify-items: center;
+  gap: 13px;
+}
+
+.issue179BmrTokenPlaceholder > div {
+  position: relative;
+  width: 116px;
+  height: 78px;
+}
+
+.issue179BmrTokenPlaceholder > div > span {
+  position: absolute;
+  top: 5px;
+  display: block;
+  width: 66px;
+  height: 66px;
+  border: 2px dashed rgba(218, 177, 184, .3);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .025);
+}
+
+.issue179BmrTokenPlaceholder > div > span:nth-child(1) {
+  left: 0;
+  transform: rotate(-7deg);
+}
+
+.issue179BmrTokenPlaceholder > div > span:nth-child(2) {
+  left: 25px;
+  z-index: 2;
+}
+
+.issue179BmrTokenPlaceholder > div > span:nth-child(3) {
+  right: 0;
+  transform: rotate(7deg);
+}
+
+.issue179BmrTokenPlaceholder > p {
+  display: grid;
+  margin: 0;
+  gap: 3px;
+  text-align: center;
+}
+
+.issue179BmrTokenPlaceholder > p strong {
+  color: #d7bec0;
+  font-size: .72rem;
+}
+
+.issue179BmrTokenPlaceholder > p span {
+  color: #a77f84;
+  font-size: .62rem;
+  font-weight: 800;
+}
+
+.issue179ReturnBackdrop {
+  z-index: 260;
+}
+
+.issue179ReturnDialog {
+  border-color: rgba(220, 100, 115, .42);
+  color: #fff5f1;
+  background: #2b0d15;
+  box-shadow: 0 28px 90px rgba(6, 0, 2, .66);
+}
+
+.issue179ReturnDialog p {
+  color: #d5b9bc;
+}
+
+.issue179ReturnDialog button {
+  border-color: rgba(211, 136, 142, .2);
+  color: #f2e3e2;
+  background: rgba(255, 255, 255, .045);
+}
+
+.issue179ReturnDialog button.snvDestructiveAction {
+  border-color: #d15a6e;
+  color: #fff;
+  background: #a62d43;
+}
+
+.issue179ConfirmedShell[data-theme="day"] .issue179ConfirmedLabel {
+  border-color: rgba(105, 35, 46, .16);
+  color: #704a3e;
+  background: rgba(165, 110, 48, .1);
+}
+
+.issue179BmrDetailBackdrop.day {
+  background: rgba(55, 31, 37, .48);
+}
+
+.issue179BmrDetailBackdrop.day .issue179BmrDetailDialog {
+  border-left-color: rgba(105, 35, 46, .24);
+  color: #382126;
+  background: linear-gradient(160deg, #fff9f5, #f1dfdc);
+  box-shadow: -24px 0 70px rgba(73, 31, 40, .26);
+}
+
+.issue179BmrDetailBackdrop.day .issue179BmrDetailDialog > header {
+  border-bottom-color: rgba(105, 35, 46, .14);
+}
+
+.issue179BmrDetailBackdrop.day .issue179BmrDetailIdentity > strong,
+.issue179BmrDetailBackdrop.day .issue179BmrDetailDialog > header strong {
+  color: #7c2d3c;
+}
+
+.issue179BmrDetailBackdrop.day .issue179BmrDetailDialog > header span,
+.issue179BmrDetailBackdrop.day .issue179BmrDetailDialog .playerTokenCharacterSummary > span {
+  color: #704e55;
+}
+
+.issue179BmrDetailBackdrop.day .issue179BmrDetailDialog .playerTokenCharacterSummary p {
+  color: #4d3439;
+}
+
+.issue179BmrDetailBackdrop.day .issue179BmrDetailDialog > header .playerTokenDetailClose {
+  border-color: rgba(105, 35, 46, .22);
+  color: #4a2830;
+  background: rgba(255, 255, 255, .68);
+}
+
+.issue179BmrDetailBackdrop.day .issue179LunaticIdentityComparison article {
+  border-color: rgba(105, 35, 46, .14);
+  background: rgba(255, 255, 255, .46);
+}
+
+.issue179BmrDetailBackdrop.day .issue179LunaticIdentityComparison article.actual {
+  border-color: rgba(23, 104, 140, .24);
+  background: rgba(213, 238, 247, .46);
+}
+
+.issue179BmrDetailBackdrop.day .issue179LunaticIdentityComparison article.shown {
+  border-color: rgba(156, 38, 61, .22);
+  background: rgba(248, 219, 224, .48);
+}
+
+.issue179BmrDetailBackdrop.day .issue179LunaticIdentityComparison article > span,
+.issue179BmrDetailBackdrop.day .issue179LunaticIdentityComparison p small {
+  color: #74545b;
+}
+
+.issue179BmrDetailBackdrop.day .issue179LunaticIdentityComparison p strong {
+  color: #3f252b;
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard > button.issue179ApparentDeadSeat,
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard > button.issue179ApparentDeadSeat.selected,
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard > button.issue179ApparentDeadSeat[aria-pressed="true"] {
+  border-color: #666b72;
+  color: #fff;
+  background: linear-gradient(145deg, #676c73, #42464c);
+  box-shadow: 0 0 0 3px rgba(140, 53, 68, .13), 0 9px 24px rgba(49, 51, 56, .24);
+}
+
+.issue179BmrDetailBackdrop.day .issue179BmrDetailDialog > header .playerTokenDetailAlignment.alignment-good {
+  border-color: #17688c;
+  color: #0f5d80;
+  background: #d5eef7;
+  box-shadow: 0 0 0 3px rgba(23, 104, 140, .12);
+}
+
+.issue179BmrDetailBackdrop.day .issue179BmrDetailDialog > header .playerTokenDetailAlignment.alignment-evil {
+  border-color: #9c263d;
+  color: #8a1830;
+  background: #f8dbe0;
+  box-shadow: 0 0 0 3px rgba(156, 38, 61, .12);
+}
+
+.issue179BmrDetailBackdrop.day .issue179BmrTokenPlaceholder > div > span {
+  border-color: rgba(105, 35, 46, .24);
+  background: rgba(255, 255, 255, .42);
+}
+
+.issue179BmrDetailBackdrop.day .issue179BmrTokenPlaceholder > p strong {
+  color: #66414a;
+}
+
+.issue179BmrDetailBackdrop.day .issue179BmrTokenPlaceholder > p span {
+  color: #806068;
+}
+
+.issue179ConfirmedShell[data-theme="day"] .issue179ReturnDialog {
+  border-color: rgba(154, 56, 72, .26);
+  color: #3a2026;
+  background: #f7ece8;
+  box-shadow: 0 26px 80px rgba(73, 31, 40, .24);
+}
+
+.issue179ConfirmedShell[data-theme="day"] .issue179ReturnDialog p {
+  color: #6d5157;
+}
+
+.issue179ConfirmedShell[data-theme="day"] .issue179ReturnDialog button {
+  border-color: rgba(105, 35, 46, .16);
+  color: #56343b;
+  background: rgba(255, 255, 255, .56);
+}
+
+.issue179ConfirmedShell[data-theme="day"] .issue179ReturnDialog button.snvDestructiveAction {
+  border-color: #ad3b50;
+  color: #fff;
+  background: #a62d43;
+}
+
+@media (max-width: 780px) {
+  .issue179BmrDetailIdentity .issue179CharacterMedallion {
+    width: 54px;
+    height: 54px;
+  }
+}
+
+@media (max-width: 390px) {
+  .issue179LunaticIdentityComparison article {
+    padding: 10px;
+  }
+
+  .issue179LunaticIdentityComparison article > div {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .issue179LunaticIdentityComparison .issue179CharacterMedallion {
+    width: 42px;
+    height: 42px;
+  }
+
+  .issue179LunaticIdentityComparison p strong {
+    font-size: .9rem;
+  }
+
+  .issue179ReturnDialog > div {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .issue179ReturnDialog button {
+    min-height: 46px;
+  }
+}

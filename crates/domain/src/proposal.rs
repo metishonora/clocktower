@@ -6,10 +6,10 @@ use crate::{
         ImpAttackOutcome, ImpNoDeathReason, NightActionResolution, NightActionResolvedPayload,
         NightDeathsAnnouncedPayload, NominationEventPayload, NominationStartedPayload,
         PhaseStepCommandPayload, PhaseStepEventPayload, PlayerAnnotationsUpdatedPayload, Proposal,
-        RedHerringAssignedPayload, RevealPayload, SetupEventPayload, SlayerAbilityUsedPayload,
-        SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome, SmokeEventPayload,
-        StepIdPayload, UpdatePlayerAnnotationsCommandPayload, UseSlayerAbilityCommandPayload,
-        VirginResolution,
+        RedHerringAssignedPayload, RevealPayload, ScriptReference, SetupEventPayload,
+        SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome,
+        SmokeEventPayload, StepIdPayload, UpdatePlayerAnnotationsCommandPayload,
+        UseSlayerAbilityCommandPayload, VirginResolution,
     },
     day::{
         execution_standing, nomination_record, nomination_start_input, replay_day_state,
@@ -33,13 +33,13 @@ use crate::{
     replay::{replay_rule_state, trouble_brewing_replay_context, TbReplayContext},
     setup::{
         normalized_setup_player_for_script, player_from_setup_input_for_script,
-        validate_setup_inputs_for_script, validate_setup_warnings_for_script,
+        validate_new_setup_distribution, validate_setup_inputs_for_script,
     },
 };
 use serde_json::json;
 
 pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal, CoreError> {
-    let rules = crate::characters::rules(game_file.script_id);
+    let rules = crate::characters::rules(game_file.official_script_id()?);
     rules.validate_command(&command)?;
     if command
         .expected_event_count()
@@ -347,25 +347,46 @@ pub(crate) fn propose_create_game(
         return Err(ErrorKind::GameAlreadyHasEvents.into_error());
     }
 
-    validate_setup_inputs_for_script(game_file.script_id, &payload.players)?;
-
-    let players = payload
-        .players
-        .iter()
-        .map(|player| normalized_setup_player_for_script(game_file.script_id, player))
-        .collect::<Result<Vec<_>, _>>()?;
-    let derived_players = players
-        .iter()
-        .map(|player| player_from_setup_input_for_script(game_file.script_id, player))
-        .collect::<Result<Vec<_>, _>>()?;
-    let warnings = validate_setup_warnings_for_script(game_file.script_id, &derived_players);
+    let setup_choice_id = payload.setup_choice_id.clone();
+    let players = match &game_file.script {
+        ScriptReference::Official { script_id } => {
+            validate_setup_inputs_for_script(*script_id, &payload.players)?;
+            let players = payload
+                .players
+                .iter()
+                .map(|player| normalized_setup_player_for_script(*script_id, player))
+                .collect::<Result<Vec<_>, _>>()?;
+            let derived_players = players
+                .iter()
+                .map(|player| player_from_setup_input_for_script(*script_id, player))
+                .collect::<Result<Vec<_>, _>>()?;
+            let actual_characters = derived_players
+                .iter()
+                .map(|player| player.actual_character.clone())
+                .collect::<Vec<_>>();
+            let expected = crate::characters::rules(*script_id).selected_setup_distribution(
+                crate::setup::base_distribution(players.len()),
+                &actual_characters,
+                setup_choice_id.as_deref(),
+            )?;
+            validate_new_setup_distribution(
+                &derived_players,
+                |character| crate::characters::rules(*script_id).character_kind(character),
+                expected,
+            )?;
+            players
+        }
+    };
     let count = players.len();
 
     Ok(Proposal {
         event: GameEvent {
             id: format!("setup-{}", game_file.game.events.len() + 1),
             kind: GameEventKind::SetupConfirmed {
-                payload: SetupEventPayload { players },
+                payload: SetupEventPayload {
+                    players,
+                    setup_choice_id,
+                },
             },
             phase: Phase::Setup,
             summary: setup_event_summary(count),
@@ -375,7 +396,7 @@ pub(crate) fn propose_create_game(
                 .clone()
                 .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".to_string()),
         },
-        warnings,
+        warnings: vec![],
         follow_up_steps: Vec::new(),
         preview: setup_preview(count),
         reveal_payload: None,
@@ -627,6 +648,8 @@ pub(crate) fn propose_phase_step(
         GameEventKind::PhaseStepConfirmed {
             payload: Box::new(PhaseStepEventPayload {
                 step_id: current_step.id.clone(),
+                action_ref: None,
+                ability_use: None,
                 input,
                 information,
             }),

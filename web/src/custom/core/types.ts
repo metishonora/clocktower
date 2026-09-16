@@ -1,0 +1,807 @@
+import type {DayInput,DayConfirmed,DayView} from './dayTypes.js';
+
+
+export type CustomScriptDefinition = {
+  id: string;
+  name: string;
+  characterIds: string[];
+  firstNightOrder: FirstNightOrderPlan;
+  otherNightOrder: FirstNightOrderPlan;
+};
+
+
+/**
+ * Authoring input for the read-only custom first-night-plan query.
+ * Persisted and game-snapshot definitions always carry an explicit order.
+ */
+export type CustomScriptDefinitionDraft = Omit<CustomScriptDefinition, "firstNightOrder" | "otherNightOrder"> & {
+  firstNightOrder?: FirstNightOrderPlan;
+  otherNightOrder?: FirstNightOrderPlan;
+};
+
+
+export type SystemFirstNightActionId = "dusk" | "minionInfo" | "demonInfo" | "dawn";
+
+
+export type FirstNightActionRef =
+  | { kind: "system"; actionId: SystemFirstNightActionId }
+  | { kind: "character"; characterId: string; actionId: string };
+
+
+export type FirstNightOrderPlan = FirstNightActionRef[];
+
+
+export type CustomFirstNightPlanResult = {
+  source: "definition" | "default";
+  plan: FirstNightOrderPlan;
+};
+
+
+export type CustomScriptReference = {
+  type: "custom";
+  definition: CustomScriptDefinition;
+};
+export type ScriptReference = CustomScriptReference;
+type GameFileMetadata = { ui?: { seatLayout?: SeatLayoutState } };
+
+
+export type GameFileV5 = GameFileMetadata & {
+  schemaVersion: 5;
+  game: {
+    script: ScriptReference;
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+    events: GameEvent[];
+  };
+};
+export type GameFile = GameFileV5;
+
+
+export type SeatPosition = {
+  x: number;
+  y: number;
+};
+
+
+export type SeatPositions = Record<number, SeatPosition>;
+
+
+export type SeatLayoutPreset = "circle" | "oval" | "longTable" | "horseshoe";
+
+
+export type SeatLayoutState = {
+  preset: SeatLayoutPreset;
+  positions: SeatPositions;
+};
+
+
+export type SetupPlayerInput = {
+  id?: string;
+  seat: number;
+  name: string;
+  actualCharacter: string;
+  shownCharacter?: string;
+};
+
+
+export type PhaseStepInput =
+  | { madnessCheck: "clear" | "violation" }
+  | null
+  | { playerIds: string[]; characterId?: string; zeroOutsiders?: boolean; correctPlayerId?: string }
+  | { zeroOutsiders: true; playerIds?: string[] }
+  | { characterIds: string[] }
+  | { playerIds: string[]; characterIds: string[] }
+  | { value: number; reason?: NumericReason | null }
+  | { trueValue: number; displayedValue: number; reason?: NumericReason | null }
+  | { nominatorId: string; nomineeId: string }
+  | { voterIds: string[] }
+  | { playerIds: string[]; mayorDecision?: MayorDecisionInput; successorPlayerId?: string; chooserPlayerId?: string }
+  | { successorPlayerId: string }
+  | { execute: boolean }
+  | { died: boolean };
+
+
+export type InformationResult =
+  | { kind: "number"; value: number }
+  | { kind: "boolean"; value: boolean }
+  | { kind: "character"; characterId: string }
+  | { kind: "characterPair"; characterIds: [string, string] }
+  | { kind: "player"; playerId: string }
+  | { kind: "playerPair"; playerIds: [string, string] }
+  | {
+    kind: "setupInfo";
+    playerIds: string[];
+    characterId?: string;
+    zeroOutsiders: boolean;
+  }
+  | {
+    kind: "teamInfo";
+    demonPlayerIds: string[];
+    minionPlayerIds: string[];
+    bluffCharacterIds: string[];
+  }
+  | {
+    kind: "spyGrimoire";
+    players: Array<{
+      playerId: string;
+      seat: number;
+      name: string;
+      characterId: string;
+      alignment?: "good" | "evil";
+      alive?: boolean;
+      ghostVoteUsed?: boolean;
+      reminderTokens?: SpyReminderToken[];
+      automaticReminders?: AutomaticReminder[];
+    }>;
+  };
+
+
+export type MathematicianAudit = {
+  records: MathematicianAuditRecord[];
+};
+
+
+export type MathematicianAuditRecord = {
+  subjectPlayerId: string;
+  characterId: string;
+  abilityInstanceId: string;
+  evidence: MathematicianAuditEvidence[];
+};
+
+
+export type MathematicianAuditEvidence = {
+  resolutionEventId: string;
+  stepId: string;
+  phase: "setup" | "night" | "day" | "firstNight";
+  characterId: string;
+  abilityInstanceId: string;
+  outcome: MathematicianAuditOutcome;
+  causes: DeliveryReason[];
+};
+
+
+export type MathematicianAuditOutcome =
+  | {
+    kind: "incorrectInformation";
+    deliveredResult: InformationResult;
+  }
+  | { kind: "dayInformation"; truthfulCount: number }
+  | { kind: "invalidSavantPattern"; truthfulCount: number }
+  | {
+    kind: "effectFailure";
+    effect:
+    | "poisonerPoison"
+    | "butlerMaster"
+    | "mutantExecution"
+    | "philosopherAcquisition"
+    | "witchCurse"
+    | "cerenovusMadness"
+    | "evilTwinRelationship"
+    | "snakeCharmerSwap"
+    | "witchDeath"
+    | "sweetheartDrunkenness"
+    | "demonDeath"
+    | "pitHagCharacterChange"
+    | "noDashiiPoison"
+    | "vigormortisOngoingEffect"
+    | "vortoxFalseInformation"
+    | "vortoxExecution";
+  };
+
+
+export type RegistrationJudgment = {
+  scope?: { kind: "adjacentPair"; playerIds: string[] };
+  playerId: string;
+  registeredAs: "good" | "evil" | "townsfolk" | "outsider" | "minion" | "demon";
+  characterId?: string;
+};
+
+
+export type DeliveryReason =
+  | { type: "abilityChoice" }
+  | { type: "drunk" }
+  | { type: "poisoned"; poisonerPlayerId: string; poisonEventId: string }
+  | { type: "vortox"; demonPlayerId: string }
+  | { type: "registrationJudgment"; judgments: RegistrationJudgment[] };
+
+
+export type DeliveryContext =
+  | { type: "fixed" }
+  | { type: "discretionary"; reasons: DeliveryReason[] };
+
+
+export type ConfirmedInformation = {
+  actor?: { playerId: string; characterId: string };
+  targetPlayerIds: string[];
+  computedResult?: InformationResult;
+  deliveredResult: InformationResult;
+  deliveryContext: DeliveryContext;
+};
+
+
+export type NumberChoice = {
+  value: number;
+  isComputed: boolean;
+  registrationJudgments: RegistrationJudgment[];
+};
+
+
+export type SetupInfoRegistrationOption = {
+  playerId: string;
+  registeredAs: RegistrationJudgment["registeredAs"];
+  characterIds: string[];
+};
+
+
+export type InformationPrompt = {
+  computedResult?: InformationResult;
+  deliveryMode: "fixed" | "selectable";
+  activeReasons: DeliveryReason[];
+  registrationCandidatePlayerIds: string[];
+  numberChoices: NumberChoice[];
+  numberConstraint?: {
+    min: number;
+    max: number;
+    excludedValues: number[];
+  };
+  booleanChoices?: Array<{
+    value: boolean;
+    isComputed: boolean;
+    registrationJudgments: RegistrationJudgment[];
+  }>;
+  setupInfoRegistrationOptions: SetupInfoRegistrationOption[];
+  targetChecks?: TargetCheck[];
+  mathematicianAudit?: MathematicianAudit;
+};
+
+
+export type TargetCheck = {
+  fixedCharacterId?: string;
+  targetPlayerIds: string[];
+  computedResult: InformationResult;
+  choices: Array<{
+    result: InformationResult;
+    isComputed: boolean;
+    registrationJudgments: RegistrationJudgment[];
+  }>;
+};
+
+
+export type PhaseStepConfirmation = {
+  input?: PhaseStepInput;
+  deliveredResult?: InformationResult;
+  registrationJudgments?: RegistrationJudgment[];
+};
+
+
+export type PhaseStepCommandPayload = PhaseStepConfirmation & {
+  stepId: string;
+  expectedEventCount?: number;
+};
+export type Command = {type:"confirmDay";payload:{stepId:string;expectedEventCount:number;input:DayInput}} | { type: "createGame"; payload: { players: SetupPlayerInput[]; setupChoiceId?: never } } | { type: "confirmStep"; payload: PhaseStepCommandPayload };
+
+
+export type CoreResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: { code: string; messageKo: string } };
+export type StepExecution = {id:string;rootStepId:string;displayStepId:string;predecessorEventId?:string;relation:'independent'|'continuation'|'reference'};
+export type ActionExecution = {id:string;rootStepId:string;displayStepId:string;stepIds:string[];eventIds:string[];status:'pending'|'active'|'complete'|'interrupted'};
+export type LatestUndoUnit = {id:string;executionId:string;eventIds:string[];summaryStepId:string};
+export type ReplayState = {nightNumber: number;day?:DayView;actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 5; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
+
+
+export type PendingIdentityReveal = {
+  deliveryEventId?: string;
+  sourceEventId: string;
+  sequence: number;
+  payload: CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload;
+};
+export type RuleState = {
+  automaticReminders?: AutomaticReminder[];
+  preparations?: PreparationRecord[];
+  poisonerChoices?: TargetAssignment[];
+  masterChoices?: TargetAssignment[];
+  guidance?: { source: PhilosopherSimulationSource; characterId: string; spent: boolean }[]; unannouncedNightDeathPlayerIds: string[]; activeImpairments?: ActiveImpairment[]; abilityGrants?: AbilityGrant[]; abilityUses?: AbilityUseRecord[]; philosopherChoices?: PhilosopherChoiceFact[]; witchCurses?: WitchCurse[]; twinRelationships?: TwinRelationship[] };
+
+
+export type ActiveImpairment = {
+  kind: "poisoned" | "drunk";
+  playerId: string;
+  sourceEventId: string;
+  sourceCharacterId: string;
+  expires: "never" | "whileSourceAbilityActive";
+};
+
+
+export type AbilityUseRef = {
+  ownerPlayerId: string;
+  characterId: string;
+  abilityInstanceId: string;
+};
+
+
+export type AbilityOrigin =
+  | { kind: "identityBound" }
+  | {
+    kind: "acquired";
+    acquisitionEventId: string;
+    source: AbilityUseRef;
+  };
+
+
+export type AbilityGrant = {
+  ownerPlayerId: string;
+  characterId: string;
+  sourceEventId: string;
+  sourceAbilityInstanceId: string;
+  abilityInstanceId: string;
+};
+
+
+export type Proposal = {
+  event: GameEvent;
+  warnings: CoreWarning[];
+  followUpSteps: unknown[];
+  preview: unknown;
+  revealPayload?: RevealPayload;
+};
+
+
+export type TextRevealPayload = {
+  messageKo: string;
+  previewMessageKo?: string;
+  labelKo?: string;
+  valueKo?: string;
+};
+
+
+export type SpyReminderToken = "poisoned" | "protected";
+
+
+export type AutomaticReminder = {
+  playerId: string;
+  characterId: string;
+  tokenId: string;
+  label: string;
+  description: string;
+  count?: number;
+  sourceEventId?: string;
+  inactiveReason?: string;
+};
+
+
+export type SpyGrimoireRevealPayload = {
+  kind: "spyGrimoire";
+  players: Array<{
+    alignment?: "good" | "evil";
+    playerId: string;
+    seat: number;
+    name: string;
+    characterId: string;
+    alive: boolean;
+    ghostVoteUsed: boolean;
+    reminderTokens?: SpyReminderToken[];
+    automaticReminders?: Array<Omit<AutomaticReminder, "sourceEventId">>;
+  }>;
+};
+
+
+export type RevealPlayer = { playerId: string; seat: number; name: string };
+
+export type RevealIdentity = { seat: number; name: string };
+
+
+export type EvilInformationRevealPayload =
+  | {
+    kind: "minionInformation";
+    demonPlayers: RevealIdentity[];
+    minionPlayers: RevealIdentity[];
+  }
+  | {
+    kind: "demonInformation";
+    minionPlayers: RevealIdentity[];
+    bluffCharacterIds: string[];
+  };
+
+
+export type SetupInformationRevealPayload =
+  | {
+    kind: "setupInformation";
+    characterId: "washerwoman" | "librarian" | "investigator";
+    candidatePlayers: [RevealPlayer, RevealPlayer];
+    revealedCharacterId: string;
+    zeroOutsiders: false;
+  }
+  | {
+    kind: "setupInformation";
+    characterId: "librarian";
+    candidatePlayers: [];
+    zeroOutsiders: true;
+  };
+
+
+export type NumericInformationRevealPayload = {
+  kind: "numericInformation";
+  characterId: "chef" | "empath" | "clockmaker" | "mathematician" | "oracle" | "juggler";
+  value: number;
+};
+
+
+export type BooleanInformationRevealPayload = {
+  kind: "booleanInformation";
+  characterId: "flowergirl" | "townCrier";
+  value: boolean;
+};
+
+
+export type FortuneTellerInformationRevealPayload = {
+  kind: "fortuneTellerInformation";
+  targetPlayers: [RevealPlayer, RevealPlayer];
+  hasDemon: boolean;
+};
+
+
+export type CharacterInformationRevealPayload = {
+  kind: "characterInformation";
+  characterId: "undertaker" | "ravenkeeper";
+  targetPlayer: RevealPlayer;
+  revealedCharacterId: string;
+};
+
+
+export type DreamerInformationRevealPayload = {
+  kind: "dreamerInformation";
+  characterIds: [string, string];
+};
+
+
+export type SeamstressInformationRevealPayload = {
+  kind: "seamstressInformation";
+  targetPlayers: [RevealPlayer, RevealPlayer];
+  sameAlignment: boolean;
+};
+
+
+export type SageInformationRevealPayload = {
+  kind: "sageInformation";
+  candidatePlayers: [RevealPlayer, RevealPlayer];
+};
+
+
+export type CharacterChangeRevealPayload = {
+  kind: "characterChange";
+  playerId: string;
+  alignment: "good" | "evil";
+  characterId: string;
+};
+
+
+export type MadnessAssignmentRevealPayload = {
+  kind: "madnessAssignment";
+  playerId: string;
+  characterId: string;
+};
+
+
+export type EvilTwinPairRevealPayload = {
+  kind: "evilTwinPair";
+  players: Array<{
+    playerId: string;
+    seat: number;
+    name: string;
+    alignment: "good" | "evil";
+    characterId: string;
+  }>;
+};
+
+
+export type RoleInformationRevealPayload =
+  | SetupInformationRevealPayload
+  | NumericInformationRevealPayload
+  | BooleanInformationRevealPayload
+  | FortuneTellerInformationRevealPayload
+  | CharacterInformationRevealPayload
+  | DreamerInformationRevealPayload
+  | SeamstressInformationRevealPayload
+  | SageInformationRevealPayload
+  | CharacterChangeRevealPayload
+  | EvilInformationRevealPayload;
+
+
+export type MutantExecutionRevealPayload = { kind: "mutantExecution"; player: RevealPlayer; executed: boolean; died: boolean };
+export type RevealPayload = MutantExecutionRevealPayload | TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload | MadnessAssignmentRevealPayload;
+export type SetupDistributionRequest = { customDefinition: CustomScriptDefinition; playerCount: number; actualCharacters: string[] };
+
+
+export type SetupDistribution = {
+  Townsfolk: number;
+  Outsider: number;
+  Minion: number;
+  Demon: number;
+};
+export type SetupCountDelta = { Townsfolk:number; Outsider:number; Minion:number; Demon:number };
+export type SetupAdjustment = { base:SetupDistribution; modifiers:Array<{characterId:string;delta:SetupCountDelta}>; requestedDelta:SetupCountDelta; appliedDelta:SetupCountDelta; limited:boolean };
+export type SetupDistributionResult = SetupDistribution & { adjustment:SetupAdjustment };
+
+
+type EventCommon = {
+  id: string;
+  phase: Phase;
+  summary: string;
+  createdAt: string;
+};
+
+
+/**
+ * Typed result carried by a custom Character action.  Fixture-only state-changing outcomes are
+ * intentionally absent from the production wire type and parser; the fixture test path may
+ * extend this boundary when it builds its dedicated WASM artifact.
+ */
+export type ActionCause =
+  | { kind: "death"; deathEventId: string }
+  | { kind: "effect"; triggerEventId: string; effectEventId: string }
+  | { kind: "initialPreparation"; sourceEventId: string }
+  | { kind: "requiredPreparation"; triggerEventId: string; previousPreparationEventId: string | null }
+  | { kind: "delivery"; preparationEventId: string }
+  | { kind: "optional"; prefixEventId: string };
+export type GuidanceCause = { kind: "initialDrunk" | "acquiredDrunk" } | { kind: "choice"; parentEventId: string };
+export type CustomGameEnd = { winningAlignment: "good" | "evil"; reason: "goodTwinExecuted"|"saintExecuted"|"mayorNoExecution"|"vortoxNoExecution"|"demonAbsent"|"twoLivingPlayers"|"klutzChoice"|"storytellerDecision"; sourceEventId: string };
+export type InformationPreparation = { information: InformationResult; correctPlayerId: string | null };
+export type CustomActionResult =
+  | { kind: "monkProtection" | "sweetheartDrunk"; targetPlayerId: string; effective: boolean }
+  | { kind: "nightAttack"; targetPlayerId: string; killedPlayerId: string | null; died: boolean; identityChanges: {playerId:string;before:IdentityState;after:IdentityState}[] }
+  | { kind: "pitHagChange"; targetPlayerId:string;characterId:string;changed:boolean;createdDemon:boolean }
+  | { kind: "arbitraryDeaths";playerIds:string[] }
+  | { kind: "barberSwap";playerIds:string[];chooserPlayerId:string|null;effective:boolean }
+  | { kind: "vigormortisPoison";deathEventId:string;targetPlayerId:string }
+  | {kind:"mutantJudgment";result:"clear"|"violation"}
+  | { kind: "redHerringAssigned" | "twinAssigned"; targetPlayerId: string }
+  | { kind: "informationPrepared"; preparation: InformationPreparation }
+  | { kind: "preparedInformationDelivered"; preparationEventId: string; information: ConfirmedInformation; spent: boolean }
+  | { kind: "twinInformed"; relationshipEventId: string; targetPlayerId: string; effective: boolean }
+  | { kind: "shownCharacterAssigned"; characterId: string }
+  | { kind: "poisoner" | "butler"; targetPlayerId: string; day: number; effective: boolean }
+  | { kind: "mutantExecution"; execute: boolean; executed: boolean; died: boolean }
+  | { kind: "information"; value: InformationResult }
+  | { kind: "noEffect" }
+  | { kind: "philosopherDeferred" | "seamstressDeferred" }
+  | { kind: "philosopherChoice"; characterId: string; outcome: "acquired" | "selfDrunk" | "failed" }
+  | { kind: "snakeCharmer"; targetPlayerId: string; outcome: "swapped" | "impaired" | "notDemon" }
+  | { kind: "evilTwin"; targetPlayerId: string; effective: boolean }
+  | { kind: "witch"; targetPlayerId: string; day: number; effective: boolean }
+  | { kind: "cerenovus"; targetPlayerId: string; characterId: string; day: number; effective: boolean }
+  | { kind: "informationDelivered"; information: ConfirmedInformation; spent: boolean }
+  | { kind: "simulationChoice"; characterId: string | null; spent: boolean }
+  | { kind: "simulation"; information: ConfirmedInformation | null; spent: boolean };
+
+
+export type PhilosopherSimulationSource = { guidance?: GuidanceCause; selectionEventId: string; sourceAbilityUse: AbilityUseRef };
+export type FollowUpCause = { triggerEventId: string; relationshipEventId: string };
+export type CustomActionSource =
+  | { abilityUse: AbilityUseRef; simulationSource?: never }
+  | { abilityUse?: never; simulationSource: PhilosopherSimulationSource };
+export type CustomActionConfirmedPayload = CustomActionSource & {
+  stepId: string;
+  actionRef: Extract<FirstNightActionRef, { kind: "character" }>;
+  followUpCause?: FollowUpCause;
+  actionCause?: ActionCause;
+  deliveredResult?: InformationResult;
+  registrationJudgments?: RegistrationJudgment[];
+  input: PhaseStepInput;
+  result: CustomActionResult;
+};
+export type GameEvent = EventCommon & ({type:"dayConfirmed";payload:DayConfirmed} | { type: "setupConfirmed"; payload: { players: SetupPlayerInput[]; setupChoiceId?: never } } | { type: "phaseStepConfirmed"; payload: { stepId: string; actionRef?: FirstNightActionRef; abilityUse?: AbilityUseRef; input: PhaseStepInput; information?: ConfirmedInformation } } | { type: "customActionConfirmed"; payload: CustomActionConfirmedPayload });
+
+
+export type Phase = "setup" | "firstNight" | "day" | "night";
+
+
+export type StepType =
+  | "evilInfo"
+  | "character"
+  | "phaseTransition"
+  | "announcement"
+  | "whisper"
+  | "discussion"
+  | "nomination"
+  | "execution"
+  | "executionDeath"
+  | "witchDeath"
+  | "slayerDeath"
+  | "demonSuccession"
+  | "redHerringAssignment"
+  | "pitHagArbitraryDeaths";
+
+
+export type NumericReason = "drunk" | "poisoned" | "registration";
+
+
+export type SystemTokenId =
+  | "drunk"
+  | "poisoned"
+  | "protected"
+  | "noAbility"
+  | "abilitySpent"
+  | "needsFollowUp";
+
+
+export type ScriptTokenRef = {
+  characterId: string;
+  tokenId: string;
+};
+
+
+export type Player = {
+  id: string;
+  seat: number;
+  name: string;
+  actualCharacter: string;
+  shownCharacter: string;
+  alignment: "good" | "evil";
+  alive: boolean;
+  ghostVoteUsed: boolean;
+  deathAnnounced: boolean;
+  systemTokenIds: SystemTokenId[];
+  scriptTokens: ScriptTokenRef[];
+  notes: string;
+  abilityInstance?: AbilityInstance;
+  identityHistory?: IdentityHistoryEntry[];
+};
+
+
+export type AbilityInstance = {
+  id: string;
+  characterId: string;
+  sourceEventId: string;
+};
+
+
+export type IdentityState = {
+  actualCharacter: string;
+  shownCharacter: string;
+  alignment: "good" | "evil";
+};
+
+
+export type IdentityHistoryEntry = {
+  sourceEventId: string;
+  phase: Phase;
+  before: IdentityState;
+  after: IdentityState;
+};
+
+
+export type CoreWarning = {
+  code: string;
+  severity: "warning" | "info";
+  messageKo: string;
+  winningTeam?: "good" | "evil";
+};
+
+
+export type PhaseStep = {
+  execution: StepExecution;
+  madness?: {check:"clear"|"violation"|null;sourceEffective:boolean;canCheck:boolean;canExecute:boolean};
+  informationFlow?: {id:string;preparationEventId?:string};
+  id: string;
+  phase: Phase;
+  stepType: StepType;
+  character?: string;
+  playerId?: string;
+  abilityUse?: AbilityUseRef;
+  simulationSource?: PhilosopherSimulationSource;
+  followUpCause?: FollowUpCause;
+  actionCause?: ActionCause;
+  abilityOrigin?: AbilityOrigin;
+  requiredInput: RequiredInput;
+  canSkip: boolean;
+  support?: "automated" | "manual";
+  informationPrompt?: InformationPrompt;
+  preActionReveal?: PreActionReveal;
+  actionRef?: FirstNightActionRef;
+};
+
+
+export type PreActionReveal = CharacterChangeRevealPayload & {
+  sourceEventId: string;
+};
+
+
+export type PhaseOverviewItem = PhaseStep & {
+  status:
+  | "waiting"
+  | "current"
+  | "complete"
+  | "skipped"
+  | "needsFollowUp"
+  | "interrupted"
+  | "manualComplete"
+  | "notApplicable";
+};
+
+
+export type RequiredInputKind =
+  | "none"
+  | "playerIds"
+  | "characterIds"
+  | "characterTransformation"
+  | "setupInfo"
+  | "number"
+  | "nominationVote"
+  | "nomination"
+  | "executionDecision"
+  | "executionDeathDecision"
+  | "slayerDeathDecision"
+  | "demonSuccession"
+  | "madnessAssignment"
+  | "day"
+  | "night";
+
+
+export type InputTarget =
+  | "player"
+  | "players"
+  | "characters"
+  | "setupInfo"
+  | "number"
+  | "nomination"
+  | "execution"
+  | "phase";
+
+
+export type RequiredInput = {
+  attackOptions?: {targetPlayerId: string; mayorDecision?: MayorDecisionPrompt; successorPlayerIds: string[]}[];
+  allowedSelectionCounts?: number[];
+  kind: RequiredInputKind;
+  target?: InputTarget;
+  minSelections?: number;
+  maxSelections?: number;
+  setupInfo?: "washerwoman" | "librarian" | "investigator";
+  characterKind?: "Townsfolk" | "Outsider" | "Minion" | "Demon";
+  allowedCharacterIds?: string[];
+  allowedChooserPlayerIds?: string[];
+  allowedSuccessorPlayerIds?: string[];
+  allowedPlayerIds?: string[];
+  playerRegistrationOptions?: RegistrationJudgment[];
+  setupInformationChoices?: Array<{preparation: InformationPreparation; registrationJudgments: RegistrationJudgment[]}>;
+  zeroAllowed?: boolean;
+  supportsRandomSuggestion?: boolean;
+  executionSurvivalAllowed?: boolean;
+  playerId?: string;
+  survivalAllowed?: boolean;
+  mayorDecision?: MayorDecisionPrompt;
+  demonSuccession?: DemonSuccessionPrompt;
+  dependentPlayerSelections?: Array<{
+    triggerPlayerId: string;
+    selectionIndex: number;
+    allowedPlayerIds: string[];
+  }>;
+  optional: boolean;
+};
+
+
+export type MayorDecisionInput =
+  | { kind: "mayorDies" }
+  | { kind: "bounce"; targetPlayerId: string };
+
+
+export type MayorDecisionPrompt = {
+  mayorPlayerId: string;
+  bounceTargetPlayerIds: string[];
+};
+
+
+export type DemonSuccessionPrompt =
+  | { kind: "fixed"; triggerEventId: string; successorPlayerId: string }
+  | { kind: "selectable"; triggerEventId: string; allowedPlayerIds: string[] };
+
+export type AbilityUseRecord = { sourceEventId: string; abilityUse: AbilityUseRef };
+export type PhilosopherChoiceFact = AbilityUseRecord & { characterId: string; outcome: "acquired" | "selfDrunk" | "failed" };
+export type TwinRelationship = AbilityUseRecord & { targetPlayerId: string; effective: boolean };
+export type WitchCurse = TwinRelationship & { day: number; initiallyEffective: boolean };
+export type MadnessAssignment = WitchCurse & { characterId: string };
+
+export type TargetAssignment = { sourceEventId: string; abilityUse: AbilityUseRef; targetPlayerId: string; day: number; initiallyEffective: boolean; effective: boolean };
+export type PreparationRecord = { sourceEventId: string; actionRef: FirstNightActionRef; abilityUse?: AbilityUseRef; simulationSource?: PhilosopherSimulationSource; result: CustomActionResult; registrationJudgments: RegistrationJudgment[] };

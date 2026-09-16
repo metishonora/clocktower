@@ -1,0 +1,18 @@
+.customScenarioSurface .scenarioBothNights { grid-template-rows: auto auto minmax(0,1fr) auto; }
+.scenarioNightPanels { min-height: 0; overflow: hidden; }
+.scenarioNightPanels > div { min-height: 0; height: 100%; }
+.scenarioBothNights .issue202Gate3OrderPanel { height: 100%; }
+.scenarioNightTabs { display: none; }
+.scenarioNightPanels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.scenarioNightPanels > div { min-width: 0; }
+.scenarioBothNights .issue202Gate3OrderPanel { width: 100%; max-width: 100%; }
+@media (max-width: 700px) {
+ .customScenarioSurface .scenarioBothNights { grid-template-rows: auto auto auto minmax(0,1fr) auto; }
+ .scenarioNightTabs { display: flex; gap: 8px; margin: 12px 0; }
+ .scenarioNightTabs button { flex: 1; min-height: 44px; }
+ .scenarioNightTabs [aria-selected="true"] { background: #702333; color: #fff2d6; }
+ .scenarioNightPanels { display: block; }
+ .scenarioNightPanels > div:not(.is-active) { display: none; }
+}
+.scenarioNightTabs button { color: #ddc49c; border: 1px solid #876642; background: #241b16; font-weight: 700; }
+.scenarioNightTabs button:focus-visible { outline: 2px solid #e7be7a; outline-offset: 2px; }

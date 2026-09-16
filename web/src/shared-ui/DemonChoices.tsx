@@ -1,0 +1,2 @@
+import type {ReactNode} from 'react';
+export function DemonChoices({characters,selectedIds,busy,onSelect}:{characters:{id:string;name:string;icon:ReactNode}[];selectedIds:string[];busy:boolean;onSelect:(id:string)=>void}){return <section className="snvControlCard"><span>악마</span><div className="bmrDemonChoices">{characters.map(c=><button key={c.id} type="button" aria-label={`${c.name} 악마 선택`} aria-pressed={selectedIds.includes(c.id)} disabled={busy} onClick={()=>onSelect(c.id)}>{c.icon}<strong>{c.name}</strong></button>)}</div></section>;}
