@@ -1,6 +1,6 @@
 .scenarioReferenceCatalogHeader { display:flex; justify-content:flex-end; }
 .scenarioReferencePdfButton { display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:42px; padding:10px 15px; color:var(--bmr-ink,#fff5f1); background:var(--bmr-card,rgba(255,255,255,.05)); border:1px solid var(--bmr-line,#976977); border-radius:10px; font-weight:750; font-size:13px; }
-.scenarioReferencePdfButton > span { color:var(--bmr-gold,#e9c36e); }
+.scenarioReferenceOpenIcon { width:1em; height:1em; flex-shrink:0; color:var(--bmr-gold,#e9c36e); }
 .scenarioReferenceCharacterLink { display:inline-flex; align-items:center; text-align:left; gap:8px; padding:2px 0; border:0; background:transparent; color:inherit; font-weight:750; }
 .scenarioReferenceCharacterLink img { width:34px; height:34px; object-fit:contain; flex-shrink:0; }
 .customScenarioSurface .scenarioReferenceLoadError { color:#562e27; background:#fff3e6; border-color:#bb9b86; font-size:12px; flex-wrap:wrap; padding:12px; }

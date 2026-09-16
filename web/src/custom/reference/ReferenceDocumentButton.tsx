@@ -14,7 +14,7 @@ export function ReferenceDocumentButton({ name, ids, jinxes, disabled = false }:
   return <>
     <button type="button" className="scenarioReferencePdfButton" disabled={disabled || !jinxes} onClick={() => {
       if (jinxes) setDocument({ name, ids: [...ids], jinxes });
-    }}><span aria-hidden="true">▤</span> 직업 일람</button>
+    }}>직업 일람 <svg className="scenarioReferenceOpenIcon" aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
     {document && <PreviewBoundary onClose={() => setDocument(undefined)}><Suspense fallback={<div role="status">직업 일람 준비 중…</div>}><DocumentPreview {...document} onClose={() => setDocument(undefined)}/></Suspense></PreviewBoundary>}
   </>;
 }
