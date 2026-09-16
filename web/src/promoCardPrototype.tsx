@@ -1,33 +1,39 @@
 import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
 import envelopeTextureUrl from "./assets/promo/envelope-texture-v1.webp";
 import letterTextureUrl from "./assets/promo/letter-texture-v1.webp";
-import letterVellumTextureUrl from "./assets/promo/letter-vellum-calfskin-v1.jpg";
-import letterChanceryTextureUrl from "./assets/promo/letter-parchment-sheepskin-v1.jpg";
-import letterRagTextureUrl from "./assets/promo/letter-rag-paper-v1.jpg";
 import waxSealUrl from "./assets/promo/wax-seal.png";
-import waxSealSnvUrl from "./assets/promo/wax-seal-snv.png";
-import waxSealTbUrl from "./assets/promo/wax-seal-tb.png";
+import {
+  INVITATION_ORIGINALS,
+  type InvitationOriginalVariant,
+} from "./promoCardOriginals";
 import type { PromoCardDesign } from "./promoCardPrototypeRoute";
 import "./promoCardPrototype.css";
 
 const PROMO_CARD_SIZE = 640;
-const TB_HEADING = "밤이 깃든 마을로 여러분을 초대합니다.";
-const TB_HEADING_LINES = ["밤이 깃든 마을로", "여러분을 초대합니다."] as const;
-const SNV_HEADING = "뒤엉킨 진실 속으로, 여러분을 다시 한 번 초대합니다.";
-const SNV_HEADING_LINES = ["뒤엉킨 진실 속으로,", "여러분을 다시 한 번 초대합니다."] as const;
 
-const TB_LETTER_TEXTURES: Record<PromoCardDesign, string> = {
-  vellum: letterVellumTextureUrl,
-  chancery: letterChanceryTextureUrl,
-  "rag-paper": letterRagTextureUrl,
-};
-
-export type PromoCardVariant = "sample" | "trouble-brewing" | "sects-and-violets";
+export type PromoCardVariant = "sample" | InvitationOriginalVariant;
 
 type PromoCardPrototypeProps = {
   variant?: PromoCardVariant;
   design?: PromoCardDesign;
   idleGlowHint?: boolean;
+  hideDateAndPlace?: boolean;
+  hideAcceptanceLink?: boolean;
+  dateOverride?: string;
+  headingOverride?: string;
+  headingLinesOverride?: readonly string[];
+  timeOverride?: string;
+  placeOverride?: string;
+  runtimeOverride?: string;
+  compactHeading?: boolean;
+  hideGameName?: boolean;
+  hideGenre?: boolean;
+  hideCapacity?: boolean;
+  spaciousCopy?: boolean;
+  showVioletStamp?: boolean;
+  showEntangledStaffStamp?: boolean;
+  openHint?: string;
+  idleGlowDelayMs?: number;
 };
 
 function renderInkGlyphs(text: string, seedOffset = 0) {
@@ -85,30 +91,44 @@ export function PromoCardPrototype({
   variant = "sample",
   design = "vellum",
   idleGlowHint = false,
+  hideDateAndPlace = false,
+  hideAcceptanceLink = false,
+  dateOverride,
+  headingOverride,
+  headingLinesOverride,
+  timeOverride,
+  placeOverride,
+  runtimeOverride,
+  compactHeading = false,
+  hideGameName = false,
+  hideGenre = false,
+  hideCapacity = false,
+  spaciousCopy = false,
+  showVioletStamp = false,
+  showEntangledStaffStamp = false,
+  openHint,
+  idleGlowDelayMs,
 }: PromoCardPrototypeProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [opened, setOpened] = useState(false);
   const isTroubleBrewing = variant === "trouble-brewing";
   const isSectsAndViolets = variant === "sects-and-violets";
-  const isThemedInvitation = isTroubleBrewing || isSectsAndViolets;
-  const themedDesign = isThemedInvitation ? design : undefined;
-  const letterTexture = isThemedInvitation
-    ? TB_LETTER_TEXTURES[design]
+  const invitation = variant === "sample" ? undefined : INVITATION_ORIGINALS[variant];
+  const isThemedInvitation = Boolean(invitation);
+  const themedDesign = invitation ? design : undefined;
+  const letterTexture = invitation
+    ? invitation.letterTextures[design]
     : letterTextureUrl;
-  const sealUrl = isSectsAndViolets
-    ? waxSealSnvUrl
-    : isTroubleBrewing
-      ? waxSealTbUrl
-      : waxSealUrl;
-  const invitationDate = isSectsAndViolets
-    ? "날짜: 26년 8월 13일(목)"
-    : "날짜: 26년 8월 16일(주일)";
-  const invitationPlace = isSectsAndViolets
-    ? "장소: 삼성사옥 1층 회의실"
-    : "장소: 노량진교회";
-  const invitationHeading = isSectsAndViolets ? SNV_HEADING : TB_HEADING;
-  const invitationHeadingLines = isSectsAndViolets ? SNV_HEADING_LINES : TB_HEADING_LINES;
+  const sealUrl = invitation?.sealUrl ?? waxSealUrl;
+  const invitationDate = dateOverride
+    ?? (hideDateAndPlace ? "날짜: -" : invitation?.date ?? "");
+  const invitationHeading = headingOverride ?? invitation?.heading ?? "";
+  const invitationHeadingLines = headingLinesOverride ?? invitation?.headingLines ?? ["", ""];
+  const invitationTime = timeOverride ?? invitation?.time ?? "";
+  const invitationPlace = placeOverride
+    ?? (hideDateAndPlace ? "장소: -" : invitation?.place ?? "");
+  const invitationRuntime = runtimeOverride ?? invitation?.runtime ?? "";
 
   useLayoutEffect(() => {
     const frame = frameRef.current;
@@ -177,6 +197,10 @@ export function PromoCardPrototype({
             isThemedInvitation ? "promoCard--tb" : "",
             isSectsAndViolets ? "promoCard--snv" : "",
             themedDesign ? `promoCard--tb-${themedDesign}` : "",
+            spaciousCopy ? "hasSpaciousCopy" : "",
+            compactHeading ? "hasCompactHeading" : "",
+            showVioletStamp ? "hasVioletStamp" : "",
+            showEntangledStaffStamp ? "hasEntangledStaffStamp" : "",
             idleGlowHint ? "hasIdleGlowHint" : "",
             opened ? "isOpen" : "",
           ].filter(Boolean).join(" ")}
@@ -186,6 +210,9 @@ export function PromoCardPrototype({
           style={{
             "--envelope-texture": `url(${envelopeTextureUrl})`,
             "--letter-texture": `url(${letterTexture})`,
+            "--promo-idle-glow-delay": idleGlowDelayMs === undefined
+              ? undefined
+              : `${idleGlowDelayMs}ms`,
             transform: `scale(${scale})`,
           } as CSSProperties}
         >
@@ -196,16 +223,50 @@ export function PromoCardPrototype({
             data-letter-material={themedDesign}
           >
             <span className="promoLetterRule" aria-hidden="true" />
+            {showVioletStamp ? (
+              <svg
+                className="promoVioletStamp"
+                viewBox="0 0 100 100"
+                aria-hidden="true"
+              >
+                <circle cx="50" cy="50" r="42" />
+                <circle cx="50" cy="50" r="37" />
+                <path className="promoVioletRuneTicks" d="M50 3V10M73 9L69 16M91 27L84 31M97 50H89M91 73L84 69M73 91L69 84M50 97V89M27 91L31 84M9 73L16 69M3 50H11M9 27L16 31M27 9L31 16" />
+                <path className="promoVioletSigilFrame" d="M17 27L83 27L50 86Z" />
+                <g className="promoVioletBloom">
+                  <path d="M50 49C41 40 41 27 50 18C59 27 59 40 50 49Z" />
+                  <path d="M50 49C41 40 41 27 50 18C59 27 59 40 50 49Z" transform="rotate(72 50 50)" />
+                  <path d="M50 49C41 40 41 27 50 18C59 27 59 40 50 49Z" transform="rotate(144 50 50)" />
+                  <path d="M50 49C41 40 41 27 50 18C59 27 59 40 50 49Z" transform="rotate(216 50 50)" />
+                  <path d="M50 49C41 40 41 27 50 18C59 27 59 40 50 49Z" transform="rotate(288 50 50)" />
+                </g>
+                <path className="promoVioletSigilCore" d="M50 39L60 50L50 61L40 50ZM50 43V57M44 50H56" />
+                <path className="promoVioletThorns" d="M50 61V80M50 68L43 64M50 73L57 68" />
+              </svg>
+            ) : null}
+            {showEntangledStaffStamp ? (
+              <svg className="promoEntangledStaffStamp" viewBox="0 0 100 100" aria-hidden="true">
+                <circle className="promoEntangledStampRim" cx="50" cy="50" r="43" />
+                <circle className="promoEntangledStampInnerRim" cx="50" cy="50" r="38" />
+                <path className="promoEntangledStaffWings" d="M47 35C36 28 29 24 19 22C21 29 25 33 31 37L20 34C24 42 34 45 46 44M53 35C64 28 71 24 81 22C79 29 75 33 69 37L80 34C76 42 66 45 54 44" />
+                <path className="promoEntangledStaffSkull" d="M39 29C39 20 43 16 50 16C57 16 61 20 61 29C61 35 57 39 54 41L53 46H47L46 41C43 39 39 35 39 29Z" />
+                <path className="promoEntangledStaffFace" d="M43 31L47 33M57 31L53 33M48 38H52" />
+                <path className="promoEntangledStaffShaft" d="M50 46V83M50 70H59V76H50" />
+                <path className="promoEntangledStaffVine" d="M41 78C62 75 62 68 44 64C32 61 35 54 52 53C68 52 70 44 56 41M59 80C43 76 42 70 58 67C71 64 68 57 49 56C34 55 31 48 43 44" />
+                <path className="promoEntangledStaffThorns" d="M43 64L36 66M58 67L65 69M52 53L50 47M49 56L46 50M56 41L62 38M43 44L37 41" />
+                <path className="promoEntangledStaffLeaves" d="M36 66C30 65 28 61 29 57C34 58 37 61 36 66ZM65 69C71 68 74 64 74 60C68 61 65 64 65 69ZM62 38C68 38 72 34 73 29C67 30 63 33 62 38ZM37 41C31 40 28 36 27 31C33 33 36 36 37 41Z" />
+              </svg>
+            ) : null}
             <header className="promoLetterHeader">
-              {isThemedInvitation ? (
+              {invitation ? (
                 <p aria-label="From 이야기꾼">{renderInkText("From 이야기꾼", 1)}</p>
               ) : (
                 <p>AN INVITATION AFTER DARK</p>
               )}
             </header>
 
-            <div className={isThemedInvitation ? "promoLetterCopy promoLetterCopy--tb" : "promoLetterCopy"}>
-              {isThemedInvitation ? (
+            <div className={invitation ? "promoLetterCopy promoLetterCopy--tb" : "promoLetterCopy"}>
+              {invitation ? (
                 <>
                   <h1 aria-label={invitationHeading}>
                     <span className="promoInkAccessible">{invitationHeading}</span>
@@ -218,13 +279,19 @@ export function PromoCardPrototype({
                     </span>
                   </h1>
                   <div className="promoEventDetails" role="group" aria-label="초대 일정">
-                    <p aria-label="게임 이름: 시계탑에 흐른 피">{renderInkText("게임 이름: 시계탑에 흐른 피", 4)}</p>
-                    <p className="promoGenre" aria-label="장르: 마피아">{renderInkText("장르: 마피아", 5)}</p>
-                    <p aria-label="정원: 10-15인">{renderInkText("정원: 10-15인", 6)}</p>
+                    {!hideGameName ? (
+                      <p aria-label={invitation.gameName}>{renderInkText(invitation.gameName, 4)}</p>
+                    ) : null}
+                    {!hideGenre ? (
+                      <p className="promoGenre" aria-label={invitation.genre}>{renderInkText(invitation.genre, 5)}</p>
+                    ) : null}
+                    {!hideCapacity ? (
+                      <p aria-label={invitation.capacity}>{renderInkText(invitation.capacity, 6)}</p>
+                    ) : null}
                     <p aria-label={invitationDate}>{renderInkText(invitationDate, 7)}</p>
-                    <p aria-label="시간: 18:00~">{renderInkText("시간: 18:00~", 8)}</p>
+                    <p aria-label={invitationTime}>{renderInkText(invitationTime, 8)}</p>
                     <p aria-label={invitationPlace}>{renderInkText(invitationPlace, 9)}</p>
-                    <p aria-label="예상 런타임: 3시간">{renderInkText("예상 런타임: 3시간", 10)}</p>
+                    <p aria-label={invitationRuntime}>{renderInkText(invitationRuntime, 10)}</p>
                   </div>
                 </>
               ) : (
@@ -244,7 +311,7 @@ export function PromoCardPrototype({
               )}
             </div>
 
-            {isTroubleBrewing && opened ? (
+            {isTroubleBrewing && opened && !hideAcceptanceLink ? (
               <a
                 className="promoAcceptanceLink"
                 href="https://invite.kakao.com/tc/bA5MLDMhPD"
@@ -256,6 +323,8 @@ export function PromoCardPrototype({
 
             <span className="promoLetterFooter" aria-hidden="true" />
           </section>
+
+          {!opened && openHint ? <p className="promoOpenHint">{openHint}</p> : null}
 
           <div
             className={[

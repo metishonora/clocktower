@@ -51,6 +51,37 @@ test("renders the Trouble Brewing seal and modifier without changing the sample 
   expect(tbSeal?.getAttribute("src")).toContain("wax-seal-tb.png");
 });
 
+test("renders a reusable Trouble Brewing sample with only date and place hidden", () => {
+  render(
+    <PromoCardPrototype
+      variant="trouble-brewing"
+      hideDateAndPlace
+    />,
+  );
+
+  expect(screen.getByLabelText("날짜: -")).toBeTruthy();
+  expect(screen.getByLabelText("장소: -")).toBeTruthy();
+  expect(screen.getByLabelText("시간: 18:00~")).toBeTruthy();
+  expect(screen.getByLabelText("게임 이름: 시계탑에 흐른 피")).toBeTruthy();
+  expect(screen.queryByLabelText("날짜: 26년 8월 16일(주일)")).toBeNull();
+  expect(screen.queryByLabelText("장소: 노량진교회")).toBeNull();
+});
+
+test("can omit the acceptance link from the reusable Trouble Brewing sample", async () => {
+  const user = userEvent.setup();
+  render(
+    <PromoCardPrototype
+      variant="trouble-brewing"
+      hideDateAndPlace
+      hideAcceptanceLink
+    />,
+  );
+
+  await user.click(screen.getByRole("button", { name: "봉투 열기" }));
+
+  expect(screen.queryByRole("link", { name: "초대 수락하기" })).toBeNull();
+});
+
 test("renders the Sects & Violets prototype with its own seal and date", async () => {
   globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
   const user = userEvent.setup();
@@ -68,6 +99,40 @@ test("renders the Sects & Violets prototype with its own seal and date", async (
   await user.click(screen.getByRole("button", { name: "봉투 열기" }));
   expect(screen.getByText("날짜: 26년 8월 13일(목)")).toBeTruthy();
   expect(screen.queryByRole("link", { name: "초대 수락하기" })).toBeNull();
+});
+
+test("renders the 260921 invitation with only its four event details", async () => {
+  globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
+  const user = userEvent.setup();
+  const { container } = render(
+    <PromoCardPrototype
+      variant="sects-and-violets"
+      headingOverride="뒤엉키는 진실 속에서 당신의 믿음을 시험합니다."
+      headingLinesOverride={["뒤엉키는 진실 속에서", "당신의 믿음을 시험합니다."]}
+      dateOverride="날짜: 26년 9월 21일 (월)"
+      timeOverride="시간: 18:00~"
+      placeOverride="장소: 삼성사옥 1층 회의실"
+      runtimeOverride="예상 런타임: 2~3시간"
+      hideGameName
+      hideGenre
+      hideCapacity
+      spaciousCopy
+      compactHeading
+      showEntangledStaffStamp
+    />,
+  );
+
+  await user.click(screen.getByRole("button", { name: "봉투 열기" }));
+  expect(screen.getByRole("heading", { name: "뒤엉키는 진실 속에서 당신의 믿음을 시험합니다." })).toBeTruthy();
+  expect(screen.getByLabelText("날짜: 26년 9월 21일 (월)")).toBeTruthy();
+  expect(screen.getByLabelText("시간: 18:00~")).toBeTruthy();
+  expect(screen.getByLabelText("장소: 삼성사옥 1층 회의실")).toBeTruthy();
+  expect(screen.getByLabelText("예상 런타임: 2~3시간")).toBeTruthy();
+  expect(screen.queryByLabelText("정원: 10-15인")).toBeNull();
+  expect(screen.queryByLabelText("게임 이름: 시계탑에 흐른 피")).toBeNull();
+  expect(screen.queryByLabelText("장르: 마피아")).toBeNull();
+  expect(container.querySelector(".promoEntangledStaffStamp")).not.toBeNull();
+  expect(container.querySelector(".promoVioletStamp")).toBeNull();
 });
 
 test("renders the event invitation copy only for the Trouble Brewing variant", async () => {

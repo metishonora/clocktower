@@ -1,8 +1,11 @@
 import { describe, expect, test } from "vitest";
 import {
   isPromoCardSampleRequest,
+  isPublishedPromoCardSampleRequest,
   isPromoCardProductionRequest,
   resolvePromoCardDesign,
+  resolveActivePromoCardProductionRoute,
+  resolveExpiredInvitationPrototypeRoute,
   resolvePromoCardProductionRoute,
   resolvePromoCardRoute,
 } from "../src/promoCardPrototypeRoute";
@@ -27,6 +30,19 @@ describe("promo card sample route", () => {
 
   test("preserves a custom deployment base before the sample suffix", () => {
     expect(isPromoCardSampleRequest({ pathname: "/custom-base/invitation/sample/", search: "" })).toBe(true);
+  });
+
+  test.each([
+    "/invitation/sample",
+    "/invitation/sample/",
+    "/clocktower/invitation/sample",
+    "/custom-base/invitation/sample/",
+  ])("publishes the sample path independently of the development query alias: %s", (pathname) => {
+    expect(isPublishedPromoCardSampleRequest({ pathname, search: "" })).toBe(true);
+  });
+
+  test("does not publish the query-only sample alias", () => {
+    expect(isPublishedPromoCardSampleRequest({ pathname: "/clocktower/", search: "?prototype=promo-card" })).toBe(false);
   });
 
   test("keeps the existing query link as a compatibility alias", () => {
@@ -61,6 +77,25 @@ describe("promo card sample route", () => {
   });
 
   test.each([
+    ["/invitation/expired/trouble-brewing", "trouble-brewing"],
+    ["/invitation/expired/trouble-brewing/", "trouble-brewing"],
+    ["/clocktower/invitation/expired/trouble-brewing", "trouble-brewing"],
+    ["/invitation/expired/sects-and-violets", "sects-and-violets"],
+    ["/clocktower/invitation/expired/sects-and-violets/", "sects-and-violets"],
+  ] as const)("matches the expired invitation prototype path %s", (pathname, variant) => {
+    expect(resolveExpiredInvitationPrototypeRoute({ pathname, search: "" })).toBe(variant);
+  });
+
+  test.each([
+    "/invitation/260816",
+    "/clocktower/invitation/260813",
+    "/invitation/expired/trouble-brewing.html",
+    "/invitation/expired/sects-and-violets/extra",
+  ])("keeps production and non-exact paths out of expired prototypes: %s", (pathname) => {
+    expect(resolveExpiredInvitationPrototypeRoute({ pathname, search: "" })).toBeUndefined();
+  });
+
+  test.each([
     "/invitation/260813",
     "/invitation/260813/",
     "/clocktower/invitation/260813",
@@ -78,6 +113,36 @@ describe("promo card sample route", () => {
   ])("matches the production invitation path %s", (pathname) => {
     expect(resolvePromoCardProductionRoute({ pathname, search: "" })).toBe("trouble-brewing");
     expect(isPromoCardProductionRequest({ pathname, search: "" })).toBe(true);
+  });
+
+  test.each([
+    "/invitation/260921",
+    "/invitation/260921/",
+    "/clocktower/invitation/260921",
+    "/clocktower/invitation/260921/",
+    "/invitation/260923",
+    "/invitation/260923/",
+    "/clocktower/invitation/260923",
+    "/clocktower/invitation/260923/",
+    "/invitation/260923-2",
+    "/invitation/260923-2/",
+    "/clocktower/invitation/260923-2",
+    "/clocktower/invitation/260923-2/",
+  ])("matches the active Sects & Violets invitation path %s", (pathname) => {
+    expect(resolveActivePromoCardProductionRoute({ pathname, search: "" })).toBe("sects-and-violets");
+    expect(resolvePromoCardProductionRoute({ pathname, search: "" })).toBeUndefined();
+  });
+
+  test.each([
+    "/invitation/260921.html",
+    "/invitation/260923.html",
+    "/invitation/260923-2.html",
+    "/clocktower/invitation/260923-other",
+    "/clocktower/invitation/260923/extra",
+    "/clocktower/invitation/260921/extra",
+    "/clocktower/invitation/260923-2/extra",
+  ])("does not match another active invitation path %s", (pathname) => {
+    expect(resolveActivePromoCardProductionRoute({ pathname, search: "" })).toBeUndefined();
   });
 
   test.each([
