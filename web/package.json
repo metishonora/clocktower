@@ -49,7 +49,8 @@
     "test:browser:run": "tsc -p tsconfig.browser.json --noEmit && playwright test",
     "test:smoke:run": "tsc -p tsconfig.browser.json --noEmit && playwright test production-smoke.spec.ts --workers=2",
     "test:custom": "tsc -p tsconfig.custom-test.json && vitest run --config vitest.custom.config.ts",
-    "test:custom:fixtures": "vitest run --config vitest.custom-fixtures.config.ts"
+    "test:custom:fixtures": "vitest run --config vitest.custom-fixtures.config.ts",
+    "test:reference:run": "tsc -p tsconfig.browser.json --noEmit && playwright test --config playwright.reference.config.ts --workers=1"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
