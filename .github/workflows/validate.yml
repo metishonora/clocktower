@@ -36,7 +36,17 @@ jobs:
         run: pnpm --dir web build
       - name: Verify PWA build contract
         run: pnpm --dir web verify:pwa
-      - name: Install Chromium
-        run: pnpm --dir web exec playwright install --with-deps chromium
+      - name: Test custom domain and WASM
+        run: cargo test -p clocktower-custom-domain -p clocktower-custom-wasm
+      - name: Test custom runtime fixtures
+        run: pnpm test:custom-runtime
+      - name: Test custom web contracts and UI
+        run: pnpm --dir web test:custom
+      - name: Install browser engines
+        run: pnpm --dir web exec playwright install --with-deps chromium webkit
       - name: Smoke test production build
         run: pnpm --dir web test:smoke:run
+      - name: Test scenario reference PDF and Jinx UI
+        run: pnpm --dir web test:reference:run
+        env:
+          REFERENCE_PREVIEW: "1"

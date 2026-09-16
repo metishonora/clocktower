@@ -1,3 +1,6 @@
+import { useScenarioJinxes } from '../custom/reference/useScenarioJinxes';
+import { ReferenceDocumentButton, ReferenceLoadError } from '../custom/reference/ReferenceDocumentButton';
+import { ScenarioJinxSection } from './ScenarioJinxSection';
 import {CustomSetupAdjustment} from './CustomSetupAdjustment';
 import {DemonChoices} from '../shared-ui/DemonChoices';
 import { useState } from 'react';
@@ -9,17 +12,19 @@ import type { GrimoireSetupDraft } from '../custom/grimoire/setupController';
 import type { CustomScriptDefinition, SetupAdjustment, SetupDistribution } from '../custom/core/types';
 import { characterPresentation, countsFor, kindOrder, kindLabels } from '../custom/authoring/characterPresentation';
 export function CustomRoleSetup({definition,draft,rosterConfirmed,distribution,adjustment,distributionPending=false,locked=false,complete=true,onPlayerCount,onDemon,canSelect,onToggle,onConfirm,theme='night'}:{theme?:'day'|'night';definition:CustomScriptDefinition;draft:GrimoireSetupDraft;rosterConfirmed:boolean;distribution?:SetupDistribution;adjustment?:SetupAdjustment;distributionPending?:boolean;locked?:boolean;complete?:boolean;onPlayerCount:(n:number)=>void;onDemon:(id:string)=>void;canSelect:(id:string)=>boolean;onToggle:(id:string)=>void;onConfirm:()=>void}) {
+  const query = useScenarioJinxes(definition.characterIds);
   const [focusedId,setFocusedId]=useState<string>();
   const focused=characterPresentation(focusedId ?? definition.characterIds[0]);
   const counts=countsFor(draft.selectedIds);
   const characters=definition.characterIds.map(id=>{const c=characterPresentation(id)!;return {id,name:c.label,kind:c.kind.toLowerCase()};});
-  return <SetupPresentation ariaLabel="커스텀 게임 설정" className="snvSetupSurface bmrSetupSurface snvTabPanel"
+  return <SetupPresentation ariaLabel="커스텀 게임 설정" className="snvSetupSurface bmrSetupSurface snvTabPanel scenarioReferenceSetup"
+      afterCatalog={query.error ? <ReferenceLoadError retry={query.retry}/> : <ScenarioJinxSection jinxes={query.jinxes} theme={theme}/>}
       controls={<SetupControls distributionTitle="적용 인원 구성" countsClassName="bmrPlayerCounts" className="bmrSetupControls" playerCount={draft.playerCount} counts={Array.from({ length: 11 }, (_, i) => i + 5)}
         disabled={locked || rosterConfirmed} onPlayerCountSelect={onPlayerCount}
         choices={<><DemonChoices characters={characters.filter(c=>c.kind==='demon').map(c=>({id:c.id,name:c.name,icon:<img className="bmrCharacterMedallion compact" src={characterPresentation(c.id)?.image} alt=""/>}))} selectedIds={draft.selectedIds} busy={locked||rosterConfirmed||distributionPending} onSelect={id=>{setFocusedId(id);onDemon(id);}}/><CustomSetupAdjustment value={adjustment}/></>}
 
         distribution={kindOrder.map(kind => ({ label: kindLabels[kind], value: distribution?.[kind] }))} />}
-      catalog={<RoleCatalog ariaLabel="직업 선택 패널" className={`snvCatalogPreview bmrCatalog${rosterConfirmed?' rosterConfirmed':''}`} groupsClassName="snvCatalogGroups"
+      catalog={<RoleCatalog header={<div className="scenarioReferenceCatalogHeader"><ReferenceDocumentButton name={definition.name} ids={definition.characterIds} jinxes={query.jinxes}/></div>} ariaLabel="직업 선택 패널" className={`snvCatalogPreview bmrCatalog${rosterConfirmed?' rosterConfirmed':''}`} groupsClassName="snvCatalogGroups"
         groups={kindOrder.map(kind => ({ id: kind, label: kindLabels[kind], selectedCount: counts[kind], requiredCount: distribution?.[kind] ?? 0,
           roles: definition.characterIds.map(characterPresentation).filter(role => role?.kind === kind).map(role => ({ id: role!.id, label: role!.label,
             selected: draft.selectedIds.includes(role!.id), disabled: kind === 'Demon' || !canSelect(role!.id),

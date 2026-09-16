@@ -53,3 +53,8 @@ mod day;
 pub fn custom_other_night_plan_json(request: &str) -> String {
     boundary::custom_other_night_plan_json(request)
 }
+
+mod scenario_reference;
+pub fn scenario_jinxes_json(request: &str) -> String {
+    scenario_reference::query_json(request)
+}

@@ -1,0 +1,5 @@
+{
+  "drunk--mathematician": { "reasonKo": "주정뱅이의 능력이 거짓 정보를 주거나 제대로 작동하지 않았다면, 수학자는 이를 알게 됩니다.", "sourceCharacterId": "mathematician" },
+  "recluse--sage": { "reasonKo": "은둔자는 현자에게 악마로 등록될 수 있습니다.", "sourceCharacterId": "sage" },
+  "fanggu--scarletwoman": { "reasonKo": "악마가 둘이 되려 하고 그중 하나가 탕녀였던 경우, 탕녀는 탕녀로 남습니다.", "sourceCharacterId": "fangGu" }
+}

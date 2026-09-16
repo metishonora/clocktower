@@ -1,3 +1,4 @@
+import { ScenarioReviewReference } from '../reference/ReferenceDocumentButton.js';
 import type { ImportedGame } from './importScenarioSource.js';
 import type { ValidatedScenario } from '../core/definitionValidator.js';
 import type { ScenarioEditorController } from './scenarioEditorController.js';
@@ -31,6 +32,7 @@ export function ScenarioReviewSheet({ state, controller, onNewGrimoire, onResume
           {shortages.length > 0 && !invalid && <section className="issue202Gate4Recommendation" aria-label="권장 구성 경고"><strong>캐릭터가 부족합니다.</strong><ul>
             {shortages.map(kind => <li key={kind}><span>{kindLabels[kind]}</span><b>{counts[kind]}/{recommendedMinimums[kind]}</b></li>)}
           </ul></section>}
+          <ScenarioReviewReference definition={draft} disabled={invalid || state.orderPending}/>
           <button type="button" className="is-save" disabled={invalid || state.orderPending} onClick={controller.save}>시나리오 저장</button>
           <button type="button" className={!resumable ? "is-primary" : undefined} disabled={!onNewGrimoire || invalid || state.orderPending} onClick={() => {
             const scenario = controller.getValidatedScenario();
