@@ -1,0 +1,1524 @@
+{
+  "schemaVersion": 5,
+  "game": {
+    "script": {
+      "type": "custom",
+      "definition": {
+        "id": "issue232-G01",
+        "name": "뒤바뀐 증언",
+        "characterIds": [
+          "washerwoman",
+          "librarian",
+          "investigator",
+          "chef",
+          "empath",
+          "fortuneTeller",
+          "mathematician",
+          "drunk",
+          "recluse",
+          "butler",
+          "saint",
+          "poisoner",
+          "spy",
+          "baron",
+          "imp",
+          "clockmaker",
+          "soldier",
+          "mayor",
+          "virgin"
+        ],
+        "firstNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "washerwoman",
+            "actionId": "learnTownsfolk"
+          },
+          {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "learnOutsider"
+          },
+          {
+            "kind": "character",
+            "characterId": "investigator",
+            "actionId": "learnMinion"
+          },
+          {
+            "kind": "character",
+            "characterId": "chef",
+            "actionId": "learnEvilPairs"
+          },
+          {
+            "kind": "character",
+            "characterId": "empath",
+            "actionId": "learnEvilNeighbors"
+          },
+          {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "butler",
+            "actionId": "chooseMaster"
+          },
+          {
+            "kind": "character",
+            "characterId": "clockmaker",
+            "actionId": "learnSteps"
+          },
+          {
+            "kind": "character",
+            "characterId": "spy",
+            "actionId": "inspectGrimoire"
+          },
+          {
+            "kind": "character",
+            "characterId": "mathematician",
+            "actionId": "learnCount"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ],
+        "otherNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "imp",
+            "actionId": "attackPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "empath",
+            "actionId": "learnEvilNeighbors"
+          },
+          {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "butler",
+            "actionId": "chooseMaster"
+          },
+          {
+            "kind": "character",
+            "characterId": "spy",
+            "actionId": "inspectGrimoire"
+          },
+          {
+            "kind": "character",
+            "characterId": "mathematician",
+            "actionId": "learnCount"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ]
+      }
+    },
+    "id": "issue232-G01",
+    "name": "뒤바뀐 증언",
+    "createdAt": "2026-09-16T12:00:00.000Z",
+    "updatedAt": "2026-09-16T11:17:15.253Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "seat": 1,
+              "name": "1번",
+              "actualCharacter": "washerwoman",
+              "shownCharacter": "washerwoman"
+            },
+            {
+              "id": "p2",
+              "seat": 2,
+              "name": "2번",
+              "actualCharacter": "librarian",
+              "shownCharacter": "librarian"
+            },
+            {
+              "id": "p3",
+              "seat": 3,
+              "name": "3번",
+              "actualCharacter": "investigator",
+              "shownCharacter": "investigator"
+            },
+            {
+              "id": "p4",
+              "seat": 4,
+              "name": "4번",
+              "actualCharacter": "chef",
+              "shownCharacter": "chef"
+            },
+            {
+              "id": "p5",
+              "seat": 5,
+              "name": "5번",
+              "actualCharacter": "empath",
+              "shownCharacter": "empath"
+            },
+            {
+              "id": "p6",
+              "seat": 6,
+              "name": "6번",
+              "actualCharacter": "fortuneTeller",
+              "shownCharacter": "fortuneTeller"
+            },
+            {
+              "id": "p7",
+              "seat": 7,
+              "name": "7번",
+              "actualCharacter": "mathematician",
+              "shownCharacter": "mathematician"
+            },
+            {
+              "id": "p8",
+              "seat": 8,
+              "name": "8번",
+              "actualCharacter": "drunk",
+              "shownCharacter": "clockmaker"
+            },
+            {
+              "id": "p9",
+              "seat": 9,
+              "name": "9번",
+              "actualCharacter": "recluse",
+              "shownCharacter": "recluse"
+            },
+            {
+              "id": "p10",
+              "seat": 10,
+              "name": "10번",
+              "actualCharacter": "butler",
+              "shownCharacter": "butler"
+            },
+            {
+              "id": "p11",
+              "seat": 11,
+              "name": "11번",
+              "actualCharacter": "saint",
+              "shownCharacter": "saint"
+            },
+            {
+              "id": "p12",
+              "seat": 12,
+              "name": "12번",
+              "actualCharacter": "poisoner",
+              "shownCharacter": "poisoner"
+            },
+            {
+              "id": "p13",
+              "seat": 13,
+              "name": "13번",
+              "actualCharacter": "spy",
+              "shownCharacter": "spy"
+            },
+            {
+              "id": "p14",
+              "seat": 14,
+              "name": "14번",
+              "actualCharacter": "baron",
+              "shownCharacter": "baron"
+            },
+            {
+              "id": "p15",
+              "seat": 15,
+              "name": "15번",
+              "actualCharacter": "imp",
+              "shownCharacter": "imp"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 15명",
+        "createdAt": "2026-09-16T12:00:00.000Z"
+      },
+      {
+        "id": "phase-step-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:minionInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:minionInfo",
+        "createdAt": "2026-09-16T11:17:14.574Z"
+      },
+      {
+        "id": "phase-step-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          "input": {
+            "characterIds": [
+              "soldier",
+              "mayor",
+              "virgin"
+            ]
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:demonInfo",
+        "createdAt": "2026-09-16T11:17:14.636Z"
+      },
+      {
+        "id": "phase-step-4",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:poisoner:choosePoisonTarget:owner3:p12:instance9:setup:p12",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p12",
+            "characterId": "poisoner",
+            "abilityInstanceId": "setup:p12"
+          },
+          "input": {
+            "playerIds": [
+              "p8"
+            ]
+          },
+          "result": {
+            "kind": "poisoner",
+            "targetPlayerId": "p8",
+            "day": 1,
+            "effective": true
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:poisoner:choosePoisonTarget:owner3:p12:instance9:setup:p12",
+        "createdAt": "2026-09-16T11:17:14.650Z"
+      },
+      {
+        "id": "phase-step-5",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:washerwoman:prepareInformation:owner2:p1:instance8:setup:p1:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "washerwoman",
+            "actionId": "prepareInformation"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p1",
+            "characterId": "washerwoman",
+            "abilityInstanceId": "setup:p1"
+          },
+          "actionCause": {
+            "kind": "initialPreparation",
+            "sourceEventId": "setup"
+          },
+          "input": {
+            "correctPlayerId": "p7",
+            "playerIds": [
+              "p1",
+              "p7"
+            ],
+            "characterId": "mathematician"
+          },
+          "result": {
+            "kind": "informationPrepared",
+            "preparation": {
+              "information": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p1",
+                  "p7"
+                ],
+                "characterId": "mathematician",
+                "zeroOutsiders": false
+              },
+              "correctPlayerId": "p7"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:washerwoman:prepareInformation:owner2:p1:instance8:setup:p1:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+        "createdAt": "2026-09-16T11:17:14.671Z"
+      },
+      {
+        "id": "phase-step-6",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:washerwoman:learnTownsfolk:owner2:p1:instance8:setup:p1",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "washerwoman",
+            "actionId": "learnTownsfolk"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p1",
+            "characterId": "washerwoman",
+            "abilityInstanceId": "setup:p1"
+          },
+          "input": null,
+          "result": {
+            "kind": "preparedInformationDelivered",
+            "preparationEventId": "phase-step-5",
+            "information": {
+              "actor": {
+                "playerId": "p1",
+                "characterId": "washerwoman"
+              },
+              "targetPlayerIds": [
+                "p1",
+                "p7"
+              ],
+              "computedResult": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p1",
+                  "p7"
+                ],
+                "characterId": "mathematician",
+                "zeroOutsiders": false
+              },
+              "deliveredResult": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p1",
+                  "p7"
+                ],
+                "characterId": "mathematician",
+                "zeroOutsiders": false
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:washerwoman:learnTownsfolk:owner2:p1:instance8:setup:p1",
+        "createdAt": "2026-09-16T11:17:14.701Z"
+      },
+      {
+        "id": "phase-step-7",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:librarian:prepareInformation:owner2:p2:instance8:setup:p2:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "prepareInformation"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p2",
+            "characterId": "librarian",
+            "abilityInstanceId": "setup:p2"
+          },
+          "actionCause": {
+            "kind": "initialPreparation",
+            "sourceEventId": "setup"
+          },
+          "input": {
+            "correctPlayerId": "p10",
+            "playerIds": [
+              "p1",
+              "p10"
+            ],
+            "characterId": "butler"
+          },
+          "result": {
+            "kind": "informationPrepared",
+            "preparation": {
+              "information": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p1",
+                  "p10"
+                ],
+                "characterId": "butler",
+                "zeroOutsiders": false
+              },
+              "correctPlayerId": "p10"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:librarian:prepareInformation:owner2:p2:instance8:setup:p2:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+        "createdAt": "2026-09-16T11:17:14.730Z"
+      },
+      {
+        "id": "phase-step-8",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:librarian:learnOutsider:owner2:p2:instance8:setup:p2",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "learnOutsider"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p2",
+            "characterId": "librarian",
+            "abilityInstanceId": "setup:p2"
+          },
+          "input": null,
+          "result": {
+            "kind": "preparedInformationDelivered",
+            "preparationEventId": "phase-step-7",
+            "information": {
+              "actor": {
+                "playerId": "p2",
+                "characterId": "librarian"
+              },
+              "targetPlayerIds": [
+                "p1",
+                "p10"
+              ],
+              "computedResult": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p1",
+                  "p10"
+                ],
+                "characterId": "butler",
+                "zeroOutsiders": false
+              },
+              "deliveredResult": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p1",
+                  "p10"
+                ],
+                "characterId": "butler",
+                "zeroOutsiders": false
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:librarian:learnOutsider:owner2:p2:instance8:setup:p2",
+        "createdAt": "2026-09-16T11:17:14.754Z"
+      },
+      {
+        "id": "phase-step-9",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:investigator:prepareInformation:owner2:p3:instance8:setup:p3:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "investigator",
+            "actionId": "prepareInformation"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p3",
+            "characterId": "investigator",
+            "abilityInstanceId": "setup:p3"
+          },
+          "actionCause": {
+            "kind": "initialPreparation",
+            "sourceEventId": "setup"
+          },
+          "input": {
+            "correctPlayerId": "p12",
+            "playerIds": [
+              "p1",
+              "p12"
+            ],
+            "characterId": "poisoner"
+          },
+          "result": {
+            "kind": "informationPrepared",
+            "preparation": {
+              "information": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p1",
+                  "p12"
+                ],
+                "characterId": "poisoner",
+                "zeroOutsiders": false
+              },
+              "correctPlayerId": "p12"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:investigator:prepareInformation:owner2:p3:instance8:setup:p3:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+        "createdAt": "2026-09-16T11:17:14.774Z"
+      },
+      {
+        "id": "phase-step-10",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:investigator:learnMinion:owner2:p3:instance8:setup:p3",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "investigator",
+            "actionId": "learnMinion"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p3",
+            "characterId": "investigator",
+            "abilityInstanceId": "setup:p3"
+          },
+          "input": null,
+          "result": {
+            "kind": "preparedInformationDelivered",
+            "preparationEventId": "phase-step-9",
+            "information": {
+              "actor": {
+                "playerId": "p3",
+                "characterId": "investigator"
+              },
+              "targetPlayerIds": [
+                "p1",
+                "p12"
+              ],
+              "computedResult": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p1",
+                  "p12"
+                ],
+                "characterId": "poisoner",
+                "zeroOutsiders": false
+              },
+              "deliveredResult": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p1",
+                  "p12"
+                ],
+                "characterId": "poisoner",
+                "zeroOutsiders": false
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:investigator:learnMinion:owner2:p3:instance8:setup:p3",
+        "createdAt": "2026-09-16T11:17:14.795Z"
+      },
+      {
+        "id": "phase-step-11",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:chef:learnEvilPairs:owner2:p4:instance8:setup:p4",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "chef",
+            "actionId": "learnEvilPairs"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p4",
+            "characterId": "chef",
+            "abilityInstanceId": "setup:p4"
+          },
+          "input": null,
+          "result": {
+            "kind": "informationDelivered",
+            "information": {
+              "actor": {
+                "playerId": "p4",
+                "characterId": "chef"
+              },
+              "targetPlayerIds": [],
+              "computedResult": {
+                "kind": "number",
+                "value": 3
+              },
+              "deliveredResult": {
+                "kind": "number",
+                "value": 3
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:chef:learnEvilPairs:owner2:p4:instance8:setup:p4",
+        "createdAt": "2026-09-16T11:17:14.813Z"
+      },
+      {
+        "id": "phase-step-12",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:empath:learnEvilNeighbors:owner2:p5:instance8:setup:p5",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "empath",
+            "actionId": "learnEvilNeighbors"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p5",
+            "characterId": "empath",
+            "abilityInstanceId": "setup:p5"
+          },
+          "input": null,
+          "result": {
+            "kind": "informationDelivered",
+            "information": {
+              "actor": {
+                "playerId": "p5",
+                "characterId": "empath"
+              },
+              "targetPlayerIds": [],
+              "computedResult": {
+                "kind": "number",
+                "value": 0
+              },
+              "deliveredResult": {
+                "kind": "number",
+                "value": 0
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:empath:learnEvilNeighbors:owner2:p5:instance8:setup:p5",
+        "createdAt": "2026-09-16T11:17:14.833Z"
+      },
+      {
+        "id": "phase-step-13",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:fortuneTeller:assignRedHerring:owner2:p6:instance8:setup:p6:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "assignRedHerring"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p6",
+            "characterId": "fortuneTeller",
+            "abilityInstanceId": "setup:p6"
+          },
+          "actionCause": {
+            "kind": "initialPreparation",
+            "sourceEventId": "setup"
+          },
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          },
+          "result": {
+            "kind": "redHerringAssigned",
+            "targetPlayerId": "p7"
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:fortuneTeller:assignRedHerring:owner2:p6:instance8:setup:p6:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+        "createdAt": "2026-09-16T11:17:14.852Z"
+      },
+      {
+        "id": "phase-step-14",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:fortuneTeller:checkDemon:owner2:p6:instance8:setup:p6",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p6",
+            "characterId": "fortuneTeller",
+            "abilityInstanceId": "setup:p6"
+          },
+          "input": {
+            "playerIds": [
+              "p6",
+              "p7"
+            ]
+          },
+          "result": {
+            "kind": "informationDelivered",
+            "information": {
+              "actor": {
+                "playerId": "p6",
+                "characterId": "fortuneTeller"
+              },
+              "targetPlayerIds": [
+                "p6",
+                "p7"
+              ],
+              "computedResult": {
+                "kind": "boolean",
+                "value": true
+              },
+              "deliveredResult": {
+                "kind": "boolean",
+                "value": true
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:fortuneTeller:checkDemon:owner2:p6:instance8:setup:p6",
+        "createdAt": "2026-09-16T11:17:14.875Z"
+      },
+      {
+        "id": "phase-step-15",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:butler:chooseMaster:owner3:p10:instance9:setup:p10",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "butler",
+            "actionId": "chooseMaster"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p10",
+            "characterId": "butler",
+            "abilityInstanceId": "setup:p10"
+          },
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          },
+          "result": {
+            "kind": "butler",
+            "targetPlayerId": "p7",
+            "day": 1,
+            "effective": true
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:butler:chooseMaster:owner3:p10:instance9:setup:p10",
+        "createdAt": "2026-09-16T11:17:14.905Z"
+      },
+      {
+        "id": "phase-step-16",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:clockmaker:learnSteps:simulation5:setup2:p88:setup:p8",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "clockmaker",
+            "actionId": "learnSteps"
+          },
+          "simulationSource": {
+            "guidance": {
+              "kind": "initialDrunk"
+            },
+            "selectionEventId": "setup",
+            "sourceAbilityUse": {
+              "ownerPlayerId": "p8",
+              "characterId": "drunk",
+              "abilityInstanceId": "setup:p8"
+            }
+          },
+          "input": null,
+          "result": {
+            "kind": "simulation",
+            "information": {
+              "actor": {
+                "playerId": "p8",
+                "characterId": "clockmaker"
+              },
+              "targetPlayerIds": [],
+              "computedResult": {
+                "kind": "number",
+                "value": 1
+              },
+              "deliveredResult": {
+                "kind": "number",
+                "value": 1
+              },
+              "deliveryContext": {
+                "type": "discretionary",
+                "reasons": [
+                  {
+                    "type": "poisoned",
+                    "poisonerPlayerId": "p12",
+                    "poisonEventId": "phase-step-4"
+                  },
+                  {
+                    "type": "drunk"
+                  }
+                ]
+              }
+            },
+            "spent": false
+          },
+          "deliveredResult": {
+            "kind": "number",
+            "value": 1
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:clockmaker:learnSteps:simulation5:setup2:p88:setup:p8",
+        "createdAt": "2026-09-16T11:17:15.104Z"
+      },
+      {
+        "id": "phase-step-17",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:spy:inspectGrimoire:owner3:p13:instance9:setup:p13",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "spy",
+            "actionId": "inspectGrimoire"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p13",
+            "characterId": "spy",
+            "abilityInstanceId": "setup:p13"
+          },
+          "input": null,
+          "result": {
+            "kind": "informationDelivered",
+            "information": {
+              "actor": {
+                "playerId": "p13",
+                "characterId": "spy"
+              },
+              "targetPlayerIds": [],
+              "computedResult": {
+                "kind": "spyGrimoire",
+                "players": [
+                  {
+                    "alignment": "good",
+                    "playerId": "p1",
+                    "seat": 1,
+                    "name": "1번",
+                    "characterId": "washerwoman",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": [
+                      {
+                        "playerId": "p1",
+                        "characterId": "washerwoman",
+                        "tokenId": "wrong",
+                        "label": "wrong",
+                        "description": "wrong",
+                        "sourceEventId": "phase-step-5"
+                      },
+                      {
+                        "playerId": "p1",
+                        "characterId": "librarian",
+                        "tokenId": "wrong",
+                        "label": "wrong",
+                        "description": "wrong",
+                        "sourceEventId": "phase-step-7"
+                      },
+                      {
+                        "playerId": "p1",
+                        "characterId": "investigator",
+                        "tokenId": "wrong",
+                        "label": "wrong",
+                        "description": "wrong",
+                        "sourceEventId": "phase-step-9"
+                      }
+                    ]
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p2",
+                    "seat": 2,
+                    "name": "2번",
+                    "characterId": "librarian",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p3",
+                    "seat": 3,
+                    "name": "3번",
+                    "characterId": "investigator",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p4",
+                    "seat": 4,
+                    "name": "4번",
+                    "characterId": "chef",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p5",
+                    "seat": 5,
+                    "name": "5번",
+                    "characterId": "empath",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p6",
+                    "seat": 6,
+                    "name": "6번",
+                    "characterId": "fortuneTeller",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p7",
+                    "seat": 7,
+                    "name": "7번",
+                    "characterId": "mathematician",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": [
+                      {
+                        "playerId": "p7",
+                        "characterId": "washerwoman",
+                        "tokenId": "townsfolk",
+                        "label": "townsfolk",
+                        "description": "townsfolk",
+                        "sourceEventId": "phase-step-5"
+                      },
+                      {
+                        "playerId": "p7",
+                        "characterId": "fortuneTeller",
+                        "tokenId": "redHerring",
+                        "label": "redHerring",
+                        "description": "redHerring",
+                        "sourceEventId": "phase-step-13"
+                      },
+                      {
+                        "playerId": "p7",
+                        "characterId": "butler",
+                        "tokenId": "master",
+                        "label": "master",
+                        "description": "master",
+                        "sourceEventId": "phase-step-15"
+                      }
+                    ]
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p8",
+                    "seat": 8,
+                    "name": "8번",
+                    "characterId": "drunk",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [
+                      "poisoned"
+                    ],
+                    "automaticReminders": [
+                      {
+                        "playerId": "p8",
+                        "characterId": "drunk",
+                        "tokenId": "isTheDrunk",
+                        "label": "isTheDrunk",
+                        "description": "isTheDrunk",
+                        "sourceEventId": "setup"
+                      },
+                      {
+                        "playerId": "p8",
+                        "characterId": "poisoner",
+                        "tokenId": "poisoned",
+                        "label": "poisoned",
+                        "description": "poisoned",
+                        "sourceEventId": "phase-step-4"
+                      }
+                    ]
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p9",
+                    "seat": 9,
+                    "name": "9번",
+                    "characterId": "recluse",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p10",
+                    "seat": 10,
+                    "name": "10번",
+                    "characterId": "butler",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": [
+                      {
+                        "playerId": "p10",
+                        "characterId": "librarian",
+                        "tokenId": "outsider",
+                        "label": "outsider",
+                        "description": "outsider",
+                        "sourceEventId": "phase-step-7"
+                      }
+                    ]
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p11",
+                    "seat": 11,
+                    "name": "11번",
+                    "characterId": "saint",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "evil",
+                    "playerId": "p12",
+                    "seat": 12,
+                    "name": "12번",
+                    "characterId": "poisoner",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": [
+                      {
+                        "playerId": "p12",
+                        "characterId": "investigator",
+                        "tokenId": "minion",
+                        "label": "minion",
+                        "description": "minion",
+                        "sourceEventId": "phase-step-9"
+                      }
+                    ]
+                  },
+                  {
+                    "alignment": "evil",
+                    "playerId": "p13",
+                    "seat": 13,
+                    "name": "13번",
+                    "characterId": "spy",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "evil",
+                    "playerId": "p14",
+                    "seat": 14,
+                    "name": "14번",
+                    "characterId": "baron",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "evil",
+                    "playerId": "p15",
+                    "seat": 15,
+                    "name": "15번",
+                    "characterId": "imp",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  }
+                ]
+              },
+              "deliveredResult": {
+                "kind": "spyGrimoire",
+                "players": [
+                  {
+                    "alignment": "good",
+                    "playerId": "p1",
+                    "seat": 1,
+                    "name": "1번",
+                    "characterId": "washerwoman",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": [
+                      {
+                        "playerId": "p1",
+                        "characterId": "washerwoman",
+                        "tokenId": "wrong",
+                        "label": "wrong",
+                        "description": "wrong",
+                        "sourceEventId": "phase-step-5"
+                      },
+                      {
+                        "playerId": "p1",
+                        "characterId": "librarian",
+                        "tokenId": "wrong",
+                        "label": "wrong",
+                        "description": "wrong",
+                        "sourceEventId": "phase-step-7"
+                      },
+                      {
+                        "playerId": "p1",
+                        "characterId": "investigator",
+                        "tokenId": "wrong",
+                        "label": "wrong",
+                        "description": "wrong",
+                        "sourceEventId": "phase-step-9"
+                      }
+                    ]
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p2",
+                    "seat": 2,
+                    "name": "2번",
+                    "characterId": "librarian",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p3",
+                    "seat": 3,
+                    "name": "3번",
+                    "characterId": "investigator",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p4",
+                    "seat": 4,
+                    "name": "4번",
+                    "characterId": "chef",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p5",
+                    "seat": 5,
+                    "name": "5번",
+                    "characterId": "empath",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p6",
+                    "seat": 6,
+                    "name": "6번",
+                    "characterId": "fortuneTeller",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p7",
+                    "seat": 7,
+                    "name": "7번",
+                    "characterId": "mathematician",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": [
+                      {
+                        "playerId": "p7",
+                        "characterId": "washerwoman",
+                        "tokenId": "townsfolk",
+                        "label": "townsfolk",
+                        "description": "townsfolk",
+                        "sourceEventId": "phase-step-5"
+                      },
+                      {
+                        "playerId": "p7",
+                        "characterId": "fortuneTeller",
+                        "tokenId": "redHerring",
+                        "label": "redHerring",
+                        "description": "redHerring",
+                        "sourceEventId": "phase-step-13"
+                      },
+                      {
+                        "playerId": "p7",
+                        "characterId": "butler",
+                        "tokenId": "master",
+                        "label": "master",
+                        "description": "master",
+                        "sourceEventId": "phase-step-15"
+                      }
+                    ]
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p8",
+                    "seat": 8,
+                    "name": "8번",
+                    "characterId": "drunk",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [
+                      "poisoned"
+                    ],
+                    "automaticReminders": [
+                      {
+                        "playerId": "p8",
+                        "characterId": "drunk",
+                        "tokenId": "isTheDrunk",
+                        "label": "isTheDrunk",
+                        "description": "isTheDrunk",
+                        "sourceEventId": "setup"
+                      },
+                      {
+                        "playerId": "p8",
+                        "characterId": "poisoner",
+                        "tokenId": "poisoned",
+                        "label": "poisoned",
+                        "description": "poisoned",
+                        "sourceEventId": "phase-step-4"
+                      }
+                    ]
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p9",
+                    "seat": 9,
+                    "name": "9번",
+                    "characterId": "recluse",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p10",
+                    "seat": 10,
+                    "name": "10번",
+                    "characterId": "butler",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": [
+                      {
+                        "playerId": "p10",
+                        "characterId": "librarian",
+                        "tokenId": "outsider",
+                        "label": "outsider",
+                        "description": "outsider",
+                        "sourceEventId": "phase-step-7"
+                      }
+                    ]
+                  },
+                  {
+                    "alignment": "good",
+                    "playerId": "p11",
+                    "seat": 11,
+                    "name": "11번",
+                    "characterId": "saint",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "evil",
+                    "playerId": "p12",
+                    "seat": 12,
+                    "name": "12번",
+                    "characterId": "poisoner",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": [
+                      {
+                        "playerId": "p12",
+                        "characterId": "investigator",
+                        "tokenId": "minion",
+                        "label": "minion",
+                        "description": "minion",
+                        "sourceEventId": "phase-step-9"
+                      }
+                    ]
+                  },
+                  {
+                    "alignment": "evil",
+                    "playerId": "p13",
+                    "seat": 13,
+                    "name": "13번",
+                    "characterId": "spy",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "evil",
+                    "playerId": "p14",
+                    "seat": 14,
+                    "name": "14번",
+                    "characterId": "baron",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  },
+                  {
+                    "alignment": "evil",
+                    "playerId": "p15",
+                    "seat": 15,
+                    "name": "15번",
+                    "characterId": "imp",
+                    "alive": true,
+                    "ghostVoteUsed": false,
+                    "reminderTokens": [],
+                    "automaticReminders": []
+                  }
+                ]
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:spy:inspectGrimoire:owner3:p13:instance9:setup:p13",
+        "createdAt": "2026-09-16T11:17:15.134Z"
+      },
+      {
+        "id": "phase-step-18",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:mathematician:learnCount:owner2:p7:instance8:setup:p7",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "mathematician",
+            "actionId": "learnCount"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p7",
+            "characterId": "mathematician",
+            "abilityInstanceId": "setup:p7"
+          },
+          "input": null,
+          "result": {
+            "kind": "informationDelivered",
+            "information": {
+              "actor": {
+                "playerId": "p7",
+                "characterId": "mathematician"
+              },
+              "targetPlayerIds": [],
+              "computedResult": {
+                "kind": "number",
+                "value": 0
+              },
+              "deliveredResult": {
+                "kind": "number",
+                "value": 0
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:mathematician:learnCount:owner2:p7:instance8:setup:p7",
+        "createdAt": "2026-09-16T11:17:15.167Z"
+      },
+      {
+        "id": "phase-step-19",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:dawn",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "dawn"
+          },
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:dawn",
+        "createdAt": "2026-09-16T11:17:15.214Z"
+      }
+    ]
+  },
+  "exportedAt": "2026-09-16T12:00:00.000Z"
+}

@@ -1,0 +1,184 @@
+{
+  "type": "clocktower-custom-scenario",
+  "version": 2,
+  "scenario": {
+    "name": "죽어도 남는 힘",
+    "characterIds": [
+      "philosopher",
+      "snakeCharmer",
+      "juggler",
+      "dreamer",
+      "empath",
+      "fortuneTeller",
+      "monk",
+      "sage",
+      "ravenkeeper",
+      "mathematician",
+      "barber",
+      "poisoner",
+      "witch",
+      "pitHag",
+      "vigormortis",
+      "artist",
+      "seamstress",
+      "noDashii",
+      "recluse",
+      "chef",
+      "soldier",
+      "mayor"
+    ],
+    "firstNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "character",
+        "characterId": "philosopher",
+        "actionId": "chooseAbility"
+      },
+      {
+        "kind": "system",
+        "actionId": "minionInfo"
+      },
+      {
+        "kind": "system",
+        "actionId": "demonInfo"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "snakeCharmer",
+        "actionId": "choosePlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "witch",
+        "actionId": "chooseCursedPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "chef",
+        "actionId": "learnEvilPairs"
+      },
+      {
+        "kind": "character",
+        "characterId": "empath",
+        "actionId": "learnEvilNeighbors"
+      },
+      {
+        "kind": "character",
+        "characterId": "fortuneTeller",
+        "actionId": "checkDemon"
+      },
+      {
+        "kind": "character",
+        "characterId": "dreamer",
+        "actionId": "learnCharacters"
+      },
+      {
+        "kind": "character",
+        "characterId": "seamstress",
+        "actionId": "compareAlignments"
+      },
+      {
+        "kind": "character",
+        "characterId": "mathematician",
+        "actionId": "learnCount"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ],
+    "otherNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "character",
+        "characterId": "philosopher",
+        "actionId": "chooseAbility"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "snakeCharmer",
+        "actionId": "choosePlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "monk",
+        "actionId": "protectPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "witch",
+        "actionId": "chooseCursedPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "pitHag",
+        "actionId": "changeCharacter"
+      },
+      {
+        "kind": "character",
+        "characterId": "noDashii",
+        "actionId": "attackPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "vigormortis",
+        "actionId": "attackPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "barber",
+        "actionId": "swapCharacters"
+      },
+      {
+        "kind": "character",
+        "characterId": "empath",
+        "actionId": "learnEvilNeighbors"
+      },
+      {
+        "kind": "character",
+        "characterId": "fortuneTeller",
+        "actionId": "checkDemon"
+      },
+      {
+        "kind": "character",
+        "characterId": "dreamer",
+        "actionId": "learnCharacters"
+      },
+      {
+        "kind": "character",
+        "characterId": "seamstress",
+        "actionId": "compareAlignments"
+      },
+      {
+        "kind": "character",
+        "characterId": "juggler",
+        "actionId": "learnJuggles"
+      },
+      {
+        "kind": "character",
+        "characterId": "mathematician",
+        "actionId": "learnCount"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ]
+  }
+}

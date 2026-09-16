@@ -1,0 +1,146 @@
+{
+  "type": "clocktower-custom-scenario",
+  "version": 2,
+  "scenario": {
+    "name": "뒤바뀐 증언",
+    "characterIds": [
+      "washerwoman",
+      "librarian",
+      "investigator",
+      "chef",
+      "empath",
+      "fortuneTeller",
+      "mathematician",
+      "drunk",
+      "recluse",
+      "butler",
+      "saint",
+      "poisoner",
+      "spy",
+      "baron",
+      "imp",
+      "clockmaker",
+      "soldier",
+      "mayor",
+      "virgin"
+    ],
+    "firstNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "system",
+        "actionId": "minionInfo"
+      },
+      {
+        "kind": "system",
+        "actionId": "demonInfo"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "washerwoman",
+        "actionId": "learnTownsfolk"
+      },
+      {
+        "kind": "character",
+        "characterId": "librarian",
+        "actionId": "learnOutsider"
+      },
+      {
+        "kind": "character",
+        "characterId": "investigator",
+        "actionId": "learnMinion"
+      },
+      {
+        "kind": "character",
+        "characterId": "chef",
+        "actionId": "learnEvilPairs"
+      },
+      {
+        "kind": "character",
+        "characterId": "empath",
+        "actionId": "learnEvilNeighbors"
+      },
+      {
+        "kind": "character",
+        "characterId": "fortuneTeller",
+        "actionId": "checkDemon"
+      },
+      {
+        "kind": "character",
+        "characterId": "butler",
+        "actionId": "chooseMaster"
+      },
+      {
+        "kind": "character",
+        "characterId": "clockmaker",
+        "actionId": "learnSteps"
+      },
+      {
+        "kind": "character",
+        "characterId": "spy",
+        "actionId": "inspectGrimoire"
+      },
+      {
+        "kind": "character",
+        "characterId": "mathematician",
+        "actionId": "learnCount"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ],
+    "otherNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "empath",
+        "actionId": "learnEvilNeighbors"
+      },
+      {
+        "kind": "character",
+        "characterId": "fortuneTeller",
+        "actionId": "checkDemon"
+      },
+      {
+        "kind": "character",
+        "characterId": "butler",
+        "actionId": "chooseMaster"
+      },
+      {
+        "kind": "character",
+        "characterId": "spy",
+        "actionId": "inspectGrimoire"
+      },
+      {
+        "kind": "character",
+        "characterId": "mathematician",
+        "actionId": "learnCount"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ]
+  }
+}

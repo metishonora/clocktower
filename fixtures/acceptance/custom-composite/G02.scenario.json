@@ -1,0 +1,115 @@
+{
+  "type": "clocktower-custom-scenario",
+  "version": 2,
+  "scenario": {
+    "name": "죽음의 계승",
+    "characterIds": [
+      "undertaker",
+      "monk",
+      "ravenkeeper",
+      "virgin",
+      "slayer",
+      "soldier",
+      "mayor",
+      "sage",
+      "clockmaker",
+      "sweetheart",
+      "barber",
+      "scarletWoman",
+      "witch",
+      "cerenovus",
+      "imp",
+      "chef",
+      "empath",
+      "saint"
+    ],
+    "firstNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "system",
+        "actionId": "minionInfo"
+      },
+      {
+        "kind": "system",
+        "actionId": "demonInfo"
+      },
+      {
+        "kind": "character",
+        "characterId": "witch",
+        "actionId": "chooseCursedPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "cerenovus",
+        "actionId": "assignMadness"
+      },
+      {
+        "kind": "character",
+        "characterId": "chef",
+        "actionId": "learnEvilPairs"
+      },
+      {
+        "kind": "character",
+        "characterId": "empath",
+        "actionId": "learnEvilNeighbors"
+      },
+      {
+        "kind": "character",
+        "characterId": "clockmaker",
+        "actionId": "learnSteps"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ],
+    "otherNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "character",
+        "characterId": "barber",
+        "actionId": "swapCharacters"
+      },
+      {
+        "kind": "character",
+        "characterId": "monk",
+        "actionId": "protectPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "witch",
+        "actionId": "chooseCursedPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "cerenovus",
+        "actionId": "assignMadness"
+      },
+      {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "empath",
+        "actionId": "learnEvilNeighbors"
+      },
+      {
+        "kind": "character",
+        "characterId": "undertaker",
+        "actionId": "learnExecutedCharacter"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ]
+  }
+}
