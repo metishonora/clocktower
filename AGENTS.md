@@ -9,12 +9,13 @@
 - Keep live-play UI concise for a rule-literate Storyteller. Prefer actionable values and add explanatory copy only for validation, failure, recovery, destructive actions, or explicit requests.
 - For Rust domain changes, follow `ARCHITECTURE.md`, including keeping script-specific character rules in `characters/<script_name>.rs`.
 
-## Prototype review
+## Prototypes
 
-- Have `prototype_reviewer` verify new or materially revised prototypes before user review.
+Keep prototypes faithful to the existing product screen outside agreed changes, so UI decisions can be reviewed in context and carried through to production.
 
 ## Test server lifecycle
 
+- Give users the manager-returned Tailscale URL as a clickable link so they can review from other devices.
 - For Clocktower, use only `node scripts/test-server-manager.mjs` as the fallback manager entrypoint; direct server or process commands are prohibited.
 - `.codex/web-server.json` and the shared manager own profiles, ports, binding, process ownership, verification, URLs, and session cleanup. Never terminate an unrecorded or unverified process.
 - Keep review servers running across turns while the review remains active. Stop them through the lifecycle manager when the review concludes, the worktree or phase changes, the server is replaced, or the user requests it. A turn boundary alone is not a reason to stop.
