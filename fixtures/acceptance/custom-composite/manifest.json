@@ -27003,6 +27003,10 @@
             "actionId": "attackPlayer"
           },
           {
+            "kind": "system",
+            "actionId": "resolveNightDeaths"
+          },
+          {
             "kind": "character",
             "characterId": "barber",
             "actionId": "swapCharacters"
@@ -27041,7 +27045,8 @@
             "kind": "system",
             "actionId": "dawn"
           }
-        ]
+        ],
+        "nightOrderVersion": 2
       },
       "scenario": "G05.scenario.json",
       "guide": "G05.md",
@@ -28102,32 +28107,13 @@
             }
           },
           "eventId": "phase-step-46",
-          "checks": []
-        },
-        {
-          "index": 47,
-          "checkpoint": "G05-arbitrary-deaths-pending",
-          "phase": "night",
-          "night": 3,
-          "instructionKo": "14번 마귀할멈: chooseDeaths — {\"playerIds\":[]}",
-          "command": {
-            "type": "confirmStep",
-            "payload": {
-              "stepId": "night:3:pitHag:chooseDeaths:owner3:p14:instance9:setup:p14:cause82:{\"kind\":\"effect\",\"triggerEventId\":\"phase-step-46\",\"effectEventId\":\"phase-step-46\"}",
-              "expectedEventCount": 46,
-              "input": {
-                "playerIds": []
-              }
-            }
-          },
-          "eventId": "phase-step-47",
           "checks": [
             "G05-C07"
           ]
         },
         {
-          "index": 48,
-          "checkpoint": "G05-arbitrary-deaths-pending",
+          "index": 47,
+          "checkpoint": "G05-new-demon",
           "phase": "night",
           "night": 3,
           "instructionKo": "15번 노 다시: attackPlayer — {\"playerIds\":[\"p8\"]}",
@@ -28135,11 +28121,30 @@
             "type": "confirmStep",
             "payload": {
               "stepId": "night:3:noDashii:attackPlayer:owner3:p15:instance17:phase-step-46:p15",
-              "expectedEventCount": 47,
+              "expectedEventCount": 46,
               "input": {
                 "playerIds": [
                   "p8"
                 ]
+              }
+            }
+          },
+          "eventId": "phase-step-47",
+          "checks": []
+        },
+        {
+          "index": 48,
+          "checkpoint": "G05-arbitrary-deaths-pending",
+          "phase": "night",
+          "night": 3,
+          "instructionKo": "예측불허의 죽음: 앞선 15번 → 8번 공격을 확인하고 마도서에서 사망 없음을 확정한다.",
+          "command": {
+            "type": "confirmStep",
+            "payload": {
+              "stepId": "night:3:system:resolveNightDeaths",
+              "expectedEventCount": 47,
+              "input": {
+                "playerIds": []
               }
             }
           },
@@ -29671,7 +29676,7 @@
               },
               "phase": "day",
               "summary": "낮 능력 기록",
-              "createdAt": "2026-09-16T11:17:32.420Z"
+              "createdAt": "2026-09-17T06:09:01.657Z"
             }
           }
         },
@@ -29832,7 +29837,7 @@
               },
               "phase": "night",
               "summary": "단계 확정: night:2:vigormortis:choosePoison:owner3:p15:instance9:setup:p15:cause82:{\"kind\":\"effect\",\"triggerEventId\":\"phase-step-27\",\"effectEventId\":\"phase-step-27\"}",
-              "createdAt": "2026-09-16T11:17:32.845Z"
+              "createdAt": "2026-09-17T06:09:01.867Z"
             }
           }
         },
@@ -30000,7 +30005,7 @@
               },
               "phase": "night",
               "summary": "단계 확정: night:2:juggler:learnJuggles:owner2:p3:instance8:setup:p3",
-              "createdAt": "2026-09-16T11:17:33.202Z"
+              "createdAt": "2026-09-17T06:09:02.090Z"
             }
           }
         },
@@ -30157,7 +30162,7 @@
               },
               "phase": "night",
               "summary": "단계 확정: night:3:poisoner:choosePoisonTarget:owner3:p12:instance9:setup:p12",
-              "createdAt": "2026-09-16T11:17:33.886Z"
+              "createdAt": "2026-09-17T06:09:02.245Z"
             }
           }
         },
@@ -30167,10 +30172,10 @@
             "character-pitHag",
             "character-noDashii"
           ],
-          "expectedKo": "악마 생성의 필수 사망 판단을 거쳐 노 다시가 된다. 외지인·하수인을 건너뛴 1번과 10번만 노 다시 중독이다.",
-          "checkpoint": "G05-arbitrary-deaths-pending",
-          "traceIndex": 47,
-          "eventCount": 47,
+          "expectedKo": "노 다시 변경 후 공격 대상을 먼저 고른다. 외지인·하수인을 건너뛴 1번과 10번만 노 다시 중독이다.",
+          "checkpoint": "G05-new-demon",
+          "traceIndex": 46,
+          "eventCount": 46,
           "automatic": "passed",
           "user": "unverified",
           "device": "unverified",
@@ -30286,36 +30291,39 @@
               }
             ],
             "lastEvent": {
-              "id": "phase-step-47",
+              "id": "phase-step-46",
               "type": "customActionConfirmed",
               "payload": {
-                "stepId": "night:3:pitHag:chooseDeaths:owner3:p14:instance9:setup:p14:cause82:{\"kind\":\"effect\",\"triggerEventId\":\"phase-step-46\",\"effectEventId\":\"phase-step-46\"}",
+                "stepId": "night:3:pitHag:changeCharacter:owner3:p14:instance9:setup:p14",
                 "actionRef": {
                   "kind": "character",
                   "characterId": "pitHag",
-                  "actionId": "chooseDeaths"
+                  "actionId": "changeCharacter"
                 },
                 "abilityUse": {
                   "ownerPlayerId": "p14",
                   "characterId": "pitHag",
                   "abilityInstanceId": "setup:p14"
                 },
-                "actionCause": {
-                  "kind": "effect",
-                  "triggerEventId": "phase-step-46",
-                  "effectEventId": "phase-step-46"
-                },
                 "input": {
-                  "playerIds": []
+                  "playerIds": [
+                    "p15"
+                  ],
+                  "characterIds": [
+                    "noDashii"
+                  ]
                 },
                 "result": {
-                  "kind": "arbitraryDeaths",
-                  "playerIds": []
+                  "kind": "pitHagChange",
+                  "targetPlayerId": "p15",
+                  "characterId": "noDashii",
+                  "changed": true,
+                  "createdDemon": true
                 }
               },
               "phase": "night",
-              "summary": "단계 확정: night:3:pitHag:chooseDeaths:owner3:p14:instance9:setup:p14:cause82:{\"kind\":\"effect\",\"triggerEventId\":\"phase-step-46\",\"effectEventId\":\"phase-step-46\"}",
-              "createdAt": "2026-09-16T11:17:34.357Z"
+              "summary": "단계 확정: night:3:pitHag:changeCharacter:owner3:p14:instance9:setup:p14",
+              "createdAt": "2026-09-17T06:09:02.359Z"
             }
           }
         },
@@ -30324,7 +30332,7 @@
           "requirements": [
             "character-pitHag"
           ],
-          "expectedKo": "악마 변경 밤에 사망 없음으로 판단하면 노 다시의 공격으로도 8번은 죽지 않는다.",
+          "expectedKo": "예측불허의 죽음에서 앞선 15번→8번 공격을 확인하고 사망 없음을 확정한다. 8번은 생존하며 이 사망 판단은 별도로 되돌릴 수 있다.",
           "checkpoint": "G05-arbitrary-deaths-pending",
           "traceIndex": 48,
           "eventCount": 48,
@@ -30446,33 +30454,25 @@
               "id": "phase-step-48",
               "type": "customActionConfirmed",
               "payload": {
-                "stepId": "night:3:noDashii:attackPlayer:owner3:p15:instance17:phase-step-46:p15",
+                "stepId": "night:3:system:resolveNightDeaths",
                 "actionRef": {
-                  "kind": "character",
-                  "characterId": "noDashii",
-                  "actionId": "attackPlayer"
-                },
-                "abilityUse": {
-                  "ownerPlayerId": "p15",
-                  "characterId": "noDashii",
-                  "abilityInstanceId": "phase-step-46:p15"
+                  "kind": "system",
+                  "actionId": "resolveNightDeaths"
                 },
                 "input": {
-                  "playerIds": [
-                    "p8"
-                  ]
+                  "playerIds": []
                 },
                 "result": {
-                  "kind": "nightAttack",
-                  "targetPlayerId": "p8",
-                  "killedPlayerId": null,
-                  "died": false,
-                  "identityChanges": []
+                  "kind": "nightDeathsResolved",
+                  "playerIds": [],
+                  "sourceEventIds": [
+                    "phase-step-46"
+                  ]
                 }
               },
               "phase": "night",
-              "summary": "단계 확정: night:3:noDashii:attackPlayer:owner3:p15:instance17:phase-step-46:p15",
-              "createdAt": "2026-09-16T11:17:34.514Z"
+              "summary": "단계 확정: night:3:system:resolveNightDeaths",
+              "createdAt": "2026-09-17T06:09:02.422Z"
             }
           }
         },
@@ -30663,7 +30663,7 @@
               },
               "phase": "night",
               "summary": "단계 확정: night:4:sage:learnDemon:owner2:p8:instance8:setup:p8:cause47:{\"kind\":\"death\",\"deathEventId\":\"phase-step-64\"}",
-              "createdAt": "2026-09-16T11:17:36.522Z"
+              "createdAt": "2026-09-17T06:09:02.898Z"
             }
           }
         },
@@ -31061,7 +31061,7 @@
               },
               "phase": "day",
               "summary": "사망 확정",
-              "createdAt": "2026-09-16T11:17:38.562Z"
+              "createdAt": "2026-09-17T06:09:03.280Z"
             }
           }
         },
@@ -31437,7 +31437,7 @@
               },
               "phase": "day",
               "summary": "게임 종료 확정",
-              "createdAt": "2026-09-16T11:17:38.728Z"
+              "createdAt": "2026-09-17T06:09:03.309Z"
             }
           }
         }

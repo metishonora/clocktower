@@ -1,6 +1,6 @@
 {
   "type": "clocktower-custom-scenario",
-  "version": 2,
+  "version": 3,
   "scenario": {
     "name": "죽어도 남는 힘",
     "characterIds": [
@@ -141,6 +141,10 @@
         "actionId": "attackPlayer"
       },
       {
+        "kind": "system",
+        "actionId": "resolveNightDeaths"
+      },
+      {
         "kind": "character",
         "characterId": "barber",
         "actionId": "swapCharacters"
@@ -179,6 +183,7 @@
         "kind": "system",
         "actionId": "dawn"
       }
-    ]
+    ],
+    "nightOrderVersion": 2
   }
 }

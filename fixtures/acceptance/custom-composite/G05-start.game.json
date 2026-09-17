@@ -144,6 +144,10 @@
             "actionId": "attackPlayer"
           },
           {
+            "kind": "system",
+            "actionId": "resolveNightDeaths"
+          },
+          {
             "kind": "character",
             "characterId": "barber",
             "actionId": "swapCharacters"
@@ -182,13 +186,14 @@
             "kind": "system",
             "actionId": "dawn"
           }
-        ]
+        ],
+        "nightOrderVersion": 2
       }
     },
     "id": "issue232-G05",
     "name": "죽어도 남는 힘",
     "createdAt": "2026-09-16T12:00:00.000Z",
-    "updatedAt": "2026-09-16T11:17:32.254Z",
+    "updatedAt": "2026-09-17T06:09:01.455Z",
     "events": [
       {
         "id": "setup-1",

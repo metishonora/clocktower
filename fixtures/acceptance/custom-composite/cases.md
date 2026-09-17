@@ -79,8 +79,8 @@
 | G05-C04 | character-vigormortis, shared-pending-restore | 12번 독살범을 살해한 후 미완료 중독 선택을 복원해 이웃 마을주민 10번을 중독시킨다. | [G05 절차 27](G05.md) | [G05-vigor-poison-pending](G05-vigor-poison-pending.game.json) | 통과 | 미확인 | 미확인 |
 | G05-C05 | character-juggler | 전날 기록한 정답 2개가 정상 곡예사 정보 2로 전달된다. | [G05 절차 32](G05.md) | [G05-vigor-poison-pending](G05-vigor-poison-pending.game.json) | 통과 | 미확인 | 미확인 |
 | G05-C06 | character-vigormortis, character-poisoner | 죽은 12번 독살범이 기존 능력 instance로 다음 밤에도 5번을 중독시킨다. | [G05 절차 41](G05.md) | [G05-retained-minion](G05-retained-minion.game.json) | 통과 | 미확인 | 미확인 |
-| G05-C07 | character-pitHag, character-noDashii | 악마 생성의 필수 사망 판단을 거쳐 노 다시가 된다. 외지인·하수인을 건너뛴 1번과 10번만 노 다시 중독이다. | [G05 절차 46](G05.md) | [G05-arbitrary-deaths-pending](G05-arbitrary-deaths-pending.game.json) | 통과 | 미확인 | 미확인 |
-| G05-C08 | character-pitHag | 악마 변경 밤에 사망 없음으로 판단하면 노 다시의 공격으로도 8번은 죽지 않는다. | [G05 절차 47](G05.md) | [G05-arbitrary-deaths-pending](G05-arbitrary-deaths-pending.game.json) | 통과 | 미확인 | 미확인 |
+| G05-C07 | character-pitHag, character-noDashii | 노 다시 변경 후 공격 대상을 먼저 고른다. 외지인·하수인을 건너뛴 1번과 10번만 노 다시 중독이다. | [G05 절차 45](G05.md) | [G05-new-demon](G05-new-demon.game.json) | 통과 | 미확인 | 미확인 |
+| G05-C08 | character-pitHag | 예측불허의 죽음에서 앞선 15번→8번 공격을 확인하고 사망 없음을 확정한다. 8번은 생존하며 이 사망 판단은 별도로 되돌릴 수 있다. | [G05 절차 47](G05.md) | [G05-arbitrary-deaths-pending](G05-arbitrary-deaths-pending.game.json) | 통과 | 미확인 | 미확인 |
 | G05-C09 | character-sage, shared-jinx-recluse-sage | 은둔자가 후보 풀에만 있으면 현자는 실제 살해자 15번이 포함된 정보를 받는다. | [G05 절차 64](G05.md) | [G05-pool-only-sage](G05-pool-only-sage.game.json) | 통과 | 미확인 | 미확인 |
 | G05-C10 | character-noDashii | 노 다시가 죽으면 그 출처의 이웃 중독은 사라진다. | [G05 절차 77](G05.md) | [G05-pool-only-sage](G05-pool-only-sage.game.json) | 통과 | 미확인 | 미확인 |
 | G05-C11 | shared-end-game | 선 승리가 확정되고 이후 밤 진행을 거부한다. | [G05 절차 78](G05.md) | [G05-pool-only-sage](G05-pool-only-sage.game.json) | 통과 | 미확인 | 미확인 |

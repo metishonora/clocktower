@@ -144,6 +144,10 @@
             "actionId": "attackPlayer"
           },
           {
+            "kind": "system",
+            "actionId": "resolveNightDeaths"
+          },
+          {
             "kind": "character",
             "characterId": "barber",
             "actionId": "swapCharacters"
@@ -182,13 +186,14 @@
             "kind": "system",
             "actionId": "dawn"
           }
-        ]
+        ],
+        "nightOrderVersion": 2
       }
     },
     "id": "issue232-G05",
     "name": "죽어도 남는 힘",
     "createdAt": "2026-09-16T12:00:00.000Z",
-    "updatedAt": "2026-09-16T11:17:33.886Z",
+    "updatedAt": "2026-09-17T06:09:02.245Z",
     "events": [
       {
         "id": "setup-1",
@@ -334,7 +339,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:philosopher:chooseAbility:owner2:p1:instance8:setup:p1",
-        "createdAt": "2026-09-16T11:17:32.254Z"
+        "createdAt": "2026-09-17T06:09:01.455Z"
       },
       {
         "id": "phase-step-3",
@@ -349,7 +354,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:system:minionInfo",
-        "createdAt": "2026-09-16T11:17:32.268Z"
+        "createdAt": "2026-09-17T06:09:01.507Z"
       },
       {
         "id": "phase-step-4",
@@ -370,7 +375,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:system:demonInfo",
-        "createdAt": "2026-09-16T11:17:32.276Z"
+        "createdAt": "2026-09-17T06:09:01.522Z"
       },
       {
         "id": "phase-step-5",
@@ -401,7 +406,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:poisoner:choosePoisonTarget:owner3:p12:instance9:setup:p12",
-        "createdAt": "2026-09-16T11:17:32.286Z"
+        "createdAt": "2026-09-17T06:09:01.533Z"
       },
       {
         "id": "phase-step-6",
@@ -431,7 +436,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
-        "createdAt": "2026-09-16T11:17:32.295Z"
+        "createdAt": "2026-09-17T06:09:01.548Z"
       },
       {
         "id": "phase-step-7",
@@ -462,7 +467,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:witch:chooseCursedPlayer:owner3:p13:instance9:setup:p13",
-        "createdAt": "2026-09-16T11:17:32.303Z"
+        "createdAt": "2026-09-17T06:09:01.558Z"
       },
       {
         "id": "phase-step-8",
@@ -505,7 +510,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:empath:learnEvilNeighbors:owner2:p5:instance8:setup:p5",
-        "createdAt": "2026-09-16T11:17:32.312Z"
+        "createdAt": "2026-09-17T06:09:01.569Z"
       },
       {
         "id": "phase-step-9",
@@ -538,7 +543,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:fortuneTeller:assignRedHerring:owner2:p6:instance8:setup:p6:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
-        "createdAt": "2026-09-16T11:17:32.322Z"
+        "createdAt": "2026-09-17T06:09:01.580Z"
       },
       {
         "id": "phase-step-10",
@@ -589,7 +594,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:fortuneTeller:checkDemon:owner2:p6:instance8:setup:p6",
-        "createdAt": "2026-09-16T11:17:32.334Z"
+        "createdAt": "2026-09-17T06:09:01.597Z"
       },
       {
         "id": "phase-step-11",
@@ -656,7 +661,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:dreamer:learnCharacters:owner2:p4:instance8:setup:p4",
-        "createdAt": "2026-09-16T11:17:32.356Z"
+        "createdAt": "2026-09-17T06:09:01.620Z"
       },
       {
         "id": "phase-step-12",
@@ -699,7 +704,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:mathematician:learnCount:owner3:p10:instance9:setup:p10",
-        "createdAt": "2026-09-16T11:17:32.379Z"
+        "createdAt": "2026-09-17T06:09:01.638Z"
       },
       {
         "id": "phase-step-13",
@@ -714,7 +719,7 @@
         },
         "phase": "firstNight",
         "summary": "단계 확정: firstNight:system:dawn",
-        "createdAt": "2026-09-16T11:17:32.399Z"
+        "createdAt": "2026-09-17T06:09:01.649Z"
       },
       {
         "id": "day-event-14",
@@ -1023,7 +1028,7 @@
         },
         "phase": "day",
         "summary": "낮 능력 기록",
-        "createdAt": "2026-09-16T11:17:32.420Z"
+        "createdAt": "2026-09-17T06:09:01.657Z"
       },
       {
         "id": "day-event-15",
@@ -1328,7 +1333,7 @@
         },
         "phase": "day",
         "summary": "낮 능력 기록",
-        "createdAt": "2026-09-16T11:17:32.439Z"
+        "createdAt": "2026-09-17T06:09:01.669Z"
       },
       {
         "id": "day-event-16",
@@ -1607,7 +1612,7 @@
         },
         "phase": "day",
         "summary": "낮 진행",
-        "createdAt": "2026-09-16T11:17:32.460Z"
+        "createdAt": "2026-09-17T06:09:01.679Z"
       },
       {
         "id": "day-event-17",
@@ -1886,7 +1891,7 @@
         },
         "phase": "day",
         "summary": "낮 진행",
-        "createdAt": "2026-09-16T11:17:32.482Z"
+        "createdAt": "2026-09-17T06:09:01.686Z"
       },
       {
         "id": "day-event-18",
@@ -2165,7 +2170,7 @@
         },
         "phase": "day",
         "summary": "낮 진행",
-        "createdAt": "2026-09-16T11:17:32.504Z"
+        "createdAt": "2026-09-17T06:09:01.693Z"
       },
       {
         "id": "day-event-19",
@@ -2444,7 +2449,7 @@
         },
         "phase": "day",
         "summary": "지목 종료",
-        "createdAt": "2026-09-16T11:17:32.526Z"
+        "createdAt": "2026-09-17T06:09:01.700Z"
       },
       {
         "id": "day-event-20",
@@ -2723,7 +2728,7 @@
         },
         "phase": "day",
         "summary": "투표 결과에 따른 처형 처리",
-        "createdAt": "2026-09-16T11:17:32.550Z"
+        "createdAt": "2026-09-17T06:09:01.708Z"
       },
       {
         "id": "day-event-21",
@@ -3002,7 +3007,7 @@
         },
         "phase": "day",
         "summary": "다음 밤 시작",
-        "createdAt": "2026-09-16T11:17:32.574Z"
+        "createdAt": "2026-09-17T06:09:01.716Z"
       },
       {
         "id": "phase-step-22",
@@ -3033,7 +3038,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:poisoner:choosePoisonTarget:owner3:p12:instance9:setup:p12",
-        "createdAt": "2026-09-16T11:17:32.600Z"
+        "createdAt": "2026-09-17T06:09:01.726Z"
       },
       {
         "id": "phase-step-23",
@@ -3063,7 +3068,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
-        "createdAt": "2026-09-16T11:17:32.636Z"
+        "createdAt": "2026-09-17T06:09:01.747Z"
       },
       {
         "id": "phase-step-24",
@@ -3093,7 +3098,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:monk:protectPlayer:owner2:p7:instance8:setup:p7",
-        "createdAt": "2026-09-16T11:17:32.672Z"
+        "createdAt": "2026-09-17T06:09:01.767Z"
       },
       {
         "id": "phase-step-25",
@@ -3124,7 +3129,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:witch:chooseCursedPlayer:owner3:p13:instance9:setup:p13",
-        "createdAt": "2026-09-16T11:17:32.711Z"
+        "createdAt": "2026-09-17T06:09:01.787Z"
       },
       {
         "id": "phase-step-26",
@@ -3159,7 +3164,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:pitHag:changeCharacter:owner3:p14:instance9:setup:p14",
-        "createdAt": "2026-09-16T11:17:32.750Z"
+        "createdAt": "2026-09-17T06:09:01.807Z"
       },
       {
         "id": "phase-step-27",
@@ -3191,7 +3196,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:vigormortis:attackPlayer:owner3:p15:instance9:setup:p15",
-        "createdAt": "2026-09-16T11:17:32.792Z"
+        "createdAt": "2026-09-17T06:09:01.832Z"
       },
       {
         "id": "phase-step-28",
@@ -3226,7 +3231,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:vigormortis:choosePoison:owner3:p15:instance9:setup:p15:cause82:{\"kind\":\"effect\",\"triggerEventId\":\"phase-step-27\",\"effectEventId\":\"phase-step-27\"}",
-        "createdAt": "2026-09-16T11:17:32.845Z"
+        "createdAt": "2026-09-17T06:09:01.867Z"
       },
       {
         "id": "phase-step-29",
@@ -3269,7 +3274,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:empath:learnEvilNeighbors:owner2:p5:instance8:setup:p5",
-        "createdAt": "2026-09-16T11:17:32.917Z"
+        "createdAt": "2026-09-17T06:09:01.919Z"
       },
       {
         "id": "phase-step-30",
@@ -3320,7 +3325,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:fortuneTeller:checkDemon:owner2:p6:instance8:setup:p6",
-        "createdAt": "2026-09-16T11:17:32.984Z"
+        "createdAt": "2026-09-17T06:09:01.962Z"
       },
       {
         "id": "phase-step-31",
@@ -3387,7 +3392,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:dreamer:learnCharacters:owner2:p4:instance8:setup:p4",
-        "createdAt": "2026-09-16T11:17:33.049Z"
+        "createdAt": "2026-09-17T06:09:02.000Z"
       },
       {
         "id": "phase-step-32",
@@ -3442,7 +3447,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:seamstress:compareAlignments:owner2:p1:instance16:phase-step-26:p1",
-        "createdAt": "2026-09-16T11:17:33.120Z"
+        "createdAt": "2026-09-17T06:09:02.043Z"
       },
       {
         "id": "phase-step-33",
@@ -3485,7 +3490,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:juggler:learnJuggles:owner2:p3:instance8:setup:p3",
-        "createdAt": "2026-09-16T11:17:33.202Z"
+        "createdAt": "2026-09-17T06:09:02.090Z"
       },
       {
         "id": "phase-step-34",
@@ -3539,7 +3544,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:mathematician:learnCount:owner3:p10:instance9:setup:p10",
-        "createdAt": "2026-09-16T11:17:33.276Z"
+        "createdAt": "2026-09-17T06:09:02.115Z"
       },
       {
         "id": "phase-step-35",
@@ -3554,7 +3559,7 @@
         },
         "phase": "night",
         "summary": "단계 확정: night:2:system:dawn",
-        "createdAt": "2026-09-16T11:17:33.358Z"
+        "createdAt": "2026-09-17T06:09:02.141Z"
       },
       {
         "id": "day-event-36",
@@ -3836,7 +3841,7 @@
         },
         "phase": "day",
         "summary": "낮 진행",
-        "createdAt": "2026-09-16T11:17:33.433Z"
+        "createdAt": "2026-09-17T06:09:02.159Z"
       },
       {
         "id": "day-event-37",
@@ -4118,7 +4123,7 @@
         },
         "phase": "day",
         "summary": "낮 진행",
-        "createdAt": "2026-09-16T11:17:33.504Z"
+        "createdAt": "2026-09-17T06:09:02.171Z"
       },
       {
         "id": "day-event-38",
@@ -4400,7 +4405,7 @@
         },
         "phase": "day",
         "summary": "낮 진행",
-        "createdAt": "2026-09-16T11:17:33.577Z"
+        "createdAt": "2026-09-17T06:09:02.184Z"
       },
       {
         "id": "day-event-39",
@@ -4682,7 +4687,7 @@
         },
         "phase": "day",
         "summary": "지목 종료",
-        "createdAt": "2026-09-16T11:17:33.653Z"
+        "createdAt": "2026-09-17T06:09:02.199Z"
       },
       {
         "id": "day-event-40",
@@ -4964,7 +4969,7 @@
         },
         "phase": "day",
         "summary": "투표 결과에 따른 처형 처리",
-        "createdAt": "2026-09-16T11:17:33.729Z"
+        "createdAt": "2026-09-17T06:09:02.215Z"
       },
       {
         "id": "day-event-41",
@@ -5246,7 +5251,7 @@
         },
         "phase": "day",
         "summary": "다음 밤 시작",
-        "createdAt": "2026-09-16T11:17:33.806Z"
+        "createdAt": "2026-09-17T06:09:02.230Z"
       }
     ]
   },
