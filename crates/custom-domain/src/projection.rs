@@ -129,6 +129,14 @@ pub(crate) fn first_night(
         registry.enrich_input(context, occurrence, step)?;
     }
 
+    // Use the active night's plan, including actions that never run on the first night.
+    // Preparations absent from the plan retain their consumer's placement.
+    let plan_index = |action: &FirstNightActionRef| {
+        plan.0.iter().position(|entry| entry == action).or_else(|| {
+            registry.linked_action(action)
+                .and_then(|linked| plan.0.iter().position(|entry| *entry == linked))
+        })
+    };
     let mut rows = Vec::new();
     let mut last_linked_entry = 0;
     for (sequence, completion) in progress
@@ -145,8 +153,7 @@ pub(crate) fn first_night(
             .step
             .action_ref
             .as_ref()
-            .and_then(|a| registry.linked_action(a))
-            .and_then(|a| plan.0.iter().position(|p| *p == a))
+            .and_then(plan_index)
             .unwrap_or(last_linked_entry);
         last_linked_entry = entry_index;
         rows.push(OverviewRow {
@@ -159,9 +166,7 @@ pub(crate) fn first_night(
     }
 
     for (sequence, projected) in pending.into_iter().enumerate() {
-        let entry_index = registry
-            .linked_action(&projected.occurrence.action_ref)
-            .and_then(|a| plan.0.iter().position(|p| *p == a))
+        let entry_index = plan_index(&projected.occurrence.action_ref)
             .unwrap_or(sequence);
         let status = if next_identity
             .as_ref()

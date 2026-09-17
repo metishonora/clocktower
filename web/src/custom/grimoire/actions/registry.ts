@@ -3,6 +3,8 @@ import {systemActions} from './system';
 import {troubleBrewingActions} from './troubleBrewing';
 import {sectsAndVioletsActions} from './sectsAndViolets';
 export type ActionAdapter={
+ emptySelection?:{label:string};
+ confirmSelectionLabel?:string;
  resultReview?:'attack'|'selection'|'changedIdentity'|'unchangedIdentity';
  selectionLabel?:string;
  stage:'preparation'|'action'|'delivery'|'transition';

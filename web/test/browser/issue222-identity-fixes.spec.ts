@@ -7,9 +7,9 @@ for(const width of [390,1366]) {
  test(`daytime Scarlet Woman succession waits for night at ${width}`,async({page},info)=>{
   await page.setViewportSize({width,height:1000});await enter(page,await original());
   await page.getByRole('button',{name:/처단자 행동 열기/}).click();await page.getByRole('dialog',{name:'처단자 능력 사용'}).getByRole('button',{name:'7번 Player 7',exact:true}).click();
-  await page.getByRole('button',{name:'처단자 능력 사용',exact:true}).click();await page.getByRole('button',{name:'사망 확정',exact:true}).click();
+  await page.getByRole('button',{name:'처단자 능력 사용',exact:true}).click();await page.getByRole('button',{name:'사망 확인',exact:true}).click();
   await expect(page.getByRole('button',{name:'발표 완료',exact:true})).toBeVisible();await expect(page.getByText('정체 변경 알림',{exact:true})).toHaveCount(0);
-  await page.getByRole('button',{name:'마도서',exact:true}).click();await expect(page.getByRole('button',{name:'6번 Player 6, 임프',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'마도서',exact:true}).click();await expect(page.getByRole('button',{name:'6번 Player 6, 임프, 생존',exact:true})).toBeVisible();
   await page.screenshot({path:info.outputPath('scarlet-day.png'),fullPage:true});
   await page.reload();await expect(page.getByRole('dialog',{name:/직업 변경 안내/})).toHaveCount(0);await page.getByRole('button',{name:'진행',exact:true}).click();await nextNight(page);
   const notice=page.getByRole('dialog',{name:'직업 변경 안내 1/1',exact:true});await expect(notice).toContainText('6번 Player 6');await expect(page.getByRole('dialog',{name:'플레이어 정보',exact:true})).toHaveCount(0);
@@ -23,7 +23,7 @@ for(const width of [390,1366]) {
   for(const name of ['시장','성자','은둔자'])await page.getByRole('button',{name:`${name} 속임수 선택`,exact:true}).click();
   for(let i=0;i<2;i++){await page.getByRole('button',{name:/정보 공개$/}).click();await page.getByRole('button',{name:'확인했으면 눈을 감으세요',exact:true}).click();await page.getByRole('button',{name:/^(다음으로|다음 단계)$/}).click();}
   await page.getByRole('button',{name:'낮 시작',exact:true}).click();await page.getByRole('button',{name:'마도서',exact:true}).click();
-  const seat=page.getByRole('button',{name:'1번 P1, 군인',exact:true});await expect(seat).toBeVisible();await expect(seat.locator('.tbRevealTokenList')).toHaveCount(0);await page.screenshot({path:info.outputPath('drunk-day.png'),fullPage:true});
+  const seat=page.getByRole('button',{name:'1번 P1, 군인, 생존',exact:true});await expect(seat).toBeVisible();await expect(seat.locator('.tbRevealTokenList')).toHaveCount(0);await page.screenshot({path:info.outputPath('drunk-day.png'),fullPage:true});
   await page.reload();await page.getByRole('button',{name:'마도서',exact:true}).click();await expect(seat).toBeVisible();await expect(seat.locator('.tbRevealTokenList')).toHaveCount(0);await page.getByRole('button',{name:'진행',exact:true}).click();await nextNight(page);
   await page.getByRole('button',{name:'마도서',exact:true}).click();await expect(seat).toBeVisible();await expect(seat.locator('.tbRevealTokenList')).toHaveCount(0);await page.screenshot({path:info.outputPath('drunk-night.png'),fullPage:true});
  });

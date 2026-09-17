@@ -152,6 +152,7 @@ fn custom_candidate_policy_scopes_bluffs_ability_acquisition_and_transformation(
         "vortox",
     ];
     let context = resolve_custom_script(&CustomScriptDefinition {
+        night_order_version: None,
         id: "custom-candidate-contract".into(),
         name: "Custom candidate contract".into(),
         character_ids: definition_order

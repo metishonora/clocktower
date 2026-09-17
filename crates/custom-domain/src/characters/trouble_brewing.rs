@@ -557,6 +557,16 @@ pub(crate) fn registrations() -> Vec<RegisteredAction> {
 struct TbHandler {
     action_ref: FirstNightActionRef,
 }
+
+// The canonical execution record also covers Virgin and madness executions.
+// Ordinary daytime kills (Witch/Slayer) must not replace this historical subject.
+fn undertaker_execution(facts: &CustomGameFacts) -> Option<&crate::day::contracts::DayDeathRecord> {
+    let day = facts.day.as_ref()?;
+    let execution = day.execution.as_ref().filter(|e| e.died)?;
+    let death_id = execution.death_event_id.as_ref()?;
+    day.deaths.iter().find(|death| &death.event_id == death_id)
+}
+
 impl TbHandler {
     fn character(&self) -> &str {
         match &self.action_ref {
@@ -576,13 +586,7 @@ impl TbHandler {
             return raven_occurrences(facts, &self.action_ref);
         }
 
-        if self.character() == "undertaker"
-            && !facts.day.as_ref().is_some_and(|d| {
-                d.deaths.iter().any(|death| {
-                    death.cause.cause == crate::day::contracts::DayDeathCause::Execution
-                })
-            })
-        {
+        if self.character() == "undertaker" && undertaker_execution(facts).is_none() {
             return Ok(vec![]);
         }
         let mut bases = c
@@ -893,16 +897,7 @@ impl TbHandler {
         };
         if self.character() == "undertaker" {
             let actual = self.truth(definition, facts, o, &[], &[])?;
-            let death = facts
-                .day
-                .as_ref()
-                .and_then(|d| {
-                    d.deaths
-                        .iter()
-                        .rev()
-                        .find(|d| d.cause.cause == crate::day::contracts::DayDeathCause::Execution)
-                })
-                .ok_or_else(invalid)?;
+            let death = undertaker_execution(facts).ok_or_else(invalid)?;
             let source = historical_registration_source(&death.participant);
             let mut choices = vec![];
             for id in definition.character_ids() {
@@ -1223,15 +1218,7 @@ impl TbHandler {
                     .clone(),
             },
             "undertaker" => {
-                let death = facts
-                    .day
-                    .as_ref()
-                    .and_then(|d| {
-                        d.deaths.iter().rev().find(|death| {
-                            death.cause.cause == crate::day::contracts::DayDeathCause::Execution
-                        })
-                    })
-                    .ok_or_else(invalid)?;
+                let death = undertaker_execution(facts).ok_or_else(invalid)?;
                 let p = &death.participant;
                 if judgments.len() > 1
                     || judgments.iter().any(|j| {
@@ -1389,14 +1376,7 @@ impl TbHandler {
                 return Err(invalid());
             }
             if self.character() == "undertaker" {
-                vec![facts
-                    .day
-                    .as_ref()
-                    .and_then(|d| {
-                        d.deaths.iter().rev().find(|death| {
-                            death.cause.cause == crate::day::contracts::DayDeathCause::Execution
-                        })
-                    })
+                vec![undertaker_execution(facts)
                     .ok_or_else(invalid)?
                     .participant
                     .player_id
@@ -2136,14 +2116,7 @@ fn information_causes(
         });
         for j in judgments {
             let source = if character == "undertaker" {
-                facts
-                    .day
-                    .as_ref()
-                    .and_then(|d| {
-                        d.deaths.iter().rev().find(|d| {
-                            d.cause.cause == crate::day::contracts::DayDeathCause::Execution
-                        })
-                    })
+                undertaker_execution(facts)
                     .and_then(|d| historical_registration_source(&d.participant))
             } else {
                 registration_source(facts, &j.player_id)

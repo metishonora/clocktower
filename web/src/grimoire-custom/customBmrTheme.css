@@ -130,3 +130,7 @@
   background: #ecd39e;
   box-shadow: inset 4px 0 #80521d;
 }
+
+.customBmrTheme[data-theme=day] .snvGrimoireDraft > button.snvDeadSeat:not(.snvGhostVoteAvailable):not(.snvSeatStateSelected) :is(.snvSeatNumber,.snvSeatPlayerName,small) {
+  color: #45484e;
+}

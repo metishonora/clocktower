@@ -4,7 +4,7 @@ use crate::first_night::{action_registry, catalog, ActionRegistry};
 #[test]
 fn production_builder_covers_all_declared_actions_and_categories() {
     let registry = action_registry().unwrap();
-    assert_eq!(catalog::production_actions().len(), 47);
+    assert_eq!(catalog::production_actions().len(), 48);
     for (action, ordered) in catalog::production_actions() {
         assert_eq!(
             registry
@@ -43,6 +43,7 @@ fn additional_actions_cannot_be_misclassified_as_regular_even_with_a_real_handle
         let mut entry = crate::characters::trouble_brewing::registrations()
             .into_iter()
             .chain(crate::characters::sects_and_violets::registrations())
+            .chain(std::iter::once(crate::first_night::night_deaths::registration()))
             .find(|entry| entry.spec.action_ref == action)
             .unwrap();
         entry.spec.participates_in_first_night = true;

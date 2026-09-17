@@ -109,6 +109,7 @@ fn t13_registered_action_scope_matches_the_complete_night_contracts() {
     let mut expected = vec![
         "system.dusk",
         "system.minionInfo",
+        "system.resolveNightDeaths",
         "system.demonInfo",
         "system.dawn",
         "fortuneTeller.assignRedHerring",

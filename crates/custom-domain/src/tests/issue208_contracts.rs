@@ -14,6 +14,7 @@ fn additional_actions_never_become_required_definition_order_entries() {
         .chain(["drunk".into(), "mutant".into()])
         .collect();
     let draft = CustomScriptDefinitionDraft {
+        night_order_version: None,
         id: "208".into(),
         name: "208".into(),
         character_ids: pool,
@@ -26,6 +27,7 @@ fn additional_actions_never_become_required_definition_order_entries() {
         .unwrap()
         .plan;
     let definition = CustomScriptDefinition {
+        night_order_version: None,
         id: draft.id,
         name: draft.name,
         character_ids: draft.character_ids,

@@ -62,7 +62,7 @@ export function CustomReveal({ payload, onClose }: { payload: RevealPayload; onC
 }
 function RevealContent({payload:p}:{payload:RevealPayload}) {
  if('kind' in p && p.kind==='evilTwinPair')return <EvilTwinRevealContent players={p.players} label={revealAssets.label} icon={revealAssets.icon}/>;
- if('kind' in p && (p.kind==='dreamerInformation'||p.kind==='seamstressInformation'||p.kind==='sageInformation'||p.kind==='booleanInformation'||p.kind==='numericInformation'&&characterPresentation(p.characterId)?.source==='sectsAndViolets'))return <SnvInformationRevealContent payload={p} label={revealAssets.label} icon={revealAssets.icon}/>;
+ if('kind' in p && (p.kind==='booleanInformation'||p.kind==='dreamerInformation'||p.kind==='seamstressInformation'||p.kind==='sageInformation'||p.kind==='numericInformation'&&characterPresentation(p.characterId)?.source==='sectsAndViolets'))return <SnvInformationRevealContent payload={p} label={revealAssets.label} icon={revealAssets.icon}/>;
  if('kind' in p && (p.kind==='minionInformation'||p.kind==='demonInformation'))return <EvilInformationRevealContent minion={p.kind==='minionInformation'} players={p.kind==='minionInformation'?p.demonPlayers:p.minionPlayers} bluffs={p.kind==='demonInformation'?p.bluffCharacterIds.map(id=>({id,label:characterPresentation(id)?.label ?? id,icon:<img src={characterPresentation(id)?.image} width={64} height={64} alt=""/>})):[]}/>;
  if ('kind' in p && p.kind==='spyGrimoire') return null;
  if ('kind' in p && p.kind==='madnessAssignment') {const role=characterPresentation(p.characterId);return <MadnessRevealContent characterName={role?.label ?? p.characterId} icon={<img src={role?.image} alt={role?.label}/>}/>;}
@@ -86,8 +86,8 @@ function SpyBoard({payload,onClose,closeRef}:{payload:SpyGrimoireRevealPayload;o
   id:p.playerId,interactive:true,onSelect:()=>setSelected(p.playerId),buttonRef:node=>{if(node)refs.current.set(p.playerId,node);else refs.current.delete(p.playerId);},position:desktop[index],mobilePosition:mobile[index],
   afterSeat:<PlayerTokenCountBadge count={tokens(p).reduce((n,t)=>n+(t.count??1),0)} position={desktop[index]} mobilePosition={mobile[index]} theme="night"/>,
   className:`fixedSize assigned alignment-${p.alignment??'good'} kind-${characterPresentation(p.characterId)?.kind.toLowerCase()}${p.alive?'':' snvDeadSeat'}`,
-  ariaLabel:`${p.seat}번 ${p.name}, ${characterPresentation(p.characterId)?.label}`,
-  content:<GrimoireSeatContent seat={p.seat} name={p.name} alive={p.alive} label={characterPresentation(p.characterId)?.label??p.characterId} icon={<img src={characterPresentation(p.characterId)?.image} alt=""/>}/>,
+  ariaLabel:`${p.seat}번 ${p.name}, ${characterPresentation(p.characterId)?.label}, ${p.alive?'생존':p.ghostVoteUsed?'사망 · 유령표 사용함':'사망 · 유령표 사용 가능'}`,
+  content:<GrimoireSeatContent seat={p.seat} name={p.name} alive={p.alive} ghostVoteUsed={p.ghostVoteUsed} label={characterPresentation(p.characterId)?.label??p.characterId} icon={<img src={characterPresentation(p.characterId)?.image} alt=""/>}/>,
  }))}/>{player&&role&&<PlayerTokenDetailDialog appearance="bmr" theme="night" onClose={()=>{setSelected(undefined);refs.current.get(player.playerId)?.focus();}}
   player={{characterId:role.id,seat:player.seat,name:player.name,characterLabel:role.label,characterKindLabel:kindLabels[role.kind],characterAbility:role.ability,characterIconSrc:role.image,alignment:player.alignment??'good'}}
   characterDetails={role.source==='troubleBrewing'?troubleBrewingCharacterDetail(role.id):sectsAndVioletsCharacterDetail(role.id)} tokens={tokens(player)}/>}</>;
@@ -99,7 +99,8 @@ function revealClass(p:RevealPayload):string {
  if(p.kind==='evilTwinPair')return `${base} evilTwinReveal`;
  if(p.kind==='characterChange')return `${base} snakeCharmerReveal ${p.alignment}`;
  if(p.kind==='madnessAssignment')return `${base} cerenovusMadnessReveal`;
- if(p.kind==='dreamerInformation'||p.kind==='seamstressInformation'||p.kind==='sageInformation'||p.kind==='booleanInformation'||p.kind==='numericInformation'&&characterPresentation(p.characterId)?.source==='sectsAndViolets')return `${base} snvProductionInformationReveal`;
+ if(p.kind==='booleanInformation')return `${base} snvProductionInformationReveal customBooleanReveal`;
+ if(p.kind==='dreamerInformation'||p.kind==='seamstressInformation'||p.kind==='sageInformation'||p.kind==='numericInformation'&&characterPresentation(p.characterId)?.source==='sectsAndViolets')return `${base} snvProductionInformationReveal`;
  if(p.kind==='minionInformation'||p.kind==='demonInformation')return base;
  return `${base} tbInformationReveal tb-${p.kind}`;
 }

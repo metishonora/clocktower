@@ -611,6 +611,7 @@ fn system_action_id(
         SystemFirstNightActionId::MinionInfo => Ok("minionInfo"),
         SystemFirstNightActionId::DemonInfo => Ok("demonInfo"),
         SystemFirstNightActionId::Dawn => Ok("dawn"),
+        SystemFirstNightActionId::ResolveNightDeaths => Ok("resolveNightDeaths"),
         SystemFirstNightActionId::Unknown => {
             Err(crate::error::ErrorKind::InvalidFirstNightActionProvenance.into_error())
         }

@@ -1,6 +1,9 @@
+import {GameEndDialog,GameEndDock,EndedGameView} from '../shared-ui/GameEndPresentation';
+import {endReason} from './customGameEndPresentation';
 import {phaseLabel} from '../custom/grimoire/phasePresentation';
 import {CustomDayAbilities} from './CustomDayAbilities';
 import {CustomDayBoard} from './CustomDayBoard';
+import {CustomDayResolutionBoard,dayBoardResolution} from './CustomDayResolutionBoard';
 import {CustomDayPhaseOrder} from './CustomDayPhaseOrder';
 import {CustomDayTask} from './CustomDayTask';
 import {LiveUndoDialog} from '../features/event-log/LiveUndoDialog';
@@ -44,20 +47,30 @@ export function CustomGrimoirePlay({ controller, onNewGame, onNewScenario, onImp
     if(!request||current.busy||current.public||current.saveStatus!=='saved'||JSON.stringify(request.file.game)!==JSON.stringify(current.file.game))return;
     void controller.undo();
   };
-  const [tab,setTab] = useState('play');
+  const pendingDayResolution=!state.dayNotifications?.length?dayBoardResolution(replay):undefined;
+  const [dayConsequenceSelection,setDayConsequenceSelection]=useState<string>();
+  const dayResolution=pendingDayResolution?.kind==='death'||pendingDayResolution?.id===dayConsequenceSelection?pendingDayResolution:undefined;
+  const [tab,setTab] = useState(replay.gameEnd||dayResolution?'seating':'play');
   const [returnOpen,setReturnOpen]=useState(false);
   const wasSelecting=useRef(false);
   const handoffDestination=useRef<'board'|'progress'>('progress');
   useEffect(()=>{
-    const active=state.selecting||!!state.handoff||!!state.dayHandoff;
+    const active=state.selecting||!!state.handoff||!!state.dayHandoff||!!dayResolution;
+    if(dayResolution)handoffDestination.current='progress';
     if(state.dayHandoff)handoffDestination.current='progress';
     else if(state.handoff?.stage==='notification'||state.handoff?.stage==='result')handoffDestination.current=state.handoff.stage==='result'?'progress':actionAdapter(state.handoff.step)?.closeDestination??'progress';
     else if(state.selecting)handoffDestination.current='progress';
     if(active){utilities.close();setTab('seating');}
     else if(wasSelecting.current){setTab(handoffDestination.current==='board'?'seating':'play');}
     wasSelecting.current=active;
-  },[state.selecting,state.selectionRevision,state.handoff?.stage,state.dayHandoff]);
+  },[state.selecting,state.selectionRevision,state.handoff?.stage,state.dayHandoff,dayResolution?.id]);
   const utilities = useCustomUtilities({definition:file.game.script.definition,file,busy:state.busy || state.public || state.saveStatus!=='saved',onNewGame,onNewScenario,onImport,history:<CustomEventLog file={file}/>});
+  useEffect(()=>{
+    setDayConsequenceSelection(undefined);
+    if(pendingDayResolution?.kind==='consequence'){utilities.close();setTab('play');}
+  },[pendingDayResolution?.id]);
+  useEffect(()=>{if(replay.gameEnd){utilities.close();setTab('seating');}},[replay.gameEnd?.sourceEventId]);
+  const pendingEnd=replay.day?.pendingGameEnd;
   const step = controller.step;
   const original=file.game.events.find(event=>event.type==='setupConfirmed');
   const players=original?.type==='setupConfirmed'?original.payload.players:[];
@@ -69,13 +82,13 @@ export function CustomGrimoirePlay({ controller, onNewGame, onNewScenario, onImp
     headerActionsAriaLabel="되돌리기"
     headerActions={<UndoButton summary={undoSummary} disabled={state.busy||state.public} onUndo={undo}/>}
     utilities={utilities.destinations}
-    stages={[{id:'roles',label:'직업',disabled:!!state.handoff||!!state.dayHandoff,active:tab==='roles',className:tab==='roles'?'active':''},{id:'seating',label:'마도서',active:tab==='seating',className:tab==='seating'?'active':''},{id:'play',label:'진행',disabled:!!state.handoff||!!state.dayHandoff,active:tab==='play',className:tab==='play'?'active':''}]}
-    onNavigate={id=>{ if(state.selecting||state.handoff||state.dayHandoff)return; utilities.close(); setTab(id); window.scrollTo({top:0,behavior:'instant'}); }}>
+    stages={[{id:'roles',label:'직업',disabled:!!state.handoff||!!state.dayHandoff||!!dayResolution,active:tab==='roles',className:tab==='roles'?'active':''},{id:'seating',label:'마도서',active:tab==='seating',className:tab==='seating'?'active':''},{id:'play',label:'진행',disabled:!!state.handoff||!!state.dayHandoff||!!dayResolution,active:tab==='play',className:tab==='play'?'active':''}]}
+    onNavigate={id=>{ if(state.selecting||state.handoff||state.dayHandoff||dayResolution)return; utilities.close(); setTab(id); window.scrollTo({top:0,behavior:'instant'}); }}>
     <div className="customSaveStatus" role="status">{state.saveStatus==='failed' ? <><strong>자동 저장 실패 · 현재 진행 {file.game.events.length}건 · 마지막 저장 {state.lastSavedEventCount}건</strong><button type="button" onClick={controller.retrySave}>저장 다시 시도</button></> : state.saveStatus==='saving' ? '저장 중…' : null}</div>
     {Array.from(new Set([...replay.warnings,...(state.proposal?.warnings ?? [])].map(w=>w.messageKo))).map(message=><p key={message} className="customPlayWarning" role="status">{message}</p>)}
     {tab==='roles'&&state.setupDistributionError&&<div className="customPlayError" role="alert">{state.setupDistributionError}<button type="button" onClick={()=>void controller.retrySetupDistribution()}>구성 다시 확인</button></div>}
     {state.error && <p className="customPlayError" role="alert">{state.error}</p>}
-    {utilities.storageOpen ? null : tab==='roles' ? <CustomRoleSetup theme={replay.phase==='day'?'day':'night'} definition={file.game.script.definition} draft={originalDraft} rosterConfirmed distribution={state.setupDistribution} adjustment={state.setupDistribution?.adjustment} distributionPending={state.setupDistributionPending} onPlayerCount={noop} onDemon={noop} canSelect={()=>false} onToggle={noop} onConfirm={()=>setTab('seating')}/> : tab==='seating' ? state.dayHandoff?<CustomDayBoard controller={controller}/>:<CustomGrimoireBoard onRestart={onRestart?()=>setReturnOpen(true):undefined} runtime={runtime} controller={controller} onSelectionDone={()=>setTab('play')} file={file} replay={replay} onProgress={()=>setTab('play')}/> : <PlayPresentation ariaLabel={`${phaseLabel(replay)} 진행`} className={`snvManualSurface bmrPlaySurface snvFirstNightSurface snvTabPanel ${replay.phase==='day'?'snvDaySurface':'snvNightSurface'}`} headerClassName="snvFirstNightHeader" primaryClassName="snvFirstNightPrimary bmrPlayPrimary" phaseHeader={<><button type="button" aria-label="마도서로 이동" onClick={()=>setTab('seating')}>← 마도서</button><div className="snvProgressPhaseHeader"><h2>{replay.gameEnd ? '게임 종료' : phaseLabel(replay)}</h2><time aria-label="경과 시간">{runtime}</time></div></>} currentTask={replay.phase==='day'&&replay.day?<CustomDayTask key={replay.day.stepId} controller={controller}/>:<CustomNightTask key={step?.id ?? replay.phase} controller={controller}/>} auxiliary={null} phaseOrder={replay.phase==='day'&&replay.day?<CustomDayPhaseOrder controller={controller}/>:<CustomPhaseOrder controller={controller}/>} />}
+    {utilities.storageOpen ? null : tab==='roles' ? <CustomRoleSetup theme={replay.phase==='day'?'day':'night'} definition={file.game.script.definition} draft={originalDraft} rosterConfirmed distribution={state.setupDistribution} adjustment={state.setupDistribution?.adjustment} distributionPending={state.setupDistributionPending} onPlayerCount={noop} onDemon={noop} canSelect={()=>false} onToggle={noop} onConfirm={()=>setTab('seating')}/> : tab==='seating' ? dayResolution?<CustomDayResolutionBoard key={dayResolution.id} controller={controller} resolution={dayResolution} onCancel={()=>setDayConsequenceSelection(undefined)}/>:state.dayHandoff?<CustomDayBoard controller={controller}/>:<CustomGrimoireBoard onRestart={onRestart?()=>setReturnOpen(true):undefined} runtime={runtime} controller={controller} onSelectionDone={()=>setTab('play')} file={file} replay={replay} onProgress={()=>setTab('play')}/> : replay.gameEnd?<EndedGameView winningTeam={replay.gameEnd.winningAlignment} reason={endReason(replay.gameEnd.reason)} onGrimoire={()=>setTab('seating')}/>:<PlayPresentation ariaLabel={`${phaseLabel(replay)} 진행`} className={`snvManualSurface bmrPlaySurface snvFirstNightSurface snvTabPanel ${replay.phase==='day'?'snvDaySurface':'snvNightSurface'}`} headerClassName="snvFirstNightHeader" primaryClassName="snvFirstNightPrimary bmrPlayPrimary" phaseHeader={<><button type="button" aria-label="마도서로 이동" onClick={()=>setTab('seating')}>← 마도서</button><div className="snvProgressPhaseHeader"><h2>{replay.gameEnd ? '게임 종료' : phaseLabel(replay)}</h2><time aria-label="경과 시간">{runtime}</time></div></>} currentTask={replay.phase==='day'&&replay.day?<CustomDayTask key={replay.day.stepId} controller={controller} onChooseConsequence={()=>setDayConsequenceSelection(pendingDayResolution?.id)}/>:<CustomNightTask key={step?.id ?? replay.phase} controller={controller}/>} auxiliary={null} phaseOrder={replay.phase==='day'&&replay.day?<CustomDayPhaseOrder controller={controller}/>:<CustomPhaseOrder controller={controller}/>} />}
     {replay.phase==='day'&&replay.day&&!utilities.storageOpen&&tab!=='roles'&&!state.dayHandoff&&!state.handoff&&!state.public&&!replay.gameEnd&&!replay.day.pendingGameEnd&&!replay.day.pendingDeath&&!replay.day.consequences.some(c=>!c.resolved&&c.source.characterId!=='barber')&&!state.dayNotifications?.length&&<CustomDayAbilities day={replay.day} players={replay.players} controller={controller} busy={state.busy||state.saveStatus!=='saved'}/>}
     <MadnessActionView players={replay.players} assignments={controller.steps.filter(s=>s.actionCause?.kind==='optional'&&s.actionRef?.actionId==='resolveMadnessExecution'&&s.madness&&s.abilityUse).map(s=>({assignmentId:JSON.stringify(s.abilityUse),sourcePlayerId:s.abilityUse!.ownerPlayerId,targetPlayerId:s.abilityUse!.ownerPlayerId,sourceCharacterId:'mutant' as const,status:s.madness!.check==='violation'?'violated' as const:s.madness!.check==='clear'?'clear' as const:'unchecked' as const,sourceEffective:s.madness!.sourceEffective,canCheck:s.madness!.canCheck,canExecute:s.madness!.canExecute,sourceLabel:characterPresentation('mutant')!.label,iconSrc:characterPresentation('mutant')!.image,ability:characterPresentation('mutant')!.ability}))}
       groupActive={!utilities.storageOpen} phaseLabel={phaseLabel(replay)} theme={replay.phase==='day'?'day':'night'} precedingActionCount={0} busy={state.busy||state.public||!!state.handoff||!!replay.gameEnd} executionDescription="처형을 확정하면 현재 진행이 중단됩니다."
@@ -84,6 +97,8 @@ export function CustomGrimoirePlay({ controller, onNewGame, onNewScenario, onImp
     {undoRequest && <LiveUndoDialog events={undoRequest.events} onCancel={()=>setUndoRequest(undefined)} onConfirm={confirmUndo}/> }
     {returnOpen && <GameConfirmationDialog label="진행 상태 초기화 확인" title="배치 단계로 돌아갈까요?" description="진행 중인 게임과 모든 규칙 상태가 초기화됩니다. 좌석 이름과 직업 배치는 유지됩니다." confirmLabel="초기화하고 돌아가기" onCancel={()=>setReturnOpen(false)} onConfirm={()=>{if(state.busy||state.public||state.selecting||state.handoff||state.saveStatus!=='saved')return;setReturnOpen(false);onRestart?.();}}/>}
     {utilities.content}
+    {replay.gameEnd&&<GameEndDock winningTeam={replay.gameEnd.winningAlignment} reason={endReason(replay.gameEnd.reason)}/>}
+    {pendingEnd&&!replay.gameEnd&&!state.public&&!state.handoff&&!state.dayHandoff&&!state.dayNotifications?.length&&state.saveStatus!=='failed'&&<GameEndDialog winningTeam={pendingEnd.winningAlignment} reason={endReason(pendingEnd.reason)} busy={state.busy||state.saveStatus!=='saved'} error={state.error} onConfirm={()=>void controller.confirmDay({kind:'confirmGameEnd'})}/>}
 
   </ProductionApplicationShell>{state.public && state.activeReveal && <CustomReveal payload={state.activeReveal.payload} onClose={controller.conceal}/>}</>;
 }

@@ -148,7 +148,7 @@ export function parseGameEvent(value: unknown): GameEvent {
       if (
         !hasOnlyKeys(payload, ["stepId", "actionRef", "abilityUse", "simulationSource", "followUpCause", "actionCause", "deliveredResult", "registrationJudgments", "input", "result"]) ||
         typeof payload.stepId !== "string" || payload.stepId.trim().length === 0 ||
-        !isCustomCharacterActionRef(payload.actionRef) || !isOccurrenceSource(payload) ||
+        !isFirstNightActionRef(payload.actionRef) || !isOccurrenceSource(payload) ||
         !isRecord(payload.result) || ((payload.simulationSource !== undefined) !== (["simulation", "simulationChoice"].includes(payload.result.kind as string)) && !(payload.simulationSource !== undefined && ["informationPrepared", "preparedInformationDelivered"].includes(payload.result.kind as string))) ||
         !isCustomPhaseStepInput(payload.input) ||
         (payload.deliveredResult !== undefined && !isInformationResult(payload.deliveredResult)) ||
@@ -164,9 +164,17 @@ export function parseGameEvent(value: unknown): GameEvent {
   return value as GameEvent;
 }
 const dayValidators={ability:isAbilityUseRef,impairment:isActiveImpairment,character:isKnownCharacter,simulation:isSimulationSource};
+function isNightDeathsView(value:unknown):boolean {
+ return isRecord(value)&&hasExactKeys(value,['status','sources','pendingAttackEventIds'])
+  &&['pending','resolved'].includes(String(value.status))&&Array.isArray(value.sources)&&value.sources.length>0
+  &&value.sources.every(s=>isRecord(s)&&hasExactKeys(s,['eventId','abilityUse'])&&nonempty(s.eventId)&&isAbilityUseRef(s.abilityUse))
+  &&Array.isArray(value.pendingAttackEventIds)&&value.pendingAttackEventIds.every(nonempty)
+  &&new Set(value.pendingAttackEventIds).size===value.pendingAttackEventIds.length
+  &&(value.status!=='resolved'||value.pendingAttackEventIds.length===0);
+}
 export function parseReplayState(value: unknown): ReplayState {
   if(isRecord(value) && value.day!==undefined && !isDayView(value.day,dayValidators))throw invalidCoreResponse();
-  if (!isRecord(value) || !Number.isInteger(value.nightNumber) || Number(value.nightNumber)<0 || !Array.isArray(value.actionExecutions) || !value.actionExecutions.every(isActionExecution) || !isLatestUndoUnit(value.latestUndoUnit) || !optionalList(value.madnessAssignments, v => isAssignment(v, true)) || value.schemaVersion !== 5 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null && !isCustomGameEnd(value.gameEnd)) || !optionalList(value.availableActions, isPhaseStep)) throw invalidCoreResponse();
+  if (!isRecord(value) || (value.nightDeaths !== undefined && !isNightDeathsView(value.nightDeaths)) || !Number.isInteger(value.nightNumber) || Number(value.nightNumber)<0 || !Array.isArray(value.actionExecutions) || !value.actionExecutions.every(isActionExecution) || !isLatestUndoUnit(value.latestUndoUnit) || !optionalList(value.madnessAssignments, v => isAssignment(v, true)) || value.schemaVersion !== 5 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null && !isCustomGameEnd(value.gameEnd)) || !optionalList(value.availableActions, isPhaseStep)) throw invalidCoreResponse();
   return value as ReplayState;
 }
 function isReplayScriptIdentity(value: Record<string, unknown>): boolean { return value.scriptId === undefined && isCustomReplayScriptReference(value.script); }
@@ -178,7 +186,8 @@ function isCustomReplayScriptReference(value: unknown): boolean {
     !hasExactKeys(value, ["type", "definition"]) ||
     value.type !== "custom" ||
     !isRecord(value.definition) ||
-    !hasExactKeys(value.definition, ["id", "name", "characterIds", "firstNightOrder", "otherNightOrder"]) ||
+    !hasExactKeys(value.definition, ["id", "name", "characterIds", "firstNightOrder", "otherNightOrder", ...(Object.hasOwn(value.definition,"nightOrderVersion")?["nightOrderVersion"]:[])]) ||
+    (value.definition.nightOrderVersion !== undefined && value.definition.nightOrderVersion !== 2) ||
     typeof value.definition.id !== "string" ||
     value.definition.id.trim().length === 0 ||
     typeof value.definition.name !== "string" ||
@@ -237,7 +246,8 @@ export function parseFirstNightOrderPlan(value: unknown): FirstNightOrderPlan {
 export function parseCustomFirstNightPlanResult(value: unknown): CustomFirstNightPlanResult {
   if (
     !isRecord(value) ||
-    !hasExactKeys(value, ["source", "plan"]) ||
+    !hasOnlyKeys(value, ["source", "plan", "upgradeNightOrderVersion"]) ||
+    (value.upgradeNightOrderVersion !== undefined && value.upgradeNightOrderVersion !== 2) ||
     (value.source !== "definition" && value.source !== "default") ||
     !isFirstNightOrderPlan(value.plan)
   ) {
@@ -286,7 +296,7 @@ function isFirstNightActionRef(value: unknown): value is FirstNightActionRef {
   if (!isRecord(value) || typeof value.kind !== "string") return false;
   if (value.kind === "system") {
     return hasExactKeys(value, ["kind", "actionId"])
-      && ["dusk", "minionInfo", "demonInfo", "dawn"].includes(String(value.actionId));
+      && ["dusk", "minionInfo", "demonInfo", "dawn", "resolveNightDeaths"].includes(String(value.actionId));
   }
   return value.kind === "character"
     && hasExactKeys(value, ["kind", "characterId", "actionId"])
@@ -1136,6 +1146,8 @@ function isSimulationSource(value: unknown): boolean {
     nonempty(value.sourceAbilityUse.abilityInstanceId);
 }
 function isOccurrenceSource(value: Record<string, unknown>): boolean {
+  if(isRecord(value.actionRef) && value.actionRef.kind==='system' && value.actionRef.actionId==='resolveNightDeaths')
+    return value.abilityUse===undefined && value.simulationSource===undefined && value.actionCause===undefined && value.followUpCause===undefined;
   if (!isCustomCharacterActionRef(value.actionRef)) return false;
   const actual = isAbilityUseRef(value.abilityUse) && nonempty(value.abilityUse.ownerPlayerId) &&
     nonempty(value.abilityUse.abilityInstanceId) && value.abilityUse.characterId === value.actionRef.characterId;

@@ -14,6 +14,7 @@ export function sameCustomScriptDefinition(
 ): boolean {
   return left.id === right.id
     && left.name === right.name
+    && left.nightOrderVersion === right.nightOrderVersion
     && sameOrderedStrings(left.characterIds, right.characterIds)
     && sameOrderedActions(left.firstNightOrder, right.firstNightOrder)
     && sameOrderedActions(left.otherNightOrder, right.otherNightOrder);
