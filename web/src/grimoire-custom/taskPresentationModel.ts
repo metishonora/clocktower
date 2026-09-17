@@ -53,7 +53,7 @@ export function taskPresentationModel(controller:FirstNightController) {
  const choice=pairInformation?(draft.choiceIndex!==''?choices[Number(draft.choiceIndex)]:undefined):registration.kind?registration.choice:draft.choiceIndex!==''?choices[Number(draft.choiceIndex)]:choices.length===1||choices[0]?.result.kind==='characterPair'?choices[0]:undefined;
  const registrationChoices=editor.kind==='setup'?candidates.map(c=>c.registrationJudgments):choices.map(c=>c.registrationJudgments);
  return {identity:actionInputIdentity(state.file,step),actor,ability,stage,editor,result,reprepareId:reprepare?.id,warnings:editor.kind==='unavailable'?[editor.message]:[],
-  actions:{confirmLabel:stage==='delivery'?'정보 공개':stage==='transition'?'낮 시작':'확인',skip:!!step&&(step.canSkip||step.requiredInput.optional)},
+  actions:{confirmLabel:stage==='delivery'?'정보 공개':stage==='transition'?'낮 시작':'확인',skip:!!step&&!adapter?.emptySelection&&(step.canSkip||step.requiredInput.optional)},
   selection:{needsPlayers,minPlayers,maxPlayers},choices,choice,fixedCharacterId:check?.fixedCharacterId,
   treatments:treatmentGroups(registrationChoices,draft.judgments,state.replay.players),
  };

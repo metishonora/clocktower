@@ -27,6 +27,7 @@ pub(crate) struct CustomFactChanges {
     ability_grants: Vec<AbilityGrantChange>,
     ability_removals: Vec<AbilityUseRef>,
     life_changes: Vec<PlayerLifeChange>,
+    death_source: Option<crate::state::ActionOccurrence>,
     impairment_additions: Vec<ActiveImpairment>,
     impairment_removals: Vec<ActiveImpairment>,
     snv: SnvFactChanges,
@@ -71,6 +72,11 @@ impl CustomFactChanges {
         self.monk_protection.as_ref()
     }
 
+    pub(crate) fn with_death_source(mut self, source: crate::state::ActionOccurrence) -> Self {
+        self.death_source = Some(source);
+        self
+    }
+    pub(crate) fn death_source(&self) -> Option<&crate::state::ActionOccurrence> { self.death_source.as_ref() }
     pub(crate) fn with_life_changes(mut self, changes: Vec<PlayerLifeChange>) -> Self {
         self.life_changes = changes;
         self
@@ -347,7 +353,8 @@ fn validate_envelope_fields(
     payload: &CustomActionConfirmedPayload,
 ) -> Result<(), CoreError> {
     if !matches!(phase, Phase::FirstNight | Phase::Night)
-        || !matches!(payload.action_ref, FirstNightActionRef::Character { .. })
+        || !(matches!(payload.action_ref, FirstNightActionRef::Character { .. })
+            || payload.action_ref == FirstNightActionRef::system("resolveNightDeaths"))
     {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }

@@ -22,6 +22,24 @@ use super::{
     state::{ActionOccurrence, CompletedActionSnapshot, CustomGameFacts, CustomGameState},
 };
 
+// One in-memory validated prefix per execution thread. Canonical events remain the source of
+// truth: compare their complete serialized contents and the exact script before reusing facts.
+// A changed/truncated prefix falls back to the full fold; an appended event is always validated.
+struct ValidatedReplayPrefix {
+    schema_version: u32,
+    script: ScriptReference,
+    events: Vec<String>,
+    state: CustomGameState,
+}
+thread_local! {
+    static REPLAY_PREFIX: std::cell::RefCell<Option<ValidatedReplayPrefix>> = const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(test)]
+pub(crate) fn clear_replay_prefix_for_tests() {
+    REPLAY_PREFIX.with(|cached| *cached.borrow_mut() = None);
+}
+
 struct ReplayComponents {
     action_executions: Vec<crate::first_night::execution::ActionExecution>,
     latest_undo_unit: Option<crate::first_night::execution::LatestUndoUnit>,
@@ -52,6 +70,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let script = game_file.script.clone();
     if game_file.game.events.is_empty() {
         return Ok(ReplayState {
+            night_deaths: None,
             night_number: 0,
             day: None,
             action_executions: vec![],
@@ -74,6 +93,10 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     }
     let components = replay_components(&game_file)?;
     Ok(ReplayState {
+        night_deaths: if components.phase == Phase::Night {
+            let ScriptReference::Custom { definition } = &game_file.script;
+            crate::night_deaths::view(&components.state.facts, definition.night_order_version == Some(2))
+        } else { None },
         night_number: components.state.facts.night_number(),
         day: crate::day::view(&components.state.facts),
         action_executions: components.action_executions,
@@ -292,27 +315,48 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         .map(|player| player_from_setup_input_for_custom(&context, player))
         .collect::<Result<Vec<_>, _>>()?;
     let plan = plan_for_definition(definition)?;
-    let mut facts = CustomGameFacts::from_players(players);
-    facts.prefix_event_id = first.id.clone();
-    crate::effects::resolve_effects(&context, &mut facts)?;
-    let initial_rules = CustomRuleService::new(&context, &facts);
-    let initial_context = ActionContext {
-        event_id: "",
-        rule_service: &initial_rules,
+    let other_plan = crate::contracts::FirstNightOrderPlan(definition.other_night_order.0.clone());
+    let event_keys = game_file.game.events.iter()
+        .map(|event| serde_json::to_string(event).expect("validated event serialization"))
+        .collect::<Vec<_>>();
+    let cached = REPLAY_PREFIX.with(|cached| {
+        cached.borrow().as_ref().filter(|prefix| {
+            prefix.schema_version == game_file.schema_version
+                && prefix.script == game_file.script
+                && event_keys.starts_with(&prefix.events)
+        }).map(|prefix| (prefix.events.len(), prefix.state.clone()))
+    });
+    let (replayed_count, mut state) = if let Some(cached) = cached {
+        cached
+    } else {
+        let mut facts = CustomGameFacts::from_players(players);
+        facts.prefix_event_id = first.id.clone();
+        crate::effects::resolve_effects(&context, &mut facts)?;
+        let initial_rules = CustomRuleService::new(&context, &facts);
+        let initial_context = ActionContext {
+            event_id: "",
+            rule_service: &initial_rules,
+        };
+        let registry = action_registry()?;
+        let activation = activation_rule();
+        let scheduler = NightScheduler::new(&plan, &registry, activation.as_ref());
+        let progress = scheduler.initial_progress(&initial_context)?;
+        (1, CustomGameState::with_first_night(facts, progress))
     };
     let registry = action_registry()?;
     let activation = activation_rule();
-    let scheduler = NightScheduler::new(&plan, &registry, activation.as_ref());
-    let progress = scheduler.initial_progress(&initial_context)?;
-    let mut state = CustomGameState::with_first_night(facts, progress);
 
-    for (event_index, event) in game_file.game.events.iter().enumerate().skip(1) {
+    for (event_index, event) in game_file.game.events.iter().enumerate().skip(replayed_count) {
         // apply_event returns an entirely new pair. The previous state remains untouched if
         // validation, reduction, projection, or scheduling rejects this event.
-        let event_plan = cycle_plan(definition, state.phase)?;
+        let event_plan = if matches!(state.phase, Phase::FirstNight | Phase::Setup) {
+            &plan
+        } else {
+            &other_plan
+        };
         state = apply_event(
             &context,
-            &event_plan,
+            event_plan,
             &registry,
             activation.as_ref(),
             &state,
@@ -394,6 +438,12 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         })
         .collect::<Result<Vec<_>, _>>()?;
     state.phase = phase;
+    REPLAY_PREFIX.with(|cached| *cached.borrow_mut() = Some(ValidatedReplayPrefix {
+        schema_version: game_file.schema_version,
+        script: game_file.script.clone(),
+        events: event_keys,
+        state: state.clone(),
+    }));
     Ok(ReplayComponents {
         action_executions,
         latest_undo_unit,

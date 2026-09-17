@@ -19,6 +19,7 @@ pub(crate) struct CharacterRegistryEntry {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ResolvedScriptContext {
     entries: Vec<CharacterRegistryEntry>,
+    pub(crate) scheduled_night_deaths: bool,
     related_jinxes: Vec<crate::jinxes::JinxMetadata>,
     kinds_by_id: HashMap<&'static str, CharacterKind>,
 }
@@ -123,6 +124,7 @@ pub(crate) fn validate_custom_script_definition(
         &definition.id,
         &definition.name,
         &definition.character_ids,
+        definition.night_order_version,
     )
 }
 
@@ -133,6 +135,7 @@ pub(crate) fn validate_custom_script_definition_draft(
         &definition.id,
         &definition.name,
         &definition.character_ids,
+        definition.night_order_version,
     )
 }
 
@@ -140,8 +143,10 @@ fn validate_custom_script_definition_fields(
     id: &str,
     name: &str,
     character_ids: &[String],
+    night_order_version: Option<u32>,
 ) -> Result<(), CoreError> {
-    if id.trim().is_empty()
+    if night_order_version.is_some_and(|v| v != 2)
+        || id.trim().is_empty()
         || name.trim().is_empty()
         || character_ids
             .iter()
@@ -164,7 +169,9 @@ fn validate_custom_script_definition_fields(
 pub(crate) fn resolve_custom_script(
     definition: &CustomScriptDefinition,
 ) -> Result<ResolvedScriptContext, CoreError> {
-    resolve_custom_script_ids(&definition.character_ids)
+    let mut context = resolve_custom_script_ids(&definition.character_ids)?;
+    context.scheduled_night_deaths = definition.night_order_version == Some(2);
+    Ok(context)
 }
 
 pub(crate) fn resolve_custom_script_ids(
@@ -190,6 +197,7 @@ pub(crate) fn resolve_custom_script_ids(
 
     let kinds_by_id = entries.iter().map(|entry| (entry.id, entry.kind)).collect();
     Ok(ResolvedScriptContext {
+        scheduled_night_deaths: false,
         entries,
         kinds_by_id,
         related_jinxes: crate::jinxes::production()?.related(character_ids),

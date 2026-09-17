@@ -67,3 +67,9 @@
  .customGrimoirePlay .snvProgressPhaseHeader h2 { font-size:1.4rem; margin:0; }
  .customGrimoirePlay .snvProgressPhaseHeader time { white-space:nowrap; }
 }
+
+@media (min-width:761px) {
+ .customGrimoirePlay:has(.snvGameEndDock) { padding-bottom:110px; }
+}
+
+.customGrimoirePlay .snvInformationInputTruthWarning { color: #ff4668; font-weight: 800; }

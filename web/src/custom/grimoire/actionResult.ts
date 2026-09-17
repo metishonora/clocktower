@@ -15,9 +15,10 @@ export function reviewedAction(event:GameEvent|undefined) {
  const input=event.payload.input;
  return {step,result,playerIds:input&&'playerIds' in input?input.playerIds??[]:[]};
 }
-export function actionResultRows(result:CustomActionResult,person:(id:string)=>string,role:(id:string)=>string) {
+export function actionResultRows(result:CustomActionResult,person:(id:string)=>string,role:(id:string)=>string, pendingNightDeath=false) {
  switch(result.kind){
- case 'nightAttack':return [{label:'공격 대상',value:person(result.targetPlayerId)},{label:'결과',value:result.killedPlayerId?`${person(result.killedPlayerId)} 사망`:'사망 없음'}];
+ case 'nightDeathsResolved':return result.playerIds.length?result.playerIds.map(id=>({label:'사망',value:person(id)})):[{label:'결과',value:'사망 없음'}];
+ case 'nightAttack':return [{label:'공격 대상',value:person(result.targetPlayerId)},{label:'결과',value:result.killedPlayerId?`${person(result.killedPlayerId)} 사망`:pendingNightDeath?'사망 결정 대기':'사망 없음'}];
  case 'witch':return [{label:'저주 대상',value:person(result.targetPlayerId)}];
  case 'snakeCharmer':return [{label:'선택 대상',value:person(result.targetPlayerId)},{label:'결과',value:'교환 없음'}];
  case 'pitHagChange':return [{label:'변경 대상',value:person(result.targetPlayerId)},{label:'직업',value:role(result.characterId)}];

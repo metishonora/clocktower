@@ -312,7 +312,7 @@ fn apply_changes(
                 event_id: event.id().into(),
                 night: next.night_number(),
                 player,
-                source: event.occurrence()?,
+                source: event.fact_changes().death_source().cloned().unwrap_or(event.occurrence()?),
                 guidance: crate::simulation::sources(next)
                     .into_iter()
                     .filter(|g| g.source.source_ability_use.owner_player_id == change.player_id)

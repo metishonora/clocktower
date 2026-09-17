@@ -525,7 +525,7 @@ fn resolve(
                 .iter()
                 .find(|h| h.event_id == end.source_event_id)
                 .map(|h| h.root_event_id.clone())
-                .unwrap_or_else(|| event_id.into());
+                .unwrap_or_else(|| end.source_event_id.clone());
             next.facts.game_end = Some(end);
         }
         DayInput::BeginNight => {
@@ -601,9 +601,11 @@ pub(crate) fn executions(
         .chain(std::iter::once(day))
         .flat_map(|d| &d.history)
     {
+        // Night units and day history are collected separately before chronological sorting.
+        // A dawn-triggered win must join its night source even after past-day units were added.
         if let Some(last) = units
-            .last_mut()
-            .filter(|u| u.event_ids.first() == Some(&entry.root_event_id))
+            .iter_mut()
+            .find(|u| u.event_ids.contains(&entry.root_event_id))
         {
             last.event_ids.push(entry.event_id.clone());
             last.step_ids.push(entry.step_id.clone());

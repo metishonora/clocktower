@@ -20,6 +20,8 @@ pub(crate) struct CustomScriptDefinition {
     pub(crate) id: String,
     pub(crate) name: String,
     pub(crate) character_ids: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) night_order_version: Option<u32>,
     pub(crate) first_night_order: FirstNightOrderPlan,
     pub(crate) other_night_order: OtherNightOrderPlan,
 }
@@ -30,6 +32,8 @@ pub(crate) struct CustomScriptDefinitionDraft {
     pub(crate) id: String,
     pub(crate) name: String,
     pub(crate) character_ids: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) night_order_version: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) first_night_order: Option<FirstNightOrderPlan>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -42,6 +46,7 @@ pub(crate) enum SystemFirstNightActionId {
     Dusk,
     MinionInfo,
     DemonInfo,
+    ResolveNightDeaths,
     Dawn,
     #[serde(other)]
     Unknown,
@@ -82,6 +87,8 @@ pub(crate) struct CustomFirstNightPlanRequest {
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct CustomFirstNightPlanResult {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) upgrade_night_order_version: Option<u32>,
     pub(crate) source: FirstNightPlanSource,
     pub(crate) plan: FirstNightOrderPlan,
 }
@@ -241,6 +248,8 @@ pub(crate) struct SetupDistributionResult {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ReplayState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) night_deaths: Option<crate::night_deaths::NightDeathsView>,
     pub(crate) night_number: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) day: Option<crate::day::contracts::DayView>,
@@ -515,6 +524,10 @@ pub(crate) enum CustomActionResult {
     },
     ArbitraryDeaths {
         player_ids: Vec<String>,
+    },
+    NightDeathsResolved {
+        player_ids: Vec<String>,
+        source_event_ids: Vec<String>,
     },
     BarberSwap {
         player_ids: Vec<String>,
@@ -877,6 +890,7 @@ impl FirstNightActionRef {
             "minionInfo" => SystemFirstNightActionId::MinionInfo,
             "demonInfo" => SystemFirstNightActionId::DemonInfo,
             "dawn" => SystemFirstNightActionId::Dawn,
+            "resolveNightDeaths" => SystemFirstNightActionId::ResolveNightDeaths,
             _ => panic!("unknown system first-night action: {action_id}"),
         };
         Self::System { action_id }

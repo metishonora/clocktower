@@ -12,6 +12,7 @@ use crate::{
 
 fn definition(character_ids: &[&str]) -> CustomScriptDefinition {
     CustomScriptDefinition {
+        night_order_version: None,
         id: "custom-registry-contract".to_string(),
         name: "Registry contract".to_string(),
         character_ids: character_ids

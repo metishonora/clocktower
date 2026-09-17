@@ -7,6 +7,7 @@ mod plan;
 mod registry;
 mod runtime;
 mod system;
+pub(crate) mod night_deaths;
 
 pub(crate) use activation::{
     ActivationContext, ActivationDecision, ActivationRule, FirstNightActivationRule,

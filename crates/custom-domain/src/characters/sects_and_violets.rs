@@ -3465,9 +3465,7 @@ impl SnvNightHandler {
                     .iter()
                     .any(|p| p.actual_character == character);
             let created_demon = changed
-                && definition.character_kind(&character) == Some(CharacterKind::Demon)
-                && definition.character_kind(&target.actual_character)
-                    != Some(CharacterKind::Demon);
+                && definition.character_kind(&character) == Some(CharacterKind::Demon);
             let changes = if changed {
                 vec![night_identity(target, &character, target.alignment)]
             } else {
@@ -3723,6 +3721,9 @@ impl crate::first_night::FollowUpRule for SnvNightHandler {
         ) {
             return Ok(vec![]);
         }
+        if self.id() == "chooseDeaths" && c.plan.0.contains(&FirstNightActionRef::system("resolveNightDeaths")) {
+            return Ok(vec![]);
+        }
         if self.character() == "barber"
             && c.plan
                 .0
@@ -3760,6 +3761,7 @@ impl ActionHandler for SnvNightHandler {
         Some(self)
     }
     fn project(&self, _: &ActionSpec, c: &ActionContext<'_>) -> Result<Vec<PhaseStep>, CoreError> {
+        if self.id() == "chooseDeaths" && c.rule_service.definition().is_some_and(|d| d.scheduled_night_deaths) { return Ok(vec![]); }
         self.occurrences(c.rule_service.facts().ok_or_else(invalid)?)?
             .iter()
             .map(|o| self.step(c, o))
@@ -4214,4 +4216,25 @@ fn drunk_mathematician_jinx(o: &ActionOccurrence) -> Option<AbilityUseRef> {
         .as_ref()
         .filter(|s| s.source_ability_use.character_id == "drunk")
         .map(|s| s.source_ability_use.clone())
+}
+
+/// Trigger ownership and order preferences belong to the character, not the scheduler.
+pub(crate) fn arbitrary_death_rule() -> crate::night_deaths::SourceRule {
+    let action = |character: &str, id: &str| FirstNightActionRef::Character { character_id: character.into(), action_id: id.into() };
+    crate::night_deaths::SourceRule {
+        trigger: action("pitHag", "changeCharacter"),
+        default_after: vec![
+            action("pitHag", "changeCharacter"),
+            action("imp", "attackPlayer"),
+            action("fangGu", "attackPlayer"),
+            action("noDashii", "attackPlayer"),
+            action("vigormortis", "attackPlayer"),
+            action("vortox", "attackPlayer"),
+        ],
+        sources: arbitrary_death_sources,
+    }
+}
+fn arbitrary_death_sources(facts: &CustomGameFacts) -> Vec<&crate::state::ConfirmedActionFact> {
+    facts.confirmed_actions.iter().filter(|event| event.occurrence.night == facts.night_number()
+        && matches!(event.result, CustomActionResult::PitHagChange { created_demon: true, .. })).collect()
 }

@@ -5,6 +5,7 @@ export type CustomScriptDefinition = {
   id: string;
   name: string;
   characterIds: string[];
+  nightOrderVersion?: 2;
   firstNightOrder: FirstNightOrderPlan;
   otherNightOrder: FirstNightOrderPlan;
 };
@@ -20,7 +21,7 @@ export type CustomScriptDefinitionDraft = Omit<CustomScriptDefinition, "firstNig
 };
 
 
-export type SystemFirstNightActionId = "dusk" | "minionInfo" | "demonInfo" | "dawn";
+export type SystemFirstNightActionId = "dusk" | "minionInfo" | "demonInfo" | "dawn" | "resolveNightDeaths";
 
 
 export type FirstNightActionRef =
@@ -32,6 +33,7 @@ export type FirstNightOrderPlan = FirstNightActionRef[];
 
 
 export type CustomFirstNightPlanResult = {
+  upgradeNightOrderVersion?: 2;
   source: "definition" | "default";
   plan: FirstNightOrderPlan;
 };
@@ -289,7 +291,8 @@ export type CoreResult<T> =
 export type StepExecution = {id:string;rootStepId:string;displayStepId:string;predecessorEventId?:string;relation:'independent'|'continuation'|'reference'};
 export type ActionExecution = {id:string;rootStepId:string;displayStepId:string;stepIds:string[];eventIds:string[];status:'pending'|'active'|'complete'|'interrupted'};
 export type LatestUndoUnit = {id:string;executionId:string;eventIds:string[];summaryStepId:string};
-export type ReplayState = {nightNumber: number;day?:DayView;actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 5; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
+export type NightDeathsView = {status:'pending'|'resolved';sources:{eventId:string;abilityUse:AbilityUseRef}[];pendingAttackEventIds:string[]};
+export type ReplayState = {nightDeaths?:NightDeathsView;nightNumber: number;day?:DayView;actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 5; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
 
 
 export type PendingIdentityReveal = {
@@ -554,6 +557,7 @@ export type CustomActionResult =
   | { kind: "nightAttack"; targetPlayerId: string; killedPlayerId: string | null; died: boolean; identityChanges: {playerId:string;before:IdentityState;after:IdentityState}[] }
   | { kind: "pitHagChange"; targetPlayerId:string;characterId:string;changed:boolean;createdDemon:boolean }
   | { kind: "arbitraryDeaths";playerIds:string[] }
+  | { kind: "nightDeathsResolved";playerIds:string[];sourceEventIds:string[] }
   | { kind: "barberSwap";playerIds:string[];chooserPlayerId:string|null;effective:boolean }
   | { kind: "vigormortisPoison";deathEventId:string;targetPlayerId:string }
   | {kind:"mutantJudgment";result:"clear"|"violation"}

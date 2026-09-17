@@ -11,6 +11,7 @@ mod jinxes;
 mod input;
 mod messages;
 mod model;
+mod night_deaths;
 mod projection;
 mod reducer;
 mod reminders;

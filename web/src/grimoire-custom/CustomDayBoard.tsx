@@ -7,7 +7,6 @@ import {GrimoireToolbar} from '../shared-ui/GrimoireToolbar';
 import {GrimoireSelectionPanel} from '../shared-ui/GrimoireSelectionPanel';
 import {GrimoireSeatContent} from '../shared-ui/GrimoireSeatContent';
 import {NominationArrow} from '../shared-ui/NominationArrow';
-import {GhostVoteIcon} from '../features/grimoire/SeatStateIcons';
 import '../features/grimoire/sectsAndVioletsSeatStates.css';
 import '../shared-ui/styles/liveTargetStates.css';
 
@@ -42,7 +41,7 @@ export function CustomDayBoard({controller}:{controller:FirstNightController}) {
           ariaLabel:`${p.seat}번 좌석, ${p.name}, ${role?.label}, ${p.alive?'생존':p.ghostVoteUsed?'사망 · 유령표 사용함':'사망 · 유령표 사용 가능'}${selectionLabel?`, ${selectionLabel}`:''}`,
           className:`assigned alignment-${p.alignment} kind-${characterPresentation(p.actualCharacter)?.kind.toLowerCase()}${!p.alive?' snvDeadSeat':''}${ghost?' snvGhostVoteAvailable':''}${spent?' snvGhostVoteSpent':''}${selected?' issue116SelectedSeat snvSeatStateSelected':''}${selected&&!p.alive?' snvSeatStateStrong':''}${selectionClass}${!eligible?' issue116IneligibleSeat':''}`,
           onSelect:()=>controller.selectDayPlayer(p.id),
-          content:<GrimoireSeatContent seat={p.seat} name={p.name} alive={p.alive} icon={ghost?<GhostVoteIcon/>:<img src={role?.image} alt=""/>} label={selectionLabel??role?.label??''}/>};
+          content:<GrimoireSeatContent seat={p.seat} name={p.name} alive={p.alive} ghostVoteUsed={p.ghostVoteUsed} icon={<img src={role?.image} alt=""/>} label={selectionLabel??role?.label??''}/>};
       })}
       overlay={!voting&&nominator&&nominee?<NominationArrow nominatorIndex={players.indexOf(nominator)} nomineeIndex={players.indexOf(nominee)} desktopPositions={desktop} mobilePositions={mobile} label={`${nominator.name} → ${nominee.name} 지명`} markerPrefix="customDayNomination"/>:undefined}/>} 
     inspector={<GrimoireSelectionPanel title={h.complete?'투표 결과':voting?'투표':'지명'} completed={h.complete}

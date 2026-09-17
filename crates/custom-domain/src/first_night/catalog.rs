@@ -50,6 +50,7 @@ pub(crate) const TRIGGER_ACTIONS: [(&str, &str); 5] = [
     ("vigormortis", "choosePoison"),
 ];
 pub(crate) fn is_other_or_trigger(action: &FirstNightActionRef) -> bool {
+    if *action == FirstNightActionRef::system("resolveNightDeaths") { return true; }
     matches!(action,FirstNightActionRef::Character {character_id,action_id} if OTHER_ORDERED_ACTIONS.iter().chain(TRIGGER_ACTIONS.iter()).any(|(c,a)|c==character_id&&a==action_id))
 }
 pub(crate) fn is_additional(action: &crate::contracts::FirstNightActionRef) -> bool {
@@ -64,6 +65,7 @@ pub(crate) fn production_actions() -> Vec<(FirstNightActionRef, bool)> {
         .into_iter()
         .map(|action_id| (FirstNightActionRef::System { action_id }, true))
         .collect();
+    result.push((FirstNightActionRef::system("resolveNightDeaths"), false));
     for (character_id, action_id) in ORDERED_ACTIONS
         .into_iter()
         .chain(ADDITIONAL_ACTIONS)

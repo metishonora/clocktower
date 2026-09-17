@@ -107,3 +107,6 @@ fn other_order_json(ids: &serde_json::Value) -> serde_json::Value {
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue213_jinxes;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue232_regressions;

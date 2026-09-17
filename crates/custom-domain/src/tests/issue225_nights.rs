@@ -1051,6 +1051,7 @@ fn demon_absence_at_dawn_uses_existing_day_end_confirmation_and_blocks_progress(
         json!({"playerIds":["p7"],"characterIds":["saint"]}),
         None,
     );
+    let before_dawn = game.clone();
     step(&mut game, system("dawn"), Value::Null, None);
     let state = replay(&game);
     assert_eq!(state["day"]["pendingGameEnd"]["winningAlignment"], "good");
@@ -1071,6 +1072,14 @@ fn demon_absence_at_dawn_uses_existing_day_end_confirmation_and_blocks_progress(
         )["ok"],
         false
     );
+    let undo_ids = ended["latestUndoUnit"]["eventIds"].as_array().unwrap();
+    assert_eq!(undo_ids.len(), 2, "dawn and game-end confirmation form one Undo unit");
+    let events = game["game"]["events"].as_array_mut().unwrap();
+    events.truncate(events.len() - undo_ids.len());
+    assert_eq!(replay(&game), replay(&before_dawn));
+    assert!(replay(&game)["gameEnd"].is_null());
+    assert!(replay(&game)["day"]["pendingGameEnd"].is_null());
+
 }
 
 #[test]

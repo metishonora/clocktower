@@ -40,6 +40,12 @@ jobs:
         run: cargo test -p clocktower-custom-domain -p clocktower-custom-wasm
       - name: Test custom runtime fixtures
         run: pnpm test:custom-runtime
+      - name: Verify custom runtime source boundaries
+        run: node scripts/check-custom-boundaries.mjs
+      - name: Test custom product UI regressions
+        run: |
+          pnpm --dir web exec tsc -p tsconfig.integration.json --noEmit
+          pnpm --dir web exec vitest run test/issue232TokenLabels.test.tsx test/issue232ScheduledDeathsUI.test.tsx test/issue223DayUI.test.tsx test/issue220VortoxFeedback.test.tsx
       - name: Test custom web contracts and UI
         run: pnpm --dir web test:custom
       - name: Install browser engines
@@ -50,3 +56,5 @@ jobs:
         run: pnpm --dir web test:reference:run
         env:
           REFERENCE_PREVIEW: "1"
+      - name: Test composite acceptance files and gameplay in browsers
+        run: pnpm --dir web exec playwright test --config playwright.acceptance.config.ts --workers=1

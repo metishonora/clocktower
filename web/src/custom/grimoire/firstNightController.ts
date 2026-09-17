@@ -18,6 +18,14 @@ export type DayHandoff = {
   kind: 'nomination' | 'vote'; stepId: string; nominatorId?: string; nomineeId?: string;
   voterIds: string[]; spyAsTownsfolk: boolean; complete: boolean; countedVotes?: number;
 };
+/** Restore the same ballot after a nomination-triggered death and its consequences. */
+function interruptedDayVoteHandoff(replay:ReplayState):DayHandoff|undefined {
+  const day=replay.day,nomination=day?.nominations.at(-1);
+  if(replay.phase!=='day'||replay.gameEnd||!day||day.stage!=='voting'||day.pendingGameEnd||day.pendingDeath||!nomination||nomination.countedVoterIds!==null)return;
+  if(day.consequences.some(c=>!c.resolved&&c.source.characterId!=='barber'))return;
+  if(!day.deaths.some(d=>d.cause.rootEventId===nomination.eventId&&d.cause.resumeStage==='voting'))return;
+  return {kind:'vote',stepId:day.stepId,nominatorId:nomination.nominatorId,nomineeId:nomination.nomineeId,voterIds:[],spyAsTownsfolk:false,complete:false};
+}
 export type FirstNightState = {
   dayHandoff?: DayHandoff;
   dayNotifications?: RevealPayload[];
@@ -42,7 +50,7 @@ export class FirstNightController {
   private disposed = false;
   constructor(readonly session: GrimoireSession, private readonly core: CoreAdapter) {
     if (!session.replay) throw new Error('게임 복원이 끝나지 않았습니다.');
-    this.state = freezeSnapshot({ inputDraft: emptyInput(), selecting: false, selectionRevision:0, replay: session.replay, file: session.snapshot.canonical, busy: false,
+    this.state = freezeSnapshot({ dayHandoff:interruptedDayVoteHandoff(session.replay),inputDraft: emptyInput(), selecting: false, selectionRevision:0, replay: session.replay, file: session.snapshot.canonical, busy: false,
       public: false, revealShown: false, saveStatus: 'saved', lastSavedEventCount: session.snapshot.canonical.game.events.length });
     if(this.state.replay.phase==='day'){const last=this.state.file.game.events.at(-1)?.id;this.state=freezeSnapshot({...this.state,dayNotifications:this.state.replay.pendingIdentityReveals?.filter(r=>(r.deliveryEventId??r.sourceEventId)===last).map(r=>r.payload)});}
     if(this.state.replay.phase==='firstNight'||this.state.replay.phase==='night') {
@@ -104,18 +112,23 @@ export class FirstNightController {
     const model=registrationPresentation(this.step,this.state.replay,this.state.inputDraft);
     this.updateInput({choiceIndex:model.index<0?'':String(model.index),judgments:model.choice?.registrationJudgments??[],delivery:undefined});
   };
+  get chooserPlayerId() {
+    const ids=this.step?.requiredInput.allowedChooserPlayerIds;
+    return ids?.length===1?ids[0]:this.state.inputDraft.chooserPlayerId;
+  }
   get selectionReady() {
     const step=this.step;if(!step)return false;
     const r=step.requiredInput,ids=this.selectedPlayerIds;
     if(this.state.selectionKind==='delivery')return ids.length===2;
     if(isPlayerPairInformation(step))return ids.length===2&&informationChoices(step,ids).length>0;
     const d=this.state.inputDraft;
+    if(actionAdapter(step)?.emptySelection&&!ids.length)return false;
     if(d.zero)return !!r.zeroAllowed;
     if(r.allowedSelectionCounts&&!r.allowedSelectionCounts.includes(ids.length))return false;
     const attack=r.attackOptions?.find(o=>o.targetPlayerId===ids[0]);
     if(attack?.mayorDecision && (!d.mayorDecision || d.mayorDecision.kind==='bounce'&&!attack.mayorDecision.bounceTargetPlayerIds.includes(d.mayorDecision.targetPlayerId)))return false;
     if(attack?.successorPlayerIds.length&&!attack.successorPlayerIds.includes(d.successorPlayerId??''))return false;
-    if(ids.length&&r.allowedChooserPlayerIds&&!r.allowedChooserPlayerIds.includes(d.chooserPlayerId??''))return false;
+    if(ids.length&&r.allowedChooserPlayerIds&&!r.allowedChooserPlayerIds.includes(this.chooserPlayerId??''))return false;
     if(ids.length<(r.minSelections??(r.kind==='setupInfo'?2:1))||ids.length>(r.maxSelections??(r.kind==='setupInfo'?2:1)))return false;
     if(r.kind==='setupInfo'&&!setupSelectionCanComplete(step,ids))return false;
     if(['madnessAssignment','characterTransformation'].includes(r.kind)&&!d.characterIds.length)return false;
@@ -153,6 +166,20 @@ export class FirstNightController {
     if(this.state.selectionKind==='delivery'){this.updatePrepared({preparedPlayerIds:ids.includes(id)?ids.filter(value=>value!==id):[...ids,id]});return;}
     this.updateInput({playerIds:ids.includes(id)?ids.filter(value=>value!==id):[...ids,id],treatments:{},zero:false,correct:'',judgments:[],choiceIndex:'',delivery:undefined});
   };
+  get emptySelectionLabel() {
+    const step=this.step;if(!step)return;
+    const r=step.requiredInput;
+    const allowsEmpty=r.allowedSelectionCounts?r.allowedSelectionCounts.includes(0):r.minSelections===0;
+    return allowsEmpty?actionAdapter(step)?.emptySelection?.label:undefined;
+  }
+  confirmEmptySelection = async () => {
+    const step=this.step;
+    if(!step||!this.emptySelectionLabel||!this.state.selecting||this.hasCheckpoint||this.state.busy||this.state.public||this.state.saveStatus!=='saved')return;
+    this.updateInput({playerIds:[],chooserPlayerId:undefined});
+    this.patch({selecting:false,handoff:this.state.handoff?{...this.state.handoff,playerIds:[]}:undefined});
+    await this.prepare({input:{playerIds:[]}});
+    if(this.state.error&&this.state.handoff?.stage==='editing'&&this.state.handoff.step.id===this.step?.id)this.patch({selecting:true});
+  };
   acceptSelection = async () => {
     const step=this.step;if(!step||this.hasCheckpoint||!this.selectionReady)return;
     if(this.state.selectionKind==='delivery'){if(this.selectedPlayerIds.length===2)this.patch({selecting:false,handoff:undefined});return;}
@@ -174,7 +201,7 @@ export class FirstNightController {
     if(!skip && step.requiredInput.kind==='setupInfo'&&!selectedSetupChoice(step,d))return;
     const constraint=step.informationPrompt?.numberConstraint;
     if(!skip&&constraint&&(!d.delivery||d.delivery.kind!=='number'||d.delivery.value<constraint.min||d.delivery.value>constraint.max||constraint.excludedValues.includes(d.delivery.value)))return;
-    await this.prepare(stepConfirmation(step,{playerIds:d.playerIds,characterIds:d.characterIds,correctPlayerId:d.correct,zero:d.zero,execute:d.execute,choice:d.choiceIndex!==''?choices[Number(d.choiceIndex)]:choices.length===1||choices[0]?.result.kind==='characterPair'?choices[0]:undefined,registrationJudgments:d.judgments,deliveredResult:d.delivery,mayorDecision:d.mayorDecision,successorPlayerId:d.successorPlayerId,chooserPlayerId:d.chooserPlayerId},skip));
+    await this.prepare(stepConfirmation(step,{playerIds:d.playerIds,characterIds:d.characterIds,correctPlayerId:d.correct,zero:d.zero,execute:d.execute,choice:d.choiceIndex!==''?choices[Number(d.choiceIndex)]:choices.length===1||choices[0]?.result.kind==='characterPair'?choices[0]:undefined,registrationJudgments:d.judgments,deliveredResult:d.delivery,mayorDecision:d.mayorDecision,successorPlayerId:d.successorPlayerId,chooserPlayerId:this.chooserPlayerId},skip));
     const next=this.step;
     if(!skip && next && next.id!==step.id && next.execution.id===step.execution.id && next.execution.relation==='continuation' && !this.state.error && !this.state.proposal && this.state.saveStatus==='saved' && !this.state.handoff) {
       const adapter=actionAdapter(next);
@@ -303,6 +330,8 @@ export class FirstNightController {
     const h=this.state.handoff;
     if(!h||h.stage!=='result'||this.state.busy||this.state.public||this.state.saveStatus!=='saved')return;
     this.patch({handoff:h.notifications.length?{...h,stage:'notification',notificationIndex:0}:undefined,selecting:false});
+    const next=this.step;
+    if(!this.state.handoff&&next?.execution.relation==='continuation'&&next.execution.rootStepId===h.step.id&&actionAdapter(next)?.completionContract.continuationEntry==='select')this.beginSelection();
   };
   private restoreResultCheckpoint() {
     const last=this.state.file.game.events.at(-1),review=reviewedAction(last);
@@ -380,7 +409,7 @@ export class FirstNightController {
       if(saved&&this.savedHandoff){this.patch({handoff:this.savedHandoff});this.savedHandoff=undefined;}
     });
   };
-  private adopt() { this.savedHandoff=undefined; this.savedDayNotifications=undefined; this.currentReveal = undefined; this.request++; this.patch({ dayHandoff:undefined,dayNotifications:undefined,inputDraft:emptyInput(), selecting:false, handoff:undefined, replay: this.session.replay!, file: this.session.snapshot.canonical, selectedStepId: undefined, activeReveal:undefined, proposal: undefined, proposedFile: undefined, reveal: undefined, public: false }); this.inputIdentity=actionInputIdentity(this.state.file,this.step); }
+  private adopt() { this.savedHandoff=undefined; this.savedDayNotifications=undefined; this.currentReveal = undefined; this.request++; this.patch({ dayHandoff:interruptedDayVoteHandoff(this.session.replay!),dayNotifications:undefined,inputDraft:emptyInput(), selecting:false, handoff:undefined, replay: this.session.replay!, file: this.session.snapshot.canonical, selectedStepId: undefined, activeReveal:undefined, proposal: undefined, proposedFile: undefined, reveal: undefined, public: false }); this.inputIdentity=actionInputIdentity(this.state.file,this.step); }
   private async observeSave(saved: Promise<boolean>) {
     const request = ++this.saveRequest;
     const count = this.session.snapshot.canonical.game.events.length;
