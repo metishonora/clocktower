@@ -1,0 +1,97 @@
+{
+  "type": "clocktower-custom-scenario",
+  "version": 2,
+  "scenario": {
+    "name": "C01 빌린 힘",
+    "characterIds": [
+      "balloonist",
+      "snakeCharmer",
+      "savant",
+      "artist",
+      "virgin",
+      "soldier",
+      "zealot",
+      "boffin",
+      "poisoner",
+      "imp",
+      "nightwatchman",
+      "saint",
+      "mayor",
+      "drunk",
+      "recluse"
+    ],
+    "firstNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "system",
+        "actionId": "minionInfo"
+      },
+      {
+        "kind": "system",
+        "actionId": "demonInfo"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "snakeCharmer",
+        "actionId": "choosePlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "balloonist",
+        "actionId": "learnPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "nightwatchman",
+        "actionId": "choosePlayer"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ],
+    "otherNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "snakeCharmer",
+        "actionId": "choosePlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "balloonist",
+        "actionId": "learnPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "nightwatchman",
+        "actionId": "choosePlayer"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ]
+  }
+}

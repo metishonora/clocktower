@@ -1,0 +1,1709 @@
+{
+  "game": "C02",
+  "name": "C02 남겨진 집착",
+  "distribution": {
+    "Townsfolk": 7,
+    "Outsider": 0,
+    "Minion": 2,
+    "Demon": 1,
+    "adjustment": {
+      "base": {
+        "Townsfolk": 7,
+        "Outsider": 0,
+        "Minion": 2,
+        "Demon": 1
+      },
+      "modifiers": [],
+      "requestedDelta": {
+        "Townsfolk": 0,
+        "Outsider": 0,
+        "Minion": 0,
+        "Demon": 0
+      },
+      "appliedDelta": {
+        "Townsfolk": 0,
+        "Outsider": 0,
+        "Minion": 0,
+        "Demon": 0
+      },
+      "limited": false
+    }
+  },
+  "roster": [
+    {
+      "seat": 1,
+      "name": "민지",
+      "characterId": "pixie"
+    },
+    {
+      "seat": 2,
+      "name": "태오",
+      "characterId": "nightwatchman"
+    },
+    {
+      "seat": 3,
+      "name": "지온",
+      "characterId": "soldier"
+    },
+    {
+      "seat": 4,
+      "name": "하린",
+      "characterId": "savant"
+    },
+    {
+      "seat": 5,
+      "name": "도윤",
+      "characterId": "artist"
+    },
+    {
+      "seat": 6,
+      "name": "서윤",
+      "characterId": "seamstress"
+    },
+    {
+      "seat": 7,
+      "name": "은호",
+      "characterId": "philosopher"
+    },
+    {
+      "seat": 8,
+      "name": "수아",
+      "characterId": "poisoner"
+    },
+    {
+      "seat": 9,
+      "name": "시우",
+      "characterId": "pitHag"
+    },
+    {
+      "seat": 10,
+      "name": "유나",
+      "characterId": "imp"
+    }
+  ],
+  "bluffs": [
+    "chef",
+    "mayor",
+    "saint"
+  ],
+  "files": [
+    "C02-00-start",
+    "C02-01-pixie-information",
+    "C02-02-nightwatchman",
+    "C02-03-pixie-judgment",
+    "C02-04-acquired-day",
+    "C02-05-acquired-nightwatchman",
+    "C02-06-acquired-used",
+    "C02-07-failed-madness",
+    "C02-08-poisoned-target-death",
+    "C02-09-recovered-no-acquisition",
+    "C02-10-target-character-change",
+    "C02-11-original-ability-after-change",
+    "C02-12-native-nightwatchman-used",
+    "C02-13-poisoned-nightwatchman",
+    "C02-14-poisoned-nightwatchman-used",
+    "C02-15-recovered-nightwatchman-spent",
+    "C02-16-pixie-died-first"
+  ],
+  "checks": [
+    {
+      "id": "C02-P01",
+      "expectedKo": "픽시 공개는 야경꾼 직업만 포함하고 대상 2번을 포함하지 않는다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-01-pixie-information.game.json"
+    },
+    {
+      "id": "C02-P02",
+      "expectedKo": "집착 성공 후 대상 사망 즉시 야경꾼 능력 획득·능력 가짐 토큰, 후속 질문 없음.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-03-pixie-judgment.game.json"
+    },
+    {
+      "id": "C02-P03",
+      "expectedKo": "픽시가 얻은 야경꾼을 실제 사용하면 5번에게 1번을 통지하고 그 능력만 소진한다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-05-acquired-nightwatchman.game.json"
+    },
+    {
+      "id": "C02-P04",
+      "expectedKo": "불충분 상태에서 대상 사망 시 능력·집착 토큰·자유행동이 모두 없다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-03-pixie-judgment.game.json"
+    },
+    {
+      "id": "C02-P05",
+      "expectedKo": "픽시가 중독된 순간 대상이 죽으면 능력을 얻지 않고 집착 토큰을 제거한다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-08-poisoned-target-death.game.json"
+    },
+    {
+      "id": "C02-P06",
+      "expectedKo": "다음 밤 중독이 풀려도 이전 대상 사망에 대한 소급 획득과 자유행동이 없다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-09-recovered-no-acquisition.game.json"
+    },
+    {
+      "id": "C02-P07",
+      "expectedKo": "대상은 요리사로 바뀌었지만 픽시가 얻은 능력은 처음 알려준 야경꾼이다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-10-target-character-change.game.json"
+    },
+    {
+      "id": "C02-N01",
+      "expectedKo": "실제 야경꾼 사용 시 5번에게 2번을 통지하고 사용함 토큰이 남는다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-02-nightwatchman.game.json"
+    },
+    {
+      "id": "C02-N02",
+      "expectedKo": "이미 사용한 실제 야경꾼은 다음 밤에 다시 나타나지 않는다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-12-native-nightwatchman-used.game.json"
+    },
+    {
+      "id": "C02-N03",
+      "expectedKo": "오늘 사용하지 않음은 즉시 진행하고 다음 밤에도 같은 야경꾼 능력을 남긴다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-02-nightwatchman.game.json"
+    },
+    {
+      "id": "C02-N04",
+      "expectedKo": "중독된 야경꾼은 대상을 선택하면 소진되지만 대상에게 통지를 만들지 않는다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-13-poisoned-nightwatchman.game.json"
+    },
+    {
+      "id": "C02-N05",
+      "expectedKo": "야경꾼 중독이 풀려도 사용 횟수는 돌아오지 않고 다음 단계가 낮 시작이다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-15-recovered-nightwatchman-spent.game.json"
+    },
+    {
+      "id": "C02-P08",
+      "expectedKo": "픽시가 먼저 죽었으면 이후 집착 대상 사망으로 능력을 얻지 않는다.",
+      "generatorCheck": "passed",
+      "user": "unverified",
+      "device": "unverified",
+      "startFile": "C02-16-pixie-died-first.game.json"
+    }
+  ],
+  "trace": [
+    {
+      "type": "createGame",
+      "payload": {
+        "players": [
+          {
+            "id": "p1",
+            "seat": 1,
+            "name": "민지",
+            "actualCharacter": "pixie"
+          },
+          {
+            "id": "p2",
+            "seat": 2,
+            "name": "태오",
+            "actualCharacter": "nightwatchman"
+          },
+          {
+            "id": "p3",
+            "seat": 3,
+            "name": "지온",
+            "actualCharacter": "soldier"
+          },
+          {
+            "id": "p4",
+            "seat": 4,
+            "name": "하린",
+            "actualCharacter": "savant"
+          },
+          {
+            "id": "p5",
+            "seat": 5,
+            "name": "도윤",
+            "actualCharacter": "artist"
+          },
+          {
+            "id": "p6",
+            "seat": 6,
+            "name": "서윤",
+            "actualCharacter": "seamstress"
+          },
+          {
+            "id": "p7",
+            "seat": 7,
+            "name": "은호",
+            "actualCharacter": "philosopher"
+          },
+          {
+            "id": "p8",
+            "seat": 8,
+            "name": "수아",
+            "actualCharacter": "poisoner"
+          },
+          {
+            "id": "p9",
+            "seat": 9,
+            "name": "시우",
+            "actualCharacter": "pitHag"
+          },
+          {
+            "id": "p10",
+            "seat": 10,
+            "name": "유나",
+            "actualCharacter": "imp"
+          }
+        ]
+      },
+      "event": "setup-1"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:philosopher:chooseAbility:owner2:p7:instance8:setup:p7",
+        "input": null
+      },
+      "event": "phase-step-2"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:system:minionInfo",
+        "input": null
+      },
+      "event": "phase-step-3"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:system:demonInfo",
+        "input": {
+          "characterIds": [
+            "chef",
+            "mayor",
+            "saint"
+          ]
+        }
+      },
+      "event": "phase-step-4"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:poisoner:choosePoisonTarget:owner2:p8:instance8:setup:p8",
+        "input": {
+          "playerIds": [
+            "p3"
+          ]
+        }
+      },
+      "event": "phase-step-5"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:pixie:learnTownsfolk:owner2:p1:instance8:setup:p1",
+        "input": {
+          "playerIds": [
+            "p2"
+          ]
+        }
+      },
+      "event": "phase-step-6"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:seamstress:compareAlignments:owner2:p6:instance8:setup:p6",
+        "input": null
+      },
+      "event": "phase-step-7"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:nightwatchman:choosePlayer:owner2:p2:instance8:setup:p2",
+        "input": null
+      },
+      "event": "phase-step-8"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:system:dawn",
+        "input": null
+      },
+      "event": "phase-step-9"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:phase-step-9",
+        "input": {
+          "kind": "checkMadness",
+          "assignmentId": "pixie:phase-step-6",
+          "violation": false
+        }
+      },
+      "event": "day-event-10"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:day-event-10",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-11"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Whisper:after12:day-event-11",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-12"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Discussion:after12:day-event-12",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-13"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Nomination:after12:day-event-13",
+        "input": {
+          "kind": "nominate",
+          "nominatorId": "p3",
+          "nomineeId": "p2",
+          "spyAsTownsfolk": false
+        }
+      },
+      "event": "day-event-14"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Voting:after12:day-event-14",
+        "input": {
+          "kind": "vote",
+          "voterIds": [
+            "p1",
+            "p3",
+            "p4",
+            "p5",
+            "p6",
+            "p7"
+          ]
+        }
+      },
+      "event": "day-event-15"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Nomination:after12:day-event-15",
+        "input": {
+          "kind": "closeNominations"
+        }
+      },
+      "event": "day-event-16"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Execution:after12:day-event-16",
+        "input": {
+          "kind": "confirmExecution"
+        }
+      },
+      "event": "day-event-17"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:ExecutionDeath:after12:day-event-17",
+        "input": {
+          "kind": "confirmDeath"
+        }
+      },
+      "event": "day-event-18"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:NightReady:after12:day-event-18",
+        "input": {
+          "kind": "beginNight"
+        }
+      },
+      "event": "day-event-19"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:philosopher:chooseAbility:owner2:p7:instance8:setup:p7",
+        "input": null
+      },
+      "event": "phase-step-20"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p8:instance8:setup:p8",
+        "input": {
+          "playerIds": [
+            "p3"
+          ]
+        }
+      },
+      "event": "phase-step-21"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:pitHag:changeCharacter:owner2:p9:instance8:setup:p9",
+        "input": {
+          "playerIds": [
+            "p3"
+          ],
+          "characterIds": [
+            "soldier"
+          ]
+        }
+      },
+      "event": "phase-step-22"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+        "input": {
+          "playerIds": [
+            "p4"
+          ]
+        }
+      },
+      "event": "phase-step-23"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:seamstress:compareAlignments:owner2:p6:instance8:setup:p6",
+        "input": null
+      },
+      "event": "phase-step-24"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:nightwatchman:choosePlayer:owner2:p1:instance69:customGrant:12#day-event-182#p15#pixie8#setup:p113#nightwatchman:2#p1",
+        "input": {
+          "playerIds": [
+            "p5"
+          ]
+        }
+      },
+      "event": "phase-step-25"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:phase-step-9",
+        "input": {
+          "kind": "checkMadness",
+          "assignmentId": "pixie:phase-step-6",
+          "violation": true
+        }
+      },
+      "event": "day-event-10"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:day-event-10",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-11"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Whisper:after12:day-event-11",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-12"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Discussion:after12:day-event-12",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-13"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Nomination:after12:day-event-13",
+        "input": {
+          "kind": "nominate",
+          "nominatorId": "p3",
+          "nomineeId": "p2",
+          "spyAsTownsfolk": false
+        }
+      },
+      "event": "day-event-14"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Voting:after12:day-event-14",
+        "input": {
+          "kind": "vote",
+          "voterIds": [
+            "p1",
+            "p3",
+            "p4",
+            "p5",
+            "p6",
+            "p7"
+          ]
+        }
+      },
+      "event": "day-event-15"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Nomination:after12:day-event-15",
+        "input": {
+          "kind": "closeNominations"
+        }
+      },
+      "event": "day-event-16"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Execution:after12:day-event-16",
+        "input": {
+          "kind": "confirmExecution"
+        }
+      },
+      "event": "day-event-17"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:ExecutionDeath:after12:day-event-17",
+        "input": {
+          "kind": "confirmDeath"
+        }
+      },
+      "event": "day-event-18"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:phase-step-9",
+        "input": {
+          "kind": "checkMadness",
+          "assignmentId": "pixie:phase-step-6",
+          "violation": false
+        }
+      },
+      "event": "day-event-10"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:day-event-10",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-11"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Whisper:after12:day-event-11",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-12"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Discussion:after12:day-event-12",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-13"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Nomination:after12:day-event-13",
+        "input": {
+          "kind": "closeNominations"
+        }
+      },
+      "event": "day-event-14"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Execution:after12:day-event-14",
+        "input": {
+          "kind": "confirmExecution"
+        }
+      },
+      "event": "day-event-15"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:NightReady:after12:day-event-15",
+        "input": {
+          "kind": "beginNight"
+        }
+      },
+      "event": "day-event-16"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:philosopher:chooseAbility:owner2:p7:instance8:setup:p7",
+        "input": null
+      },
+      "event": "phase-step-17"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p8:instance8:setup:p8",
+        "input": {
+          "playerIds": [
+            "p1"
+          ]
+        }
+      },
+      "event": "phase-step-18"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:pitHag:changeCharacter:owner2:p9:instance8:setup:p9",
+        "input": {
+          "playerIds": [
+            "p3"
+          ],
+          "characterIds": [
+            "soldier"
+          ]
+        }
+      },
+      "event": "phase-step-19"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+        "input": {
+          "playerIds": [
+            "p2"
+          ]
+        }
+      },
+      "event": "phase-step-20"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:seamstress:compareAlignments:owner2:p6:instance8:setup:p6",
+        "input": null
+      },
+      "event": "phase-step-21"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:system:dawn",
+        "input": null
+      },
+      "event": "phase-step-22"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:Announcement:after13:phase-step-22",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-23"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:Whisper:after12:day-event-23",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-24"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:Discussion:after12:day-event-24",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-25"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:Nomination:after12:day-event-25",
+        "input": {
+          "kind": "closeNominations"
+        }
+      },
+      "event": "day-event-26"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:Execution:after12:day-event-26",
+        "input": {
+          "kind": "confirmExecution"
+        }
+      },
+      "event": "day-event-27"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:NightReady:after12:day-event-27",
+        "input": {
+          "kind": "beginNight"
+        }
+      },
+      "event": "day-event-28"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:3:philosopher:chooseAbility:owner2:p7:instance8:setup:p7",
+        "input": null
+      },
+      "event": "phase-step-29"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:3:poisoner:choosePoisonTarget:owner2:p8:instance8:setup:p8",
+        "input": {
+          "playerIds": [
+            "p3"
+          ]
+        }
+      },
+      "event": "phase-step-30"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:phase-step-9",
+        "input": {
+          "kind": "checkMadness",
+          "assignmentId": "pixie:phase-step-6",
+          "violation": false
+        }
+      },
+      "event": "day-event-10"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:day-event-10",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-11"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Whisper:after12:day-event-11",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-12"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Discussion:after12:day-event-12",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-13"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Nomination:after12:day-event-13",
+        "input": {
+          "kind": "closeNominations"
+        }
+      },
+      "event": "day-event-14"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Execution:after12:day-event-14",
+        "input": {
+          "kind": "confirmExecution"
+        }
+      },
+      "event": "day-event-15"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:NightReady:after12:day-event-15",
+        "input": {
+          "kind": "beginNight"
+        }
+      },
+      "event": "day-event-16"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:philosopher:chooseAbility:owner2:p7:instance8:setup:p7",
+        "input": null
+      },
+      "event": "phase-step-17"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p8:instance8:setup:p8",
+        "input": {
+          "playerIds": [
+            "p3"
+          ]
+        }
+      },
+      "event": "phase-step-18"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:pitHag:changeCharacter:owner2:p9:instance8:setup:p9",
+        "input": {
+          "playerIds": [
+            "p2"
+          ],
+          "characterIds": [
+            "chef"
+          ]
+        }
+      },
+      "event": "phase-step-19"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:chef:learnEvilPairs:owner2:p2:instance16:phase-step-19:p2",
+        "input": null
+      },
+      "event": "phase-step-20"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+        "input": {
+          "playerIds": [
+            "p2"
+          ]
+        }
+      },
+      "event": "phase-step-21"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:seamstress:compareAlignments:owner2:p6:instance8:setup:p6",
+        "input": null
+      },
+      "event": "phase-step-22"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:nightwatchman:choosePlayer:owner2:p2:instance8:setup:p2",
+        "input": {
+          "playerIds": [
+            "p5"
+          ]
+        }
+      },
+      "event": "phase-step-8"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:system:dawn",
+        "input": null
+      },
+      "event": "phase-step-9"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:phase-step-9",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-10"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Whisper:after12:day-event-10",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-11"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Discussion:after12:day-event-11",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-12"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Nomination:after12:day-event-12",
+        "input": {
+          "kind": "closeNominations"
+        }
+      },
+      "event": "day-event-13"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Execution:after12:day-event-13",
+        "input": {
+          "kind": "confirmExecution"
+        }
+      },
+      "event": "day-event-14"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:NightReady:after12:day-event-14",
+        "input": {
+          "kind": "beginNight"
+        }
+      },
+      "event": "day-event-15"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:philosopher:chooseAbility:owner2:p7:instance8:setup:p7",
+        "input": null
+      },
+      "event": "phase-step-16"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p8:instance8:setup:p8",
+        "input": {
+          "playerIds": [
+            "p3"
+          ]
+        }
+      },
+      "event": "phase-step-17"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:pitHag:changeCharacter:owner2:p9:instance8:setup:p9",
+        "input": {
+          "playerIds": [
+            "p3"
+          ],
+          "characterIds": [
+            "soldier"
+          ]
+        }
+      },
+      "event": "phase-step-18"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+        "input": {
+          "playerIds": [
+            "p4"
+          ]
+        }
+      },
+      "event": "phase-step-19"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:seamstress:compareAlignments:owner2:p6:instance8:setup:p6",
+        "input": null
+      },
+      "event": "phase-step-20"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:nightwatchman:choosePlayer:owner2:p2:instance8:setup:p2",
+        "input": null
+      },
+      "event": "phase-step-8"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:system:dawn",
+        "input": null
+      },
+      "event": "phase-step-9"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:phase-step-9",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-10"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Whisper:after12:day-event-10",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-11"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Discussion:after12:day-event-11",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-12"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Nomination:after12:day-event-12",
+        "input": {
+          "kind": "closeNominations"
+        }
+      },
+      "event": "day-event-13"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Execution:after12:day-event-13",
+        "input": {
+          "kind": "confirmExecution"
+        }
+      },
+      "event": "day-event-14"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:NightReady:after12:day-event-14",
+        "input": {
+          "kind": "beginNight"
+        }
+      },
+      "event": "day-event-15"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:philosopher:chooseAbility:owner2:p7:instance8:setup:p7",
+        "input": null
+      },
+      "event": "phase-step-16"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p8:instance8:setup:p8",
+        "input": {
+          "playerIds": [
+            "p3"
+          ]
+        }
+      },
+      "event": "phase-step-17"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:pitHag:changeCharacter:owner2:p9:instance8:setup:p9",
+        "input": {
+          "playerIds": [
+            "p3"
+          ],
+          "characterIds": [
+            "soldier"
+          ]
+        }
+      },
+      "event": "phase-step-18"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+        "input": {
+          "playerIds": [
+            "p4"
+          ]
+        }
+      },
+      "event": "phase-step-19"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:seamstress:compareAlignments:owner2:p6:instance8:setup:p6",
+        "input": null
+      },
+      "event": "phase-step-20"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:philosopher:chooseAbility:owner2:p7:instance8:setup:p7",
+        "input": null
+      },
+      "event": "phase-step-2"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:system:minionInfo",
+        "input": null
+      },
+      "event": "phase-step-3"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:system:demonInfo",
+        "input": {
+          "characterIds": [
+            "chef",
+            "mayor",
+            "saint"
+          ]
+        }
+      },
+      "event": "phase-step-4"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:poisoner:choosePoisonTarget:owner2:p8:instance8:setup:p8",
+        "input": {
+          "playerIds": [
+            "p2"
+          ]
+        }
+      },
+      "event": "phase-step-5"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:pixie:learnTownsfolk:owner2:p1:instance8:setup:p1",
+        "input": {
+          "playerIds": [
+            "p2"
+          ]
+        }
+      },
+      "event": "phase-step-6"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:seamstress:compareAlignments:owner2:p6:instance8:setup:p6",
+        "input": null
+      },
+      "event": "phase-step-7"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:nightwatchman:choosePlayer:owner2:p2:instance8:setup:p2",
+        "input": {
+          "playerIds": [
+            "p5"
+          ]
+        }
+      },
+      "event": "phase-step-8"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "firstNight:system:dawn",
+        "input": null
+      },
+      "event": "phase-step-9"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:phase-step-9",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-10"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Whisper:after12:day-event-10",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-11"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Discussion:after12:day-event-11",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-12"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Nomination:after12:day-event-12",
+        "input": {
+          "kind": "closeNominations"
+        }
+      },
+      "event": "day-event-13"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Execution:after12:day-event-13",
+        "input": {
+          "kind": "confirmExecution"
+        }
+      },
+      "event": "day-event-14"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:NightReady:after12:day-event-14",
+        "input": {
+          "kind": "beginNight"
+        }
+      },
+      "event": "day-event-15"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:philosopher:chooseAbility:owner2:p7:instance8:setup:p7",
+        "input": null
+      },
+      "event": "phase-step-16"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p8:instance8:setup:p8",
+        "input": {
+          "playerIds": [
+            "p3"
+          ]
+        }
+      },
+      "event": "phase-step-17"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:pitHag:changeCharacter:owner2:p9:instance8:setup:p9",
+        "input": {
+          "playerIds": [
+            "p3"
+          ],
+          "characterIds": [
+            "soldier"
+          ]
+        }
+      },
+      "event": "phase-step-18"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+        "input": {
+          "playerIds": [
+            "p4"
+          ]
+        }
+      },
+      "event": "phase-step-19"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:seamstress:compareAlignments:owner2:p6:instance8:setup:p6",
+        "input": null
+      },
+      "event": "phase-step-20"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:phase-step-9",
+        "input": {
+          "kind": "checkMadness",
+          "assignmentId": "pixie:phase-step-6",
+          "violation": false
+        }
+      },
+      "event": "day-event-10"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Announcement:after12:day-event-10",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-11"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Whisper:after12:day-event-11",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-12"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Discussion:after12:day-event-12",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-13"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Nomination:after12:day-event-13",
+        "input": {
+          "kind": "closeNominations"
+        }
+      },
+      "event": "day-event-14"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:Execution:after12:day-event-14",
+        "input": {
+          "kind": "confirmExecution"
+        }
+      },
+      "event": "day-event-15"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:1:NightReady:after12:day-event-15",
+        "input": {
+          "kind": "beginNight"
+        }
+      },
+      "event": "day-event-16"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:philosopher:chooseAbility:owner2:p7:instance8:setup:p7",
+        "input": null
+      },
+      "event": "phase-step-17"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p8:instance8:setup:p8",
+        "input": {
+          "playerIds": [
+            "p3"
+          ]
+        }
+      },
+      "event": "phase-step-18"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:pitHag:changeCharacter:owner2:p9:instance8:setup:p9",
+        "input": {
+          "playerIds": [
+            "p3"
+          ],
+          "characterIds": [
+            "soldier"
+          ]
+        }
+      },
+      "event": "phase-step-19"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+        "input": {
+          "playerIds": [
+            "p1"
+          ]
+        }
+      },
+      "event": "phase-step-20"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:seamstress:compareAlignments:owner2:p6:instance8:setup:p6",
+        "input": null
+      },
+      "event": "phase-step-21"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:nightwatchman:choosePlayer:owner2:p2:instance8:setup:p2",
+        "input": null
+      },
+      "event": "phase-step-22"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:2:system:dawn",
+        "input": null
+      },
+      "event": "phase-step-23"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:Announcement:after13:phase-step-23",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-24"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:Whisper:after12:day-event-24",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-25"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:Discussion:after12:day-event-25",
+        "input": {
+          "kind": "advance"
+        }
+      },
+      "event": "day-event-26"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:Nomination:after12:day-event-26",
+        "input": {
+          "kind": "closeNominations"
+        }
+      },
+      "event": "day-event-27"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:Execution:after12:day-event-27",
+        "input": {
+          "kind": "confirmExecution"
+        }
+      },
+      "event": "day-event-28"
+    },
+    {
+      "type": "confirmDay",
+      "payload": {
+        "stepId": "day:2:NightReady:after12:day-event-28",
+        "input": {
+          "kind": "beginNight"
+        }
+      },
+      "event": "day-event-29"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:3:philosopher:chooseAbility:owner2:p7:instance8:setup:p7",
+        "input": null
+      },
+      "event": "phase-step-30"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:3:poisoner:choosePoisonTarget:owner2:p8:instance8:setup:p8",
+        "input": {
+          "playerIds": [
+            "p3"
+          ]
+        }
+      },
+      "event": "phase-step-31"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:3:pitHag:changeCharacter:owner2:p9:instance8:setup:p9",
+        "input": {
+          "playerIds": [
+            "p3"
+          ],
+          "characterIds": [
+            "soldier"
+          ]
+        }
+      },
+      "event": "phase-step-32"
+    },
+    {
+      "type": "confirmStep",
+      "payload": {
+        "stepId": "night:3:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+        "input": {
+          "playerIds": [
+            "p2"
+          ]
+        }
+      },
+      "event": "phase-step-33"
+    }
+  ],
+  "basis": "Production WASM propose/replay; 신규 역할 관련 상태 전이만 생성 시 확인; 사용자와 실기기는 미확인"
+}

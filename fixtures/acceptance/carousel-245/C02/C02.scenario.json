@@ -1,0 +1,110 @@
+{
+  "type": "clocktower-custom-scenario",
+  "version": 2,
+  "scenario": {
+    "name": "C02 남겨진 집착",
+    "characterIds": [
+      "pixie",
+      "nightwatchman",
+      "soldier",
+      "savant",
+      "artist",
+      "seamstress",
+      "philosopher",
+      "poisoner",
+      "pitHag",
+      "imp",
+      "chef",
+      "mayor",
+      "saint"
+    ],
+    "firstNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "character",
+        "characterId": "philosopher",
+        "actionId": "chooseAbility"
+      },
+      {
+        "kind": "system",
+        "actionId": "minionInfo"
+      },
+      {
+        "kind": "system",
+        "actionId": "demonInfo"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "pixie",
+        "actionId": "learnTownsfolk"
+      },
+      {
+        "kind": "character",
+        "characterId": "chef",
+        "actionId": "learnEvilPairs"
+      },
+      {
+        "kind": "character",
+        "characterId": "seamstress",
+        "actionId": "compareAlignments"
+      },
+      {
+        "kind": "character",
+        "characterId": "nightwatchman",
+        "actionId": "choosePlayer"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ],
+    "otherNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "character",
+        "characterId": "philosopher",
+        "actionId": "chooseAbility"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "pitHag",
+        "actionId": "changeCharacter"
+      },
+      {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "seamstress",
+        "actionId": "compareAlignments"
+      },
+      {
+        "kind": "character",
+        "characterId": "nightwatchman",
+        "actionId": "choosePlayer"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ]
+  }
+}

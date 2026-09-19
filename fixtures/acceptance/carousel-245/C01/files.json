@@ -1,0 +1,3117 @@
+{
+  "game": "C01",
+  "roster": [
+    "balloonist",
+    "snakeCharmer",
+    "savant",
+    "artist",
+    "virgin",
+    "soldier",
+    "zealot",
+    "boffin",
+    "poisoner",
+    "imp"
+  ],
+  "distribution": {
+    "boffinAbilityChoices": [
+      "nightwatchman",
+      "saint",
+      "mayor",
+      "recluse"
+    ],
+    "Townsfolk": 6,
+    "Outsider": 1,
+    "Minion": 2,
+    "Demon": 1,
+    "adjustment": {
+      "base": {
+        "Townsfolk": 7,
+        "Outsider": 0,
+        "Minion": 2,
+        "Demon": 1
+      },
+      "modifiers": [
+        {
+          "characterId": "balloonist",
+          "delta": {
+            "Townsfolk": -1,
+            "Outsider": 1,
+            "Minion": 0,
+            "Demon": 0
+          }
+        }
+      ],
+      "requestedDelta": {
+        "Townsfolk": -1,
+        "Outsider": 1,
+        "Minion": 0,
+        "Demon": 0
+      },
+      "appliedDelta": {
+        "Townsfolk": -1,
+        "Outsider": 1,
+        "Minion": 0,
+        "Demon": 0
+      },
+      "limited": false
+    }
+  },
+  "files": [
+    {
+      "file": "C01-start.game.json",
+      "step": {
+        "kind": "character",
+        "characterId": "boffin",
+        "actionId": "grantAbility"
+      },
+      "phase": "firstNight",
+      "night": 1,
+      "eventCount": 1
+    },
+    {
+      "file": "C01-ability-notices.game.json",
+      "step": {
+        "kind": "system",
+        "actionId": "minionInfo"
+      },
+      "phase": "firstNight",
+      "night": 1,
+      "eventCount": 2
+    },
+    {
+      "file": "C01-poison-choice.game.json",
+      "step": {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      "phase": "firstNight",
+      "night": 1,
+      "eventCount": 4
+    },
+    {
+      "file": "C01-demon-poisoned.game.json",
+      "step": {
+        "kind": "character",
+        "characterId": "nightwatchman",
+        "actionId": "choosePlayer"
+      },
+      "phase": "firstNight",
+      "night": 1,
+      "eventCount": 7
+    },
+    {
+      "file": "C01-watchman-notice.game.json",
+      "step": {
+        "kind": "system",
+        "actionId": "dawn"
+      },
+      "phase": "firstNight",
+      "night": 1,
+      "eventCount": 8
+    },
+    {
+      "file": "C01-day-one.game.json",
+      "phase": "day",
+      "night": 1,
+      "eventCount": 9
+    },
+    {
+      "file": "C01-zealot-vote.game.json",
+      "phase": "day",
+      "night": 1,
+      "eventCount": 13
+    },
+    {
+      "file": "C01-night-two.game.json",
+      "step": {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      "phase": "night",
+      "night": 2,
+      "eventCount": 17
+    },
+    {
+      "file": "C01-boffin-inactive.game.json",
+      "phase": "day",
+      "night": 2,
+      "eventCount": 22
+    },
+    {
+      "file": "C01-spent-recovered.game.json",
+      "phase": "day",
+      "night": 3,
+      "eventCount": 33
+    },
+    {
+      "file": "C01-new-demon.game.json",
+      "step": {
+        "kind": "character",
+        "characterId": "boffin",
+        "actionId": "grantAbility"
+      },
+      "phase": "night",
+      "night": 4,
+      "eventCount": 41
+    },
+    {
+      "file": "C01-new-ability-notices.game.json",
+      "step": {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      },
+      "phase": "night",
+      "night": 4,
+      "eventCount": 42
+    },
+    {
+      "file": "C01-new-watchman.game.json",
+      "step": {
+        "kind": "character",
+        "characterId": "nightwatchman",
+        "actionId": "choosePlayer"
+      },
+      "phase": "night",
+      "night": 4,
+      "eventCount": 44
+    },
+    {
+      "file": "C01-new-watchman-notice.game.json",
+      "step": {
+        "kind": "system",
+        "actionId": "dawn"
+      },
+      "phase": "night",
+      "night": 4,
+      "eventCount": 45
+    },
+    {
+      "file": "C01-boffin-poisoned-unspent.game.json",
+      "step": {
+        "kind": "system",
+        "actionId": "dawn"
+      },
+      "phase": "firstNight",
+      "night": 1,
+      "eventCount": 7
+    },
+    {
+      "file": "C01-unspent-recovered.game.json",
+      "step": {
+        "kind": "character",
+        "characterId": "nightwatchman",
+        "actionId": "choosePlayer"
+      },
+      "phase": "night",
+      "night": 2,
+      "eventCount": 18
+    },
+    {
+      "file": "C01-balloon-poisoned.game.json",
+      "step": {
+        "kind": "character",
+        "characterId": "balloonist",
+        "actionId": "learnPlayer"
+      },
+      "phase": "night",
+      "night": 2,
+      "eventCount": 18
+    },
+    {
+      "file": "C01-balloon-recovered.game.json",
+      "step": {
+        "kind": "character",
+        "characterId": "balloonist",
+        "actionId": "learnPlayer"
+      },
+      "phase": "night",
+      "night": 3,
+      "eventCount": 29
+    },
+    {
+      "file": "C01-zealot-poisoned-vote.game.json",
+      "phase": "day",
+      "night": 2,
+      "eventCount": 24
+    },
+    {
+      "file": "C01-zealot-dead-vote.game.json",
+      "phase": "day",
+      "night": 2,
+      "eventCount": 24
+    },
+    {
+      "file": "C01-five-alive-vote.game.json",
+      "phase": "day",
+      "night": 6,
+      "eventCount": 67
+    },
+    {
+      "file": "C01-four-alive-vote.game.json",
+      "phase": "day",
+      "night": 7,
+      "eventCount": 78
+    }
+  ],
+  "trace": [
+    {
+      "index": 1,
+      "command": {
+        "type": "createGame",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "seat": 1,
+              "name": "P1",
+              "actualCharacter": "balloonist"
+            },
+            {
+              "id": "p2",
+              "seat": 2,
+              "name": "P2",
+              "actualCharacter": "snakeCharmer"
+            },
+            {
+              "id": "p3",
+              "seat": 3,
+              "name": "P3",
+              "actualCharacter": "savant"
+            },
+            {
+              "id": "p4",
+              "seat": 4,
+              "name": "P4",
+              "actualCharacter": "artist"
+            },
+            {
+              "id": "p5",
+              "seat": 5,
+              "name": "P5",
+              "actualCharacter": "virgin"
+            },
+            {
+              "id": "p6",
+              "seat": 6,
+              "name": "P6",
+              "actualCharacter": "soldier"
+            },
+            {
+              "id": "p7",
+              "seat": 7,
+              "name": "P7",
+              "actualCharacter": "zealot"
+            },
+            {
+              "id": "p8",
+              "seat": 8,
+              "name": "P8",
+              "actualCharacter": "boffin"
+            },
+            {
+              "id": "p9",
+              "seat": 9,
+              "name": "P9",
+              "actualCharacter": "poisoner"
+            },
+            {
+              "id": "p10",
+              "seat": 10,
+              "name": "P10",
+              "actualCharacter": "imp"
+            }
+          ],
+          "setupChoiceId": "balloonist:1",
+          "boffinAbility": "nightwatchman"
+        }
+      },
+      "note": "",
+      "eventId": "setup-1"
+    },
+    {
+      "index": 2,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:boffin:grantAbility:owner2:p8:instance8:setup:p8:cause55:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup-1\"}",
+          "expectedEventCount": 1,
+          "input": {
+            "playerIds": [
+              "p10"
+            ],
+            "characterIds": [
+              "nightwatchman"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-2"
+    },
+    {
+      "index": 3,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:minionInfo",
+          "expectedEventCount": 2,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-3"
+    },
+    {
+      "index": 4,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "expectedEventCount": 3,
+          "input": {
+            "characterIds": [
+              "nightwatchman",
+              "saint",
+              "mayor"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-4"
+    },
+    {
+      "index": 5,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 4,
+          "input": {
+            "playerIds": [
+              "p10"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-5"
+    },
+    {
+      "index": 6,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 5,
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-6"
+    },
+    {
+      "index": 7,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 6,
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-7"
+    },
+    {
+      "index": 8,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:nightwatchman:choosePlayer:owner3:p10:instance65:customGrant:7#setup-12#p86#boffin8#setup:p813#nightwatchman:3#p10",
+          "expectedEventCount": 7,
+          "input": {
+            "playerIds": [
+              "p1"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-8"
+    },
+    {
+      "index": 9,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:dawn",
+          "expectedEventCount": 8,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-9"
+    },
+    {
+      "index": 10,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Announcement:after12:phase-step-9",
+          "expectedEventCount": 9,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-10"
+    },
+    {
+      "index": 11,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Whisper:after12:day-event-10",
+          "expectedEventCount": 10,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-11"
+    },
+    {
+      "index": 12,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Discussion:after12:day-event-11",
+          "expectedEventCount": 11,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-12"
+    },
+    {
+      "index": 13,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Nomination:after12:day-event-12",
+          "expectedEventCount": 12,
+          "input": {
+            "kind": "nominate",
+            "nominatorId": "p1",
+            "nomineeId": "p3",
+            "spyAsTownsfolk": false
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-13"
+    },
+    {
+      "index": 14,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Voting:after12:day-event-13",
+          "expectedEventCount": 13,
+          "input": {
+            "kind": "vote",
+            "voterIds": [
+              "p7"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-14"
+    },
+    {
+      "index": 15,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Nomination:after12:day-event-14",
+          "expectedEventCount": 14,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-15"
+    },
+    {
+      "index": 16,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Execution:after12:day-event-15",
+          "expectedEventCount": 15,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-16"
+    },
+    {
+      "index": 17,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:NightReady:after12:day-event-16",
+          "expectedEventCount": 16,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-17"
+    },
+    {
+      "index": 18,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 17,
+          "input": {
+            "playerIds": [
+              "p8"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-18"
+    },
+    {
+      "index": 19,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 18,
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-19"
+    },
+    {
+      "index": 20,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 19,
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-20"
+    },
+    {
+      "index": 21,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 20,
+          "input": {
+            "playerIds": [
+              "p8"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-21"
+    },
+    {
+      "index": 22,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:system:dawn",
+          "expectedEventCount": 21,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-22"
+    },
+    {
+      "index": 23,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Announcement:after13:phase-step-22",
+          "expectedEventCount": 22,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-23"
+    },
+    {
+      "index": 24,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Whisper:after12:day-event-23",
+          "expectedEventCount": 23,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-24"
+    },
+    {
+      "index": 25,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Discussion:after12:day-event-24",
+          "expectedEventCount": 24,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-25"
+    },
+    {
+      "index": 26,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Nomination:after12:day-event-25",
+          "expectedEventCount": 25,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-26"
+    },
+    {
+      "index": 27,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Execution:after12:day-event-26",
+          "expectedEventCount": 26,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-27"
+    },
+    {
+      "index": 28,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:NightReady:after12:day-event-27",
+          "expectedEventCount": 27,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-28"
+    },
+    {
+      "index": 29,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 28,
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-29"
+    },
+    {
+      "index": 30,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 29,
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-30"
+    },
+    {
+      "index": 31,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 30,
+          "input": {
+            "playerIds": [
+              "p4"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-31"
+    },
+    {
+      "index": 32,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 31,
+          "input": {
+            "playerIds": [
+              "p4"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-32"
+    },
+    {
+      "index": 33,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:system:dawn",
+          "expectedEventCount": 32,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-33"
+    },
+    {
+      "index": 34,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:Announcement:after13:phase-step-33",
+          "expectedEventCount": 33,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-34"
+    },
+    {
+      "index": 35,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:Whisper:after12:day-event-34",
+          "expectedEventCount": 34,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-35"
+    },
+    {
+      "index": 36,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:Discussion:after12:day-event-35",
+          "expectedEventCount": 35,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-36"
+    },
+    {
+      "index": 37,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:Nomination:after12:day-event-36",
+          "expectedEventCount": 36,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-37"
+    },
+    {
+      "index": 38,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:Execution:after12:day-event-37",
+          "expectedEventCount": 37,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-38"
+    },
+    {
+      "index": 39,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:NightReady:after12:day-event-38",
+          "expectedEventCount": 38,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-39"
+    },
+    {
+      "index": 40,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:4:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 39,
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-40"
+    },
+    {
+      "index": 41,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:4:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 40,
+          "input": {
+            "playerIds": [
+              "p10"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-41"
+    },
+    {
+      "index": 42,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:4:boffin:grantAbility:owner2:p8:instance8:setup:p8:cause61:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"phase-step-41\"}",
+          "expectedEventCount": 41,
+          "input": {
+            "playerIds": [
+              "p2"
+            ],
+            "characterIds": [
+              "nightwatchman"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-42"
+    },
+    {
+      "index": 43,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:4:imp:attackPlayer:owner2:p2:instance16:phase-step-41:p2",
+          "expectedEventCount": 42,
+          "input": {
+            "playerIds": [
+              "p5"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-43"
+    },
+    {
+      "index": 44,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:4:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 43,
+          "input": {
+            "playerIds": [
+              "p8"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-44"
+    },
+    {
+      "index": 45,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:4:nightwatchman:choosePlayer:owner2:p2:instance71:customGrant:13#phase-step-422#p86#boffin8#setup:p813#nightwatchman:2#p2",
+          "expectedEventCount": 44,
+          "input": {
+            "playerIds": [
+              "p1"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-45"
+    },
+    {
+      "index": 46,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 4,
+          "input": {
+            "playerIds": [
+              "p8"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-5"
+    },
+    {
+      "index": 47,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 5,
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-6"
+    },
+    {
+      "index": 48,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 6,
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-7"
+    },
+    {
+      "index": 49,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:dawn",
+          "expectedEventCount": 7,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-8"
+    },
+    {
+      "index": 50,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Announcement:after12:phase-step-8",
+          "expectedEventCount": 8,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-9"
+    },
+    {
+      "index": 51,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Whisper:after11:day-event-9",
+          "expectedEventCount": 9,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-10"
+    },
+    {
+      "index": 52,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Discussion:after12:day-event-10",
+          "expectedEventCount": 10,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-11"
+    },
+    {
+      "index": 53,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Nomination:after12:day-event-11",
+          "expectedEventCount": 11,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-12"
+    },
+    {
+      "index": 54,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Execution:after12:day-event-12",
+          "expectedEventCount": 12,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-13"
+    },
+    {
+      "index": 55,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:NightReady:after12:day-event-13",
+          "expectedEventCount": 13,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-14"
+    },
+    {
+      "index": 56,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 14,
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-15"
+    },
+    {
+      "index": 57,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 15,
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-16"
+    },
+    {
+      "index": 58,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 16,
+          "input": {
+            "playerIds": [
+              "p4"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-17"
+    },
+    {
+      "index": 59,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 17,
+          "input": {
+            "playerIds": [
+              "p8"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-18"
+    },
+    {
+      "index": 60,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Announcement:after12:phase-step-9",
+          "expectedEventCount": 9,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-10"
+    },
+    {
+      "index": 61,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Whisper:after12:day-event-10",
+          "expectedEventCount": 10,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-11"
+    },
+    {
+      "index": 62,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Discussion:after12:day-event-11",
+          "expectedEventCount": 11,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-12"
+    },
+    {
+      "index": 63,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Nomination:after12:day-event-12",
+          "expectedEventCount": 12,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-13"
+    },
+    {
+      "index": 64,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Execution:after12:day-event-13",
+          "expectedEventCount": 13,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-14"
+    },
+    {
+      "index": 65,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:NightReady:after12:day-event-14",
+          "expectedEventCount": 14,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-15"
+    },
+    {
+      "index": 66,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 15,
+          "input": {
+            "playerIds": [
+              "p1"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-16"
+    },
+    {
+      "index": 67,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 16,
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-17"
+    },
+    {
+      "index": 68,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 17,
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-18"
+    },
+    {
+      "index": 69,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 18,
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-19"
+    },
+    {
+      "index": 70,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:system:dawn",
+          "expectedEventCount": 19,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-20"
+    },
+    {
+      "index": 71,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Announcement:after13:phase-step-20",
+          "expectedEventCount": 20,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-21"
+    },
+    {
+      "index": 72,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Whisper:after12:day-event-21",
+          "expectedEventCount": 21,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-22"
+    },
+    {
+      "index": 73,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Discussion:after12:day-event-22",
+          "expectedEventCount": 22,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-23"
+    },
+    {
+      "index": 74,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Nomination:after12:day-event-23",
+          "expectedEventCount": 23,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-24"
+    },
+    {
+      "index": 75,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Execution:after12:day-event-24",
+          "expectedEventCount": 24,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-25"
+    },
+    {
+      "index": 76,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:NightReady:after12:day-event-25",
+          "expectedEventCount": 25,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-26"
+    },
+    {
+      "index": 77,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 26,
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-27"
+    },
+    {
+      "index": 78,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 27,
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-28"
+    },
+    {
+      "index": 79,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 28,
+          "input": {
+            "playerIds": [
+              "p5"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-29"
+    },
+    {
+      "index": 80,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Announcement:after12:phase-step-9",
+          "expectedEventCount": 9,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-10"
+    },
+    {
+      "index": 81,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Whisper:after12:day-event-10",
+          "expectedEventCount": 10,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-11"
+    },
+    {
+      "index": 82,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Discussion:after12:day-event-11",
+          "expectedEventCount": 11,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-12"
+    },
+    {
+      "index": 83,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Nomination:after12:day-event-12",
+          "expectedEventCount": 12,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-13"
+    },
+    {
+      "index": 84,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Execution:after12:day-event-13",
+          "expectedEventCount": 13,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-14"
+    },
+    {
+      "index": 85,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:NightReady:after12:day-event-14",
+          "expectedEventCount": 14,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-15"
+    },
+    {
+      "index": 86,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 15,
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-16"
+    },
+    {
+      "index": 87,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 16,
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-17"
+    },
+    {
+      "index": 88,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 17,
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-18"
+    },
+    {
+      "index": 89,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 18,
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-19"
+    },
+    {
+      "index": 90,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:system:dawn",
+          "expectedEventCount": 19,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-20"
+    },
+    {
+      "index": 91,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Announcement:after13:phase-step-20",
+          "expectedEventCount": 20,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-21"
+    },
+    {
+      "index": 92,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Whisper:after12:day-event-21",
+          "expectedEventCount": 21,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-22"
+    },
+    {
+      "index": 93,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Discussion:after12:day-event-22",
+          "expectedEventCount": 22,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-23"
+    },
+    {
+      "index": 94,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Nomination:after12:day-event-23",
+          "expectedEventCount": 23,
+          "input": {
+            "kind": "nominate",
+            "nominatorId": "p1",
+            "nomineeId": "p4",
+            "spyAsTownsfolk": false
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-24"
+    },
+    {
+      "index": 95,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Announcement:after12:phase-step-9",
+          "expectedEventCount": 9,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-10"
+    },
+    {
+      "index": 96,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Whisper:after12:day-event-10",
+          "expectedEventCount": 10,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-11"
+    },
+    {
+      "index": 97,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Discussion:after12:day-event-11",
+          "expectedEventCount": 11,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-12"
+    },
+    {
+      "index": 98,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Nomination:after12:day-event-12",
+          "expectedEventCount": 12,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-13"
+    },
+    {
+      "index": 99,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Execution:after12:day-event-13",
+          "expectedEventCount": 13,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-14"
+    },
+    {
+      "index": 100,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:NightReady:after12:day-event-14",
+          "expectedEventCount": 14,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-15"
+    },
+    {
+      "index": 101,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 15,
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-16"
+    },
+    {
+      "index": 102,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 16,
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-17"
+    },
+    {
+      "index": 103,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 17,
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-18"
+    },
+    {
+      "index": 104,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 18,
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-19"
+    },
+    {
+      "index": 105,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:system:dawn",
+          "expectedEventCount": 19,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-20"
+    },
+    {
+      "index": 106,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Announcement:after13:phase-step-20",
+          "expectedEventCount": 20,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-21"
+    },
+    {
+      "index": 107,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Whisper:after12:day-event-21",
+          "expectedEventCount": 21,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-22"
+    },
+    {
+      "index": 108,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Discussion:after12:day-event-22",
+          "expectedEventCount": 22,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-23"
+    },
+    {
+      "index": 109,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Nomination:after12:day-event-23",
+          "expectedEventCount": 23,
+          "input": {
+            "kind": "nominate",
+            "nominatorId": "p1",
+            "nomineeId": "p4",
+            "spyAsTownsfolk": false
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-24"
+    },
+    {
+      "index": 110,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Announcement:after12:phase-step-9",
+          "expectedEventCount": 9,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-10"
+    },
+    {
+      "index": 111,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Whisper:after12:day-event-10",
+          "expectedEventCount": 10,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-11"
+    },
+    {
+      "index": 112,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Discussion:after12:day-event-11",
+          "expectedEventCount": 11,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-12"
+    },
+    {
+      "index": 113,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Nomination:after12:day-event-12",
+          "expectedEventCount": 12,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-13"
+    },
+    {
+      "index": 114,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Execution:after12:day-event-13",
+          "expectedEventCount": 13,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-14"
+    },
+    {
+      "index": 115,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:NightReady:after12:day-event-14",
+          "expectedEventCount": 14,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-15"
+    },
+    {
+      "index": 116,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 15,
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-16"
+    },
+    {
+      "index": 117,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 16,
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-17"
+    },
+    {
+      "index": 118,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 17,
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-18"
+    },
+    {
+      "index": 119,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 18,
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-19"
+    },
+    {
+      "index": 120,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:system:dawn",
+          "expectedEventCount": 19,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-20"
+    },
+    {
+      "index": 121,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Announcement:after13:phase-step-20",
+          "expectedEventCount": 20,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-21"
+    },
+    {
+      "index": 122,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Whisper:after12:day-event-21",
+          "expectedEventCount": 21,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-22"
+    },
+    {
+      "index": 123,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Discussion:after12:day-event-22",
+          "expectedEventCount": 22,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-23"
+    },
+    {
+      "index": 124,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Nomination:after12:day-event-23",
+          "expectedEventCount": 23,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-24"
+    },
+    {
+      "index": 125,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:Execution:after12:day-event-24",
+          "expectedEventCount": 24,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-25"
+    },
+    {
+      "index": 126,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:2:NightReady:after12:day-event-25",
+          "expectedEventCount": 25,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-26"
+    },
+    {
+      "index": 127,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 26,
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-27"
+    },
+    {
+      "index": 128,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 27,
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-28"
+    },
+    {
+      "index": 129,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 28,
+          "input": {
+            "playerIds": [
+              "p4"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-29"
+    },
+    {
+      "index": 130,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 29,
+          "input": {
+            "playerIds": [
+              "p1"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-30"
+    },
+    {
+      "index": 131,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:3:system:dawn",
+          "expectedEventCount": 30,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-31"
+    },
+    {
+      "index": 132,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:Announcement:after13:phase-step-31",
+          "expectedEventCount": 31,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-32"
+    },
+    {
+      "index": 133,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:Whisper:after12:day-event-32",
+          "expectedEventCount": 32,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-33"
+    },
+    {
+      "index": 134,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:Discussion:after12:day-event-33",
+          "expectedEventCount": 33,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-34"
+    },
+    {
+      "index": 135,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:Nomination:after12:day-event-34",
+          "expectedEventCount": 34,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-35"
+    },
+    {
+      "index": 136,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:Execution:after12:day-event-35",
+          "expectedEventCount": 35,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-36"
+    },
+    {
+      "index": 137,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:3:NightReady:after12:day-event-36",
+          "expectedEventCount": 36,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-37"
+    },
+    {
+      "index": 138,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:4:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 37,
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-38"
+    },
+    {
+      "index": 139,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:4:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 38,
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-39"
+    },
+    {
+      "index": 140,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:4:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 39,
+          "input": {
+            "playerIds": [
+              "p5"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-40"
+    },
+    {
+      "index": 141,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:4:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 40,
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-41"
+    },
+    {
+      "index": 142,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:4:system:dawn",
+          "expectedEventCount": 41,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-42"
+    },
+    {
+      "index": 143,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:4:Announcement:after13:phase-step-42",
+          "expectedEventCount": 42,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-43"
+    },
+    {
+      "index": 144,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:4:Whisper:after12:day-event-43",
+          "expectedEventCount": 43,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-44"
+    },
+    {
+      "index": 145,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:4:Discussion:after12:day-event-44",
+          "expectedEventCount": 44,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-45"
+    },
+    {
+      "index": 146,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:4:Nomination:after12:day-event-45",
+          "expectedEventCount": 45,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-46"
+    },
+    {
+      "index": 147,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:4:Execution:after12:day-event-46",
+          "expectedEventCount": 46,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-47"
+    },
+    {
+      "index": 148,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:4:NightReady:after12:day-event-47",
+          "expectedEventCount": 47,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-48"
+    },
+    {
+      "index": 149,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:5:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 48,
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-49"
+    },
+    {
+      "index": 150,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:5:snakeCharmer:choosePlayer:owner2:p2:instance8:setup:p2",
+          "expectedEventCount": 49,
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-50"
+    },
+    {
+      "index": 151,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:5:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 50,
+          "input": {
+            "playerIds": [
+              "p2"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-51"
+    },
+    {
+      "index": 152,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:5:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 51,
+          "input": {
+            "playerIds": [
+              "p1"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-52"
+    },
+    {
+      "index": 153,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:5:system:dawn",
+          "expectedEventCount": 52,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-53"
+    },
+    {
+      "index": 154,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:5:Announcement:after13:phase-step-53",
+          "expectedEventCount": 53,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-54"
+    },
+    {
+      "index": 155,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:5:Whisper:after12:day-event-54",
+          "expectedEventCount": 54,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-55"
+    },
+    {
+      "index": 156,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:5:Discussion:after12:day-event-55",
+          "expectedEventCount": 55,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-56"
+    },
+    {
+      "index": 157,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:5:Nomination:after12:day-event-56",
+          "expectedEventCount": 56,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-57"
+    },
+    {
+      "index": 158,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:5:Execution:after12:day-event-57",
+          "expectedEventCount": 57,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-58"
+    },
+    {
+      "index": 159,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:5:NightReady:after12:day-event-58",
+          "expectedEventCount": 58,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-59"
+    },
+    {
+      "index": 160,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:6:poisoner:choosePoisonTarget:owner2:p9:instance8:setup:p9",
+          "expectedEventCount": 59,
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-60"
+    },
+    {
+      "index": 161,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:6:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 60,
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-61"
+    },
+    {
+      "index": 162,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:6:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 61,
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-62"
+    },
+    {
+      "index": 163,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:6:system:dawn",
+          "expectedEventCount": 62,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-63"
+    },
+    {
+      "index": 164,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:6:Announcement:after13:phase-step-63",
+          "expectedEventCount": 63,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-64"
+    },
+    {
+      "index": 165,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:6:Whisper:after12:day-event-64",
+          "expectedEventCount": 64,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-65"
+    },
+    {
+      "index": 166,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:6:Discussion:after12:day-event-65",
+          "expectedEventCount": 65,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-66"
+    },
+    {
+      "index": 167,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:6:Nomination:after12:day-event-66",
+          "expectedEventCount": 66,
+          "input": {
+            "kind": "nominate",
+            "nominatorId": "p1",
+            "nomineeId": "p8",
+            "spyAsTownsfolk": false
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-67"
+    },
+    {
+      "index": 168,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:6:Voting:after12:day-event-67",
+          "expectedEventCount": 67,
+          "input": {
+            "kind": "vote",
+            "voterIds": [
+              "p7"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-68"
+    },
+    {
+      "index": 169,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:6:Nomination:after12:day-event-68",
+          "expectedEventCount": 68,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-69"
+    },
+    {
+      "index": 170,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:6:Execution:after12:day-event-69",
+          "expectedEventCount": 69,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-70"
+    },
+    {
+      "index": 171,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:6:NightReady:after12:day-event-70",
+          "expectedEventCount": 70,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-71"
+    },
+    {
+      "index": 172,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:7:imp:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 71,
+          "input": {
+            "playerIds": [
+              "p8"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-72"
+    },
+    {
+      "index": 173,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:7:balloonist:learnPlayer:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 72,
+          "input": {
+            "playerIds": [
+              "p1"
+            ]
+          }
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-73"
+    },
+    {
+      "index": 174,
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:7:system:dawn",
+          "expectedEventCount": 73,
+          "input": null
+        }
+      },
+      "note": "",
+      "eventId": "phase-step-74"
+    },
+    {
+      "index": 175,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:7:Announcement:after13:phase-step-74",
+          "expectedEventCount": 74,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-75"
+    },
+    {
+      "index": 176,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:7:Whisper:after12:day-event-75",
+          "expectedEventCount": 75,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-76"
+    },
+    {
+      "index": 177,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:7:Discussion:after12:day-event-76",
+          "expectedEventCount": 76,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-77"
+    },
+    {
+      "index": 178,
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:7:Nomination:after12:day-event-77",
+          "expectedEventCount": 77,
+          "input": {
+            "kind": "nominate",
+            "nominatorId": "p1",
+            "nomineeId": "p10",
+            "spyAsTownsfolk": false
+          }
+        }
+      },
+      "note": "",
+      "eventId": "day-event-78"
+    }
+  ]
+}

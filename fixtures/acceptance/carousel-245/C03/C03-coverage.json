@@ -1,0 +1,1726 @@
+{
+  "issue": 245,
+  "implementationIssue": 237,
+  "scope": "C03 신규 꼭두각시·픽시 및 직접 연관 상호작용만. #232 공통 기능 재인수 제외.",
+  "generatedAt": "2026-09-19T00:00:00Z",
+  "runtime": "production custom WASM propose/replay",
+  "userAcceptance": "unverified",
+  "checks": [
+    {
+      "id": "C03-02",
+      "expectedKo": "악마는 마귀할멈과 꼭두각시를 구별해 알며 꼭두각시는 하수인 정보 수신자에서 제외된다.",
+      "generation": "passed",
+      "user": "unverified"
+    },
+    {
+      "id": "C03-03",
+      "expectedKo": "보르톡스 아래 픽시는 미배정 주민인 야경꾼을 전달받고 공개 페이로드에 집착 대상은 포함되지 않는다.",
+      "generation": "passed",
+      "user": "unverified"
+    },
+    {
+      "id": "C03-04",
+      "expectedKo": "보르톡스 아래 가장 열기구는 둘째 밤에도 거짓 강제가 없다. 첫밤 1번 주민 뒤 8번 하수인이라는 다른 유형의 참 정보를 실제 명령으로 전달할 수 있다.",
+      "generation": "passed",
+      "user": "unverified",
+      "secondNightEvidence": {
+        "checkpoint": "C03-A-balloonist-night2.game.json",
+        "priorPlayerId": "p1",
+        "priorKind": "Townsfolk",
+        "targetPlayerId": "p8",
+        "targetKind": "Minion",
+        "activeReasons": [],
+        "truthfulChoice": {
+          "result": {
+            "kind": "player",
+            "playerId": "p8"
+          },
+          "isComputed": true,
+          "registrationJudgments": []
+        },
+        "proposal": {
+          "event": {
+            "id": "phase-step-20",
+            "type": "customActionConfirmed",
+            "payload": {
+              "stepId": "night:2:balloonist:learnPlayer:simulation5:setup2:p98:setup:p9",
+              "actionRef": {
+                "kind": "character",
+                "characterId": "balloonist",
+                "actionId": "learnPlayer"
+              },
+              "simulationSource": {
+                "guidance": {
+                  "kind": "marionette"
+                },
+                "selectionEventId": "setup",
+                "sourceAbilityUse": {
+                  "ownerPlayerId": "p9",
+                  "characterId": "marionette",
+                  "abilityInstanceId": "setup:p9"
+                }
+              },
+              "input": {
+                "playerIds": [
+                  "p8"
+                ]
+              },
+              "result": {
+                "kind": "balloonistLearned",
+                "targetPlayerId": "p8",
+                "registeredKind": "Minion"
+              }
+            },
+            "phase": "night",
+            "summary": "단계 확정: night:2:balloonist:learnPlayer:simulation5:setup2:p98:setup:p9",
+            "createdAt": "2026-09-19T00:00:00Z"
+          },
+          "warnings": [],
+          "followUpSteps": [],
+          "preview": {
+            "messageKo": "현재 단계를 확정합니다."
+          },
+          "revealPayload": {
+            "kind": "learnedPlayer",
+            "sourceCharacterId": "balloonist",
+            "player": {
+              "playerId": "p8",
+              "seat": 8,
+              "name": "8번"
+            }
+          }
+        },
+        "branchReplay": "passed"
+      }
+    },
+    {
+      "id": "C03-05",
+      "expectedKo": "집착 대상으로 표시한 백치천재가 죽으면 픽시가 알려준 야경꾼 능력을 즉시 얻고 집착 자유행동이 사라진다.",
+      "generation": "passed",
+      "user": "unverified"
+    },
+    {
+      "id": "C03-06",
+      "expectedKo": "획득한 야경꾼은 실제로 작동하며 보르톡스의 거짓 신원 통지를 만들고 사용을 소진한다.",
+      "generation": "passed",
+      "user": "unverified"
+    },
+    {
+      "id": "C03-01",
+      "expectedKo": "가장 직업만 열기구 조종사인 10인 게임에서 +0은 주민7/외지인0, +1은 주민6/외지인1로 적법하게 시작한다.",
+      "generation": "passed",
+      "user": "unverified"
+    },
+    {
+      "id": "C03-07",
+      "expectedKo": "중도 생성은 가장 직업 선택 후 본인의 선·야경꾼 통지, 악마의 꼭두각시 통지가 분리된다. 실제 선 진영은 유지한다.",
+      "generation": "passed",
+      "user": "unverified"
+    },
+    {
+      "id": "C03-08",
+      "expectedKo": "가짜 야경꾼은 사용해도 실제 신원 통지를 만들지 않으며 수학자 오작동 수는 1이다.",
+      "generation": "passed",
+      "user": "unverified"
+    },
+    {
+      "id": "C03-09",
+      "expectedKo": "가짜 야경꾼이 오늘 사용하지 않으면 수학자 오작동 수는 0이다.",
+      "generation": "passed",
+      "user": "unverified"
+    },
+    {
+      "id": "C03-10",
+      "expectedKo": "보르톡스 없이 첫 정보 시 픽시가 중독이면 게임에 있는 주민과 없는 주민을 모두 알려줄 수 있다.",
+      "generation": "passed",
+      "user": "unverified"
+    }
+  ],
+  "files": [
+    {
+      "file": "C03-A-start.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "system",
+        "actionId": "minionInfo"
+      }
+    },
+    {
+      "file": "C03-A-pixie-info.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "character",
+        "characterId": "pixie",
+        "actionId": "learnTownsfolk"
+      }
+    },
+    {
+      "file": "C03-A-balloonist.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "character",
+        "characterId": "balloonist",
+        "actionId": "learnPlayer"
+      }
+    },
+    {
+      "file": "C03-A-pixie-death.game.json",
+      "phase": "day",
+      "night": 1
+    },
+    {
+      "file": "C03-A-acquired.game.json",
+      "phase": "day",
+      "night": 1
+    },
+    {
+      "file": "C03-A-night2.game.json",
+      "phase": "night",
+      "night": 2,
+      "current": {
+        "kind": "character",
+        "characterId": "pitHag",
+        "actionId": "changeCharacter"
+      }
+    },
+    {
+      "file": "C03-A-balloonist-night2.game.json",
+      "phase": "night",
+      "night": 2,
+      "current": {
+        "kind": "character",
+        "characterId": "balloonist",
+        "actionId": "learnPlayer"
+      }
+    },
+    {
+      "file": "C03-A-acquired-nightwatchman.game.json",
+      "phase": "night",
+      "night": 2,
+      "current": {
+        "kind": "character",
+        "characterId": "nightwatchman",
+        "actionId": "choosePlayer"
+      }
+    },
+    {
+      "file": "C03-A-used-acquired-ability.game.json",
+      "phase": "night",
+      "night": 2,
+      "current": {
+        "kind": "character",
+        "characterId": "mathematician",
+        "actionId": "learnCount"
+      }
+    },
+    {
+      "file": "C03-A1-start.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "system",
+        "actionId": "minionInfo"
+      }
+    },
+    {
+      "file": "C03-B-start.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "system",
+        "actionId": "minionInfo"
+      }
+    },
+    {
+      "file": "C03-B-create-marionette.game.json",
+      "phase": "night",
+      "night": 2,
+      "current": {
+        "kind": "character",
+        "characterId": "pitHag",
+        "actionId": "changeCharacter"
+      }
+    },
+    {
+      "file": "C03-B-choose-shown.game.json",
+      "phase": "night",
+      "night": 2,
+      "current": {
+        "kind": "character",
+        "characterId": "marionette",
+        "actionId": "assignShownCharacter"
+      }
+    },
+    {
+      "file": "C03-B-private-reveals.game.json",
+      "phase": "night",
+      "night": 2,
+      "current": {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      }
+    },
+    {
+      "file": "C03-C-start.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "system",
+        "actionId": "demonInfo"
+      }
+    },
+    {
+      "file": "C03-C-fake-nightwatchman.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "character",
+        "characterId": "nightwatchman",
+        "actionId": "choosePlayer"
+      }
+    },
+    {
+      "file": "C03-C-math-one.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "character",
+        "characterId": "mathematician",
+        "actionId": "learnCount"
+      }
+    },
+    {
+      "file": "C03-C-math-zero.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "character",
+        "characterId": "mathematician",
+        "actionId": "learnCount"
+      }
+    },
+    {
+      "file": "C03-D-start.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "system",
+        "actionId": "minionInfo"
+      }
+    },
+    {
+      "file": "C03-D-poisoned-pixie.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "character",
+        "characterId": "pixie",
+        "actionId": "learnTownsfolk"
+      }
+    },
+    {
+      "file": "C03-D-told-inplay.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    },
+    {
+      "file": "C03-D-told-absent.game.json",
+      "phase": "firstNight",
+      "night": 1,
+      "current": {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    }
+  ],
+  "distributions": [
+    {
+      "id": "C03-A",
+      "roster": [
+        {
+          "seat": 1,
+          "characterId": "pixie",
+          "name": "픽시",
+          "shown": null
+        },
+        {
+          "seat": 2,
+          "characterId": "savant",
+          "name": "백치천재",
+          "shown": null
+        },
+        {
+          "seat": 3,
+          "characterId": "mathematician",
+          "name": "수학자",
+          "shown": null
+        },
+        {
+          "seat": 4,
+          "characterId": "soldier",
+          "name": "군인",
+          "shown": null
+        },
+        {
+          "seat": 5,
+          "characterId": "mayor",
+          "name": "시장",
+          "shown": null
+        },
+        {
+          "seat": 6,
+          "characterId": "virgin",
+          "name": "성결자",
+          "shown": null
+        },
+        {
+          "seat": 7,
+          "characterId": "sage",
+          "name": "현자",
+          "shown": null
+        },
+        {
+          "seat": 8,
+          "characterId": "pitHag",
+          "name": "마귀할멈",
+          "shown": null
+        },
+        {
+          "seat": 9,
+          "characterId": "marionette",
+          "name": "꼭두각시",
+          "shown": "열기구 조종사"
+        },
+        {
+          "seat": 10,
+          "characterId": "vortox",
+          "name": "보르톡스",
+          "shown": null
+        }
+      ],
+      "distribution": {
+        "Townsfolk": 7,
+        "Outsider": 0,
+        "Minion": 2,
+        "Demon": 1,
+        "adjustment": {
+          "base": {
+            "Townsfolk": 7,
+            "Outsider": 0,
+            "Minion": 2,
+            "Demon": 1
+          },
+          "modifiers": [
+            {
+              "characterId": "balloonist",
+              "delta": {
+                "Townsfolk": 0,
+                "Outsider": 0,
+                "Minion": 0,
+                "Demon": 0
+              }
+            }
+          ],
+          "requestedDelta": {
+            "Townsfolk": 0,
+            "Outsider": 0,
+            "Minion": 0,
+            "Demon": 0
+          },
+          "appliedDelta": {
+            "Townsfolk": 0,
+            "Outsider": 0,
+            "Minion": 0,
+            "Demon": 0
+          },
+          "limited": false
+        }
+      }
+    },
+    {
+      "id": "C03-A1",
+      "roster": [
+        {
+          "seat": 1,
+          "characterId": "pixie",
+          "name": "픽시",
+          "shown": null
+        },
+        {
+          "seat": 2,
+          "characterId": "savant",
+          "name": "백치천재",
+          "shown": null
+        },
+        {
+          "seat": 3,
+          "characterId": "mathematician",
+          "name": "수학자",
+          "shown": null
+        },
+        {
+          "seat": 4,
+          "characterId": "soldier",
+          "name": "군인",
+          "shown": null
+        },
+        {
+          "seat": 5,
+          "characterId": "mayor",
+          "name": "시장",
+          "shown": null
+        },
+        {
+          "seat": 6,
+          "characterId": "virgin",
+          "name": "성결자",
+          "shown": null
+        },
+        {
+          "seat": 7,
+          "characterId": "saint",
+          "name": "성자",
+          "shown": null
+        },
+        {
+          "seat": 8,
+          "characterId": "pitHag",
+          "name": "마귀할멈",
+          "shown": null
+        },
+        {
+          "seat": 9,
+          "characterId": "marionette",
+          "name": "꼭두각시",
+          "shown": "열기구 조종사"
+        },
+        {
+          "seat": 10,
+          "characterId": "vortox",
+          "name": "보르톡스",
+          "shown": null
+        }
+      ],
+      "distribution": {
+        "Townsfolk": 6,
+        "Outsider": 1,
+        "Minion": 2,
+        "Demon": 1,
+        "adjustment": {
+          "base": {
+            "Townsfolk": 7,
+            "Outsider": 0,
+            "Minion": 2,
+            "Demon": 1
+          },
+          "modifiers": [
+            {
+              "characterId": "balloonist",
+              "delta": {
+                "Townsfolk": -1,
+                "Outsider": 1,
+                "Minion": 0,
+                "Demon": 0
+              }
+            }
+          ],
+          "requestedDelta": {
+            "Townsfolk": -1,
+            "Outsider": 1,
+            "Minion": 0,
+            "Demon": 0
+          },
+          "appliedDelta": {
+            "Townsfolk": -1,
+            "Outsider": 1,
+            "Minion": 0,
+            "Demon": 0
+          },
+          "limited": false
+        }
+      }
+    },
+    {
+      "id": "C03-B",
+      "roster": [
+        {
+          "seat": 1,
+          "characterId": "savant",
+          "name": "백치천재",
+          "shown": null
+        },
+        {
+          "seat": 2,
+          "characterId": "artist",
+          "name": "화가",
+          "shown": null
+        },
+        {
+          "seat": 3,
+          "characterId": "soldier",
+          "name": "군인",
+          "shown": null
+        },
+        {
+          "seat": 4,
+          "characterId": "pitHag",
+          "name": "마귀할멈",
+          "shown": null
+        },
+        {
+          "seat": 5,
+          "characterId": "imp",
+          "name": "임프",
+          "shown": null
+        }
+      ],
+      "distribution": {
+        "Townsfolk": 3,
+        "Outsider": 0,
+        "Minion": 1,
+        "Demon": 1,
+        "adjustment": {
+          "base": {
+            "Townsfolk": 3,
+            "Outsider": 0,
+            "Minion": 1,
+            "Demon": 1
+          },
+          "modifiers": [],
+          "requestedDelta": {
+            "Townsfolk": 0,
+            "Outsider": 0,
+            "Minion": 0,
+            "Demon": 0
+          },
+          "appliedDelta": {
+            "Townsfolk": 0,
+            "Outsider": 0,
+            "Minion": 0,
+            "Demon": 0
+          },
+          "limited": false
+        }
+      }
+    },
+    {
+      "id": "C03-C",
+      "roster": [
+        {
+          "seat": 1,
+          "characterId": "mathematician",
+          "name": "수학자",
+          "shown": null
+        },
+        {
+          "seat": 2,
+          "characterId": "savant",
+          "name": "백치천재",
+          "shown": null
+        },
+        {
+          "seat": 3,
+          "characterId": "artist",
+          "name": "화가",
+          "shown": null
+        },
+        {
+          "seat": 4,
+          "characterId": "marionette",
+          "name": "꼭두각시",
+          "shown": "야경꾼"
+        },
+        {
+          "seat": 5,
+          "characterId": "imp",
+          "name": "임프",
+          "shown": null
+        }
+      ],
+      "distribution": {
+        "Townsfolk": 3,
+        "Outsider": 0,
+        "Minion": 1,
+        "Demon": 1,
+        "adjustment": {
+          "base": {
+            "Townsfolk": 3,
+            "Outsider": 0,
+            "Minion": 1,
+            "Demon": 1
+          },
+          "modifiers": [],
+          "requestedDelta": {
+            "Townsfolk": 0,
+            "Outsider": 0,
+            "Minion": 0,
+            "Demon": 0
+          },
+          "appliedDelta": {
+            "Townsfolk": 0,
+            "Outsider": 0,
+            "Minion": 0,
+            "Demon": 0
+          },
+          "limited": false
+        }
+      }
+    },
+    {
+      "id": "C03-D",
+      "roster": [
+        {
+          "seat": 1,
+          "characterId": "pixie",
+          "name": "픽시",
+          "shown": null
+        },
+        {
+          "seat": 2,
+          "characterId": "savant",
+          "name": "백치천재",
+          "shown": null
+        },
+        {
+          "seat": 3,
+          "characterId": "artist",
+          "name": "화가",
+          "shown": null
+        },
+        {
+          "seat": 4,
+          "characterId": "poisoner",
+          "name": "독살범",
+          "shown": null
+        },
+        {
+          "seat": 5,
+          "characterId": "imp",
+          "name": "임프",
+          "shown": null
+        }
+      ],
+      "distribution": {
+        "Townsfolk": 3,
+        "Outsider": 0,
+        "Minion": 1,
+        "Demon": 1,
+        "adjustment": {
+          "base": {
+            "Townsfolk": 3,
+            "Outsider": 0,
+            "Minion": 1,
+            "Demon": 1
+          },
+          "modifiers": [],
+          "requestedDelta": {
+            "Townsfolk": 0,
+            "Outsider": 0,
+            "Minion": 0,
+            "Demon": 0
+          },
+          "appliedDelta": {
+            "Townsfolk": 0,
+            "Outsider": 0,
+            "Minion": 0,
+            "Demon": 0
+          },
+          "limited": false
+        }
+      }
+    }
+  ],
+  "trace": [
+    {
+      "label": "C03-A create",
+      "command": {
+        "type": "createGame",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "seat": 1,
+              "name": "1번",
+              "actualCharacter": "pixie"
+            },
+            {
+              "id": "p2",
+              "seat": 2,
+              "name": "2번",
+              "actualCharacter": "savant"
+            },
+            {
+              "id": "p3",
+              "seat": 3,
+              "name": "3번",
+              "actualCharacter": "mathematician"
+            },
+            {
+              "id": "p4",
+              "seat": 4,
+              "name": "4번",
+              "actualCharacter": "soldier"
+            },
+            {
+              "id": "p5",
+              "seat": 5,
+              "name": "5번",
+              "actualCharacter": "mayor"
+            },
+            {
+              "id": "p6",
+              "seat": 6,
+              "name": "6번",
+              "actualCharacter": "virgin"
+            },
+            {
+              "id": "p7",
+              "seat": 7,
+              "name": "7번",
+              "actualCharacter": "sage"
+            },
+            {
+              "id": "p8",
+              "seat": 8,
+              "name": "8번",
+              "actualCharacter": "pitHag"
+            },
+            {
+              "id": "p9",
+              "seat": 9,
+              "name": "9번",
+              "actualCharacter": "marionette",
+              "shownCharacter": "balloonist"
+            },
+            {
+              "id": "p10",
+              "seat": 10,
+              "name": "10번",
+              "actualCharacter": "vortox"
+            }
+          ],
+          "setupChoiceId": "balloonist:0"
+        }
+      }
+    },
+    {
+      "label": " system.minionInfo",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:minionInfo",
+          "expectedEventCount": 1,
+          "input": null
+        }
+      },
+      "reveal": {
+        "kind": "minionInformation",
+        "demonPlayers": [
+          {
+            "seat": 10,
+            "name": "10번"
+          }
+        ],
+        "minionPlayers": [
+          {
+            "seat": 8,
+            "name": "8번"
+          }
+        ]
+      }
+    },
+    {
+      "label": " system.demonInfo",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "expectedEventCount": 2,
+          "input": {
+            "characterIds": [
+              "nightwatchman",
+              "artist",
+              "saint"
+            ]
+          }
+        }
+      },
+      "reveal": {
+        "kind": "demonInformation",
+        "minionPlayers": [
+          {
+            "seat": 8,
+            "name": "8번"
+          }
+        ],
+        "bluffCharacterIds": [
+          "nightwatchman",
+          "artist",
+          "saint"
+        ],
+        "marionettePlayers": [
+          {
+            "seat": 9,
+            "name": "9번"
+          }
+        ]
+      }
+    },
+    {
+      "label": "p1 pixie.learnTownsfolk",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:pixie:learnTownsfolk:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 3,
+          "input": {
+            "playerIds": [
+              "p2"
+            ]
+          },
+          "deliveredResult": {
+            "kind": "character",
+            "characterId": "nightwatchman"
+          }
+        }
+      },
+      "reveal": {
+        "kind": "learnedCharacter",
+        "sourceCharacterId": "pixie",
+        "characterId": "nightwatchman"
+      }
+    },
+    {
+      "label": "p9 balloonist.learnPlayer",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:balloonist:learnPlayer:simulation5:setup2:p98:setup:p9",
+          "expectedEventCount": 4,
+          "input": {
+            "playerIds": [
+              "p1"
+            ]
+          }
+        }
+      },
+      "reveal": {
+        "kind": "learnedPlayer",
+        "sourceCharacterId": "balloonist",
+        "player": {
+          "playerId": "p1",
+          "seat": 1,
+          "name": "1번"
+        }
+      }
+    },
+    {
+      "label": "p3 mathematician.learnCount",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:mathematician:learnCount:owner2:p3:instance8:setup:p3",
+          "expectedEventCount": 5,
+          "input": null,
+          "deliveredResult": {
+            "kind": "number",
+            "value": 0
+          }
+        }
+      },
+      "reveal": {
+        "kind": "numericInformation",
+        "characterId": "mathematician",
+        "value": 0
+      }
+    },
+    {
+      "label": " system.dawn",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:dawn",
+          "expectedEventCount": 6,
+          "input": null
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"checkMadness\",\"assignmentId\":\"pixie:phase-step-4\",\"violation\":false}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Announcement:after12:phase-step-7",
+          "expectedEventCount": 7,
+          "input": {
+            "kind": "checkMadness",
+            "assignmentId": "pixie:phase-step-4",
+            "violation": false
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"advance\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Announcement:after11:day-event-8",
+          "expectedEventCount": 8,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"advance\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Whisper:after11:day-event-9",
+          "expectedEventCount": 9,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"advance\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Discussion:after12:day-event-10",
+          "expectedEventCount": 10,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"nominate\",\"nominatorId\":\"p1\",\"nomineeId\":\"p2\",\"spyAsTownsfolk\":false}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Nomination:after12:day-event-11",
+          "expectedEventCount": 11,
+          "input": {
+            "kind": "nominate",
+            "nominatorId": "p1",
+            "nomineeId": "p2",
+            "spyAsTownsfolk": false
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"vote\",\"voterIds\":[\"p1\",\"p2\",\"p3\",\"p4\",\"p5\",\"p6\"]}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Voting:after12:day-event-12",
+          "expectedEventCount": 12,
+          "input": {
+            "kind": "vote",
+            "voterIds": [
+              "p1",
+              "p2",
+              "p3",
+              "p4",
+              "p5",
+              "p6"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"closeNominations\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Nomination:after12:day-event-13",
+          "expectedEventCount": 13,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"confirmExecution\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Execution:after12:day-event-14",
+          "expectedEventCount": 14,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"confirmDeath\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:ExecutionDeath:after12:day-event-15",
+          "expectedEventCount": 15,
+          "input": {
+            "kind": "confirmDeath"
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"beginNight\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:NightReady:after12:day-event-16",
+          "expectedEventCount": 16,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      }
+    },
+    {
+      "label": "p8 pitHag.changeCharacter",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:pitHag:changeCharacter:owner2:p8:instance8:setup:p8",
+          "expectedEventCount": 17,
+          "input": {
+            "playerIds": [
+              "p3"
+            ],
+            "characterIds": [
+              "mathematician"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "label": "p10 vortox.attackPlayer",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:vortox:attackPlayer:owner3:p10:instance9:setup:p10",
+          "expectedEventCount": 18,
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "label": "p9 balloonist.learnPlayer",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:balloonist:learnPlayer:simulation5:setup2:p98:setup:p9",
+          "expectedEventCount": 19,
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          }
+        }
+      },
+      "reveal": {
+        "kind": "learnedPlayer",
+        "sourceCharacterId": "balloonist",
+        "player": {
+          "playerId": "p3",
+          "seat": 3,
+          "name": "3번"
+        }
+      }
+    },
+    {
+      "label": "p1 nightwatchman.choosePlayer",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:nightwatchman:choosePlayer:owner2:p1:instance69:customGrant:12#day-event-162#p15#pixie8#setup:p113#nightwatchman:2#p1",
+          "expectedEventCount": 20,
+          "input": {
+            "playerIds": [
+              "p4"
+            ]
+          },
+          "deliveredResult": {
+            "kind": "player",
+            "playerId": "p3"
+          }
+        }
+      }
+    },
+    {
+      "label": "C03-A1 create",
+      "command": {
+        "type": "createGame",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "seat": 1,
+              "name": "1번",
+              "actualCharacter": "pixie"
+            },
+            {
+              "id": "p2",
+              "seat": 2,
+              "name": "2번",
+              "actualCharacter": "savant"
+            },
+            {
+              "id": "p3",
+              "seat": 3,
+              "name": "3번",
+              "actualCharacter": "mathematician"
+            },
+            {
+              "id": "p4",
+              "seat": 4,
+              "name": "4번",
+              "actualCharacter": "soldier"
+            },
+            {
+              "id": "p5",
+              "seat": 5,
+              "name": "5번",
+              "actualCharacter": "mayor"
+            },
+            {
+              "id": "p6",
+              "seat": 6,
+              "name": "6번",
+              "actualCharacter": "virgin"
+            },
+            {
+              "id": "p7",
+              "seat": 7,
+              "name": "7번",
+              "actualCharacter": "saint"
+            },
+            {
+              "id": "p8",
+              "seat": 8,
+              "name": "8번",
+              "actualCharacter": "pitHag"
+            },
+            {
+              "id": "p9",
+              "seat": 9,
+              "name": "9번",
+              "actualCharacter": "marionette",
+              "shownCharacter": "balloonist"
+            },
+            {
+              "id": "p10",
+              "seat": 10,
+              "name": "10번",
+              "actualCharacter": "vortox"
+            }
+          ],
+          "setupChoiceId": "balloonist:1"
+        }
+      }
+    },
+    {
+      "label": "C03-B create",
+      "command": {
+        "type": "createGame",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "seat": 1,
+              "name": "1번",
+              "actualCharacter": "savant"
+            },
+            {
+              "id": "p2",
+              "seat": 2,
+              "name": "2번",
+              "actualCharacter": "artist"
+            },
+            {
+              "id": "p3",
+              "seat": 3,
+              "name": "3번",
+              "actualCharacter": "soldier"
+            },
+            {
+              "id": "p4",
+              "seat": 4,
+              "name": "4번",
+              "actualCharacter": "pitHag"
+            },
+            {
+              "id": "p5",
+              "seat": 5,
+              "name": "5번",
+              "actualCharacter": "imp"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": " system.minionInfo",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:minionInfo",
+          "expectedEventCount": 1,
+          "input": null
+        }
+      },
+      "reveal": {
+        "kind": "minionInformation",
+        "demonPlayers": [
+          {
+            "seat": 5,
+            "name": "5번"
+          }
+        ],
+        "minionPlayers": [
+          {
+            "seat": 4,
+            "name": "4번"
+          }
+        ]
+      }
+    },
+    {
+      "label": " system.demonInfo",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "expectedEventCount": 2,
+          "input": {
+            "characterIds": [
+              "nightwatchman",
+              "monk",
+              "saint"
+            ]
+          }
+        }
+      },
+      "reveal": {
+        "kind": "demonInformation",
+        "minionPlayers": [
+          {
+            "seat": 4,
+            "name": "4번"
+          }
+        ],
+        "bluffCharacterIds": [
+          "nightwatchman",
+          "monk",
+          "saint"
+        ]
+      }
+    },
+    {
+      "label": " system.dawn",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:dawn",
+          "expectedEventCount": 3,
+          "input": null
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"advance\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Announcement:after12:phase-step-4",
+          "expectedEventCount": 4,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"advance\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Whisper:after11:day-event-5",
+          "expectedEventCount": 5,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"advance\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Discussion:after11:day-event-6",
+          "expectedEventCount": 6,
+          "input": {
+            "kind": "advance"
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"closeNominations\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Nomination:after11:day-event-7",
+          "expectedEventCount": 7,
+          "input": {
+            "kind": "closeNominations"
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"confirmExecution\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:Execution:after11:day-event-8",
+          "expectedEventCount": 8,
+          "input": {
+            "kind": "confirmExecution"
+          }
+        }
+      }
+    },
+    {
+      "label": "{\"kind\":\"beginNight\"}",
+      "command": {
+        "type": "confirmDay",
+        "payload": {
+          "stepId": "day:1:NightReady:after11:day-event-9",
+          "expectedEventCount": 9,
+          "input": {
+            "kind": "beginNight"
+          }
+        }
+      }
+    },
+    {
+      "label": "p4 pitHag.changeCharacter",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:pitHag:changeCharacter:owner2:p4:instance8:setup:p4",
+          "expectedEventCount": 10,
+          "input": {
+            "playerIds": [
+              "p2"
+            ],
+            "characterIds": [
+              "marionette"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "label": "p2 marionette.assignShownCharacter",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "night:2:marionette:assignShownCharacter:owner2:p2:instance16:phase-step-11:p2:cause61:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"phase-step-11\"}",
+          "expectedEventCount": 11,
+          "input": {
+            "characterIds": [
+              "nightwatchman"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "label": "C03-C create",
+      "command": {
+        "type": "createGame",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "seat": 1,
+              "name": "1번",
+              "actualCharacter": "mathematician"
+            },
+            {
+              "id": "p2",
+              "seat": 2,
+              "name": "2번",
+              "actualCharacter": "savant"
+            },
+            {
+              "id": "p3",
+              "seat": 3,
+              "name": "3번",
+              "actualCharacter": "artist"
+            },
+            {
+              "id": "p4",
+              "seat": 4,
+              "name": "4번",
+              "actualCharacter": "marionette",
+              "shownCharacter": "nightwatchman"
+            },
+            {
+              "id": "p5",
+              "seat": 5,
+              "name": "5번",
+              "actualCharacter": "imp"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": " system.demonInfo",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "expectedEventCount": 1,
+          "input": {
+            "characterIds": [
+              "nightwatchman",
+              "monk",
+              "saint"
+            ]
+          }
+        }
+      },
+      "reveal": {
+        "kind": "demonInformation",
+        "minionPlayers": [],
+        "bluffCharacterIds": [
+          "nightwatchman",
+          "monk",
+          "saint"
+        ],
+        "marionettePlayers": [
+          {
+            "seat": 4,
+            "name": "4번"
+          }
+        ]
+      }
+    },
+    {
+      "label": "p4 nightwatchman.choosePlayer",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:nightwatchman:choosePlayer:simulation5:setup2:p48:setup:p4",
+          "expectedEventCount": 2,
+          "input": {
+            "playerIds": [
+              "p2"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "label": "p4 nightwatchman.choosePlayer",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:nightwatchman:choosePlayer:simulation5:setup2:p48:setup:p4",
+          "expectedEventCount": 2,
+          "input": null
+        }
+      }
+    },
+    {
+      "label": "C03-D create",
+      "command": {
+        "type": "createGame",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "seat": 1,
+              "name": "1번",
+              "actualCharacter": "pixie"
+            },
+            {
+              "id": "p2",
+              "seat": 2,
+              "name": "2번",
+              "actualCharacter": "savant"
+            },
+            {
+              "id": "p3",
+              "seat": 3,
+              "name": "3번",
+              "actualCharacter": "artist"
+            },
+            {
+              "id": "p4",
+              "seat": 4,
+              "name": "4번",
+              "actualCharacter": "poisoner"
+            },
+            {
+              "id": "p5",
+              "seat": 5,
+              "name": "5번",
+              "actualCharacter": "imp"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": " system.minionInfo",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:minionInfo",
+          "expectedEventCount": 1,
+          "input": null
+        }
+      },
+      "reveal": {
+        "kind": "minionInformation",
+        "demonPlayers": [
+          {
+            "seat": 5,
+            "name": "5번"
+          }
+        ],
+        "minionPlayers": [
+          {
+            "seat": 4,
+            "name": "4번"
+          }
+        ]
+      }
+    },
+    {
+      "label": " system.demonInfo",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "expectedEventCount": 2,
+          "input": {
+            "characterIds": [
+              "nightwatchman",
+              "monk",
+              "saint"
+            ]
+          }
+        }
+      },
+      "reveal": {
+        "kind": "demonInformation",
+        "minionPlayers": [
+          {
+            "seat": 4,
+            "name": "4번"
+          }
+        ],
+        "bluffCharacterIds": [
+          "nightwatchman",
+          "monk",
+          "saint"
+        ]
+      }
+    },
+    {
+      "label": "p4 poisoner.choosePoisonTarget",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:poisoner:choosePoisonTarget:owner2:p4:instance8:setup:p4",
+          "expectedEventCount": 3,
+          "input": {
+            "playerIds": [
+              "p1"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "label": "p1 pixie.learnTownsfolk",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:pixie:learnTownsfolk:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 4,
+          "input": {
+            "playerIds": [
+              "p2"
+            ]
+          },
+          "deliveredResult": {
+            "kind": "character",
+            "characterId": "artist"
+          }
+        }
+      },
+      "reveal": {
+        "kind": "learnedCharacter",
+        "sourceCharacterId": "pixie",
+        "characterId": "artist"
+      }
+    },
+    {
+      "label": "p1 pixie.learnTownsfolk",
+      "command": {
+        "type": "confirmStep",
+        "payload": {
+          "stepId": "firstNight:pixie:learnTownsfolk:owner2:p1:instance8:setup:p1",
+          "expectedEventCount": 4,
+          "input": {
+            "playerIds": [
+              "p2"
+            ]
+          },
+          "deliveredResult": {
+            "kind": "character",
+            "characterId": "nightwatchman"
+          }
+        }
+      },
+      "reveal": {
+        "kind": "learnedCharacter",
+        "sourceCharacterId": "pixie",
+        "characterId": "nightwatchman"
+      }
+    }
+  ]
+}

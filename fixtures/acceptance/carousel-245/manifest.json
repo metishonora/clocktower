@@ -1,0 +1,862 @@
+{
+  "issue": 245,
+  "developmentIssue": 237,
+  "scope": "새 6직업과 직접 연관 상호작용만. #232 기존기능 재인수 제외.",
+  "generatedAt": "2026-09-19",
+  "newTestCode": false,
+  "reviewUrl": "http://100.91.205.43:10237/clocktower/",
+  "userAcceptance": "unverified",
+  "deviceAcceptance": "unverified",
+  "counts": {
+    "cases": 34,
+    "games": 61,
+    "scenarios": 7
+  },
+  "wasmSha256": "00d8e29a24d4dbcf2a7096a68a1692e560bd7d3ff2d8cab1f8fa05b7ca1ef75e",
+  "cases": [
+    {
+      "id": "C01-01",
+      "expectedKo": "준비 드롭다운·외지인 보정·새 징크스 표시",
+      "startFile": "C01/C01.scenario.json",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C01-02",
+      "expectedKo": "초기 부여·수신자 분리",
+      "startFile": "C01/C01-start.game.json",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C01-03",
+      "expectedKo": "악마 중독과 부여 능력",
+      "startFile": "C01/C01-demon-poisoned.game.json",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C01-04",
+      "expectedKo": "과학자 중독·미사용 능력 회복",
+      "startFile": "C01/C01-poison-choice.game.json",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C01-05",
+      "expectedKo": "회복 후 사용 소진 유지",
+      "startFile": "C01/C01-boffin-inactive.game.json",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C01-06",
+      "expectedKo": "새 악마 재부여·별도 사용 기록",
+      "startFile": "C01/C01-new-demon.game.json",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C01-07",
+      "expectedKo": "열기구 정상 연속 정보·죽은 대상",
+      "startFile": "C01/C01-night-two.game.json",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C01-08",
+      "expectedKo": "열기구 중독·회복 기준",
+      "startFile": "C01/C01-balloon-poisoned.game.json",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C01-09",
+      "expectedKo": "광신자 강제 투표",
+      "startFile": "C01/C01-zealot-vote.game.json",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C01-10",
+      "expectedKo": "광신자 5명/4명 경계",
+      "startFile": "C01/C01-five-alive-vote.game.json",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C01-11",
+      "expectedKo": "광신자 중독·사망",
+      "startFile": "C01/C01-zealot-poisoned-vote.game.json",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-N01",
+      "expectedKo": "실제 야경꾼 사용 시 5번에게 2번을 통지하고 사용함 토큰이 남는다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-N02",
+      "expectedKo": "이미 사용한 실제 야경꾼은 다음 밤에 다시 나타나지 않는다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-N03",
+      "expectedKo": "오늘 사용하지 않음은 즉시 진행하고 다음 밤에도 같은 야경꾼 능력을 남긴다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-N04",
+      "expectedKo": "중독된 야경꾼은 대상을 선택하면 소진되지만 대상에게 통지를 만들지 않는다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-N05",
+      "expectedKo": "야경꾼 중독이 풀려도 사용 횟수는 돌아오지 않고 다음 단계가 낮 시작이다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-P01",
+      "expectedKo": "픽시 공개는 야경꾼 직업만 포함하고 대상 2번을 포함하지 않는다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-P02",
+      "expectedKo": "집착 성공 후 대상 사망 즉시 야경꾼 능력 획득·능력 가짐 토큰, 후속 질문 없음.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-P03",
+      "expectedKo": "픽시가 얻은 야경꾼을 실제 사용하면 5번에게 1번을 통지하고 그 능력만 소진한다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-P04",
+      "expectedKo": "불충분 상태에서 대상 사망 시 능력·집착 토큰·자유행동이 모두 없다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-P05",
+      "expectedKo": "픽시가 중독된 순간 대상이 죽으면 능력을 얻지 않고 집착 토큰을 제거한다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-P06",
+      "expectedKo": "다음 밤 중독이 풀려도 이전 대상 사망에 대한 소급 획득과 자유행동이 없다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-P07",
+      "expectedKo": "대상은 요리사로 바뀌었지만 픽시가 얻은 능력은 처음 알려준 야경꾼이다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C02-P08",
+      "expectedKo": "픽시가 먼저 죽었으면 이후 집착 대상 사망으로 능력을 얻지 않는다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C03-01",
+      "expectedKo": "가장 직업만 열기구 조종사인 10인 게임에서 +0은 주민7/외지인0, +1은 주민6/외지인1로 적법하게 시작한다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C03-02",
+      "expectedKo": "악마는 마귀할멈과 꼭두각시를 구별해 알며 꼭두각시는 하수인 정보 수신자에서 제외된다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C03-03",
+      "expectedKo": "보르톡스 아래 픽시는 미배정 주민인 야경꾼을 전달받고 공개 페이로드에 집착 대상은 포함되지 않는다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C03-04",
+      "expectedKo": "보르톡스 아래 가장 열기구는 둘째 밤에도 거짓 강제가 없다. 첫밤 1번 주민 뒤 8번 하수인이라는 다른 유형의 참 정보를 실제 명령으로 전달할 수 있다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C03-05",
+      "expectedKo": "집착 대상으로 표시한 백치천재가 죽으면 픽시가 알려준 야경꾼 능력을 즉시 얻고 집착 자유행동이 사라진다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C03-06",
+      "expectedKo": "획득한 야경꾼은 실제로 작동하며 보르톡스의 거짓 신원 통지를 만들고 사용을 소진한다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C03-07",
+      "expectedKo": "중도 생성은 가장 직업 선택 후 본인의 선·야경꾼 통지, 악마의 꼭두각시 통지가 분리된다. 실제 선 진영은 유지한다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C03-08",
+      "expectedKo": "가짜 야경꾼은 사용해도 실제 신원 통지를 만들지 않으며 수학자 오작동 수는 1이다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C03-09",
+      "expectedKo": "가짜 야경꾼이 오늘 사용하지 않으면 수학자 오작동 수는 0이다.",
+      "user": "unverified",
+      "device": "unverified"
+    },
+    {
+      "id": "C03-10",
+      "expectedKo": "보르톡스 없이 첫 정보 시 픽시가 중독이면 게임에 있는 주민과 없는 주민을 모두 알려줄 수 있다.",
+      "user": "unverified",
+      "device": "unverified"
+    }
+  ],
+  "files": [
+    {
+      "file": "C01/C01-ability-notices.game.json",
+      "kind": "game",
+      "sha256": "801afdf870aab86fc3021e08db553682c240296a38f4d7aa61ff6e2b7957d4f1",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 2
+    },
+    {
+      "file": "C01/C01-balloon-poisoned.game.json",
+      "kind": "game",
+      "sha256": "3d1d0ee337f0444e2c00434afdaef4765e5c2088c930e50701967433b5ed36a3",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 18
+    },
+    {
+      "file": "C01/C01-balloon-recovered.game.json",
+      "kind": "game",
+      "sha256": "2e84d5b646c13538e162b8e7c239119b305b0fef9ce53c8464fe2e76ee4a2ed8",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 3,
+      "events": 29
+    },
+    {
+      "file": "C01/C01-boffin-inactive.game.json",
+      "kind": "game",
+      "sha256": "c1b6fdfa354f054e50425b503072c00b40a1e8599ca2f941bd3747d229214a67",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 2,
+      "events": 22
+    },
+    {
+      "file": "C01/C01-boffin-poisoned-unspent.game.json",
+      "kind": "game",
+      "sha256": "6ebf09e5b9020707010de47b434cbcb29423c647973c54706c5a346d18adb955",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 7
+    },
+    {
+      "file": "C01/C01-day-one.game.json",
+      "kind": "game",
+      "sha256": "cb4539135de6b2c13331ab93c8078cbd6024ba9e5ef01a3581dc22ab62cfc615",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 1,
+      "events": 9
+    },
+    {
+      "file": "C01/C01-demon-poisoned.game.json",
+      "kind": "game",
+      "sha256": "1a3af35b12f4a3ce77e8d06a443d11bd3047982ed47538a337de1b4174237565",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 7
+    },
+    {
+      "file": "C01/C01-five-alive-vote.game.json",
+      "kind": "game",
+      "sha256": "1d0ca87e40d2b7be9fb162c5ac4e1ac2029e4e6fda6a0cf200c1fbcf3fae65bf",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 6,
+      "events": 67
+    },
+    {
+      "file": "C01/C01-four-alive-vote.game.json",
+      "kind": "game",
+      "sha256": "e38e710ce2b774b404d25956720dc5c8d71c83a2f0d26b95889046ff14ea440b",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 7,
+      "events": 78
+    },
+    {
+      "file": "C01/C01-new-ability-notices.game.json",
+      "kind": "game",
+      "sha256": "e61b3049844571e181ee566a368d3e09d47af748b53b18ad042b490741e5f07b",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 4,
+      "events": 42
+    },
+    {
+      "file": "C01/C01-new-demon.game.json",
+      "kind": "game",
+      "sha256": "971e70766cd826a243c481490c277d462822aea6a4871bb5f942884043f276a8",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 4,
+      "events": 41
+    },
+    {
+      "file": "C01/C01-new-watchman-notice.game.json",
+      "kind": "game",
+      "sha256": "2104b1c3e8ee22b3c403e934eef34deb8e996e976d562ff1968b2e1b107e763c",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 4,
+      "events": 45
+    },
+    {
+      "file": "C01/C01-new-watchman.game.json",
+      "kind": "game",
+      "sha256": "801ef53f52749c8feedabff9436d7baf8898f4116f5d9ce81129e32e7fda8bf1",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 4,
+      "events": 44
+    },
+    {
+      "file": "C01/C01-night-two.game.json",
+      "kind": "game",
+      "sha256": "e385674070a70bc48ac8c45b33d170e7197bb8fd0d87d48e84071437043a1a8c",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 17
+    },
+    {
+      "file": "C01/C01-poison-choice.game.json",
+      "kind": "game",
+      "sha256": "efd09ed7132dc88e991dea987cde35f4fb6341dc56a9da6d615abd3908364034",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 4
+    },
+    {
+      "file": "C01/C01-spent-recovered.game.json",
+      "kind": "game",
+      "sha256": "1d8186d52ce0f5031c5116b416d00713fc01e7050b0fe17bec83ab1d6e8eee30",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 3,
+      "events": 33
+    },
+    {
+      "file": "C01/C01-start.game.json",
+      "kind": "game",
+      "sha256": "bad3c0deb54b2b91cb8680f42dd1b763dd7120f94f9a2fceec3b089a4751878b",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 1
+    },
+    {
+      "file": "C01/C01-unspent-recovered.game.json",
+      "kind": "game",
+      "sha256": "b270990d34e932f39f61b5760cf7a4fc041788883cc74578b717388b50843b6a",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 18
+    },
+    {
+      "file": "C01/C01-watchman-notice.game.json",
+      "kind": "game",
+      "sha256": "6c27b9e442ba6700c57e4aa8f46af328f2493c3f137366533d9e967797479709",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 8
+    },
+    {
+      "file": "C01/C01-zealot-dead-vote.game.json",
+      "kind": "game",
+      "sha256": "50a48ba5d1a93d18e91eb0e5aa3ce195b31f5a724ac1ba6f65f05f21b094354b",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 2,
+      "events": 24
+    },
+    {
+      "file": "C01/C01-zealot-poisoned-vote.game.json",
+      "kind": "game",
+      "sha256": "08ac5727c0ae9999d7ab70a8fd70a7ea42d6007517210f17a7a760421143a856",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 2,
+      "events": 24
+    },
+    {
+      "file": "C01/C01-zealot-vote.game.json",
+      "kind": "game",
+      "sha256": "513b82a74145eced568164e5f46caa77fdea48d371747774b614bb51bd1043e3",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 1,
+      "events": 13
+    },
+    {
+      "file": "C01/C01.scenario.json",
+      "kind": "scenario",
+      "sha256": "7d32469048f4542eb59fe428421c42c83dda66a1c21887b1719c5e7e843a6c00",
+      "orderValidation": "passed"
+    },
+    {
+      "file": "C02/C02-00-start.game.json",
+      "kind": "game",
+      "sha256": "99feb8b77571cb1c1e7e3fb550ab1fb092fc3621940d5810ba408aabc155b43c",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 1
+    },
+    {
+      "file": "C02/C02-01-pixie-information.game.json",
+      "kind": "game",
+      "sha256": "f41f34f279d872af74df63d6eb6a14169510654ca5a5d5dd34e2a8a491c33b96",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 5
+    },
+    {
+      "file": "C02/C02-02-nightwatchman.game.json",
+      "kind": "game",
+      "sha256": "97b6d09a2c25fdf9ebcbf2cefaaa6f35fe9a077179b55c67c66a612e98277cb8",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 7
+    },
+    {
+      "file": "C02/C02-03-pixie-judgment.game.json",
+      "kind": "game",
+      "sha256": "a90283d67362b2e13d7ea7a8ca55ddc5c2be4f8fd2aa82194061763f2c7af603",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 1,
+      "events": 9
+    },
+    {
+      "file": "C02/C02-04-acquired-day.game.json",
+      "kind": "game",
+      "sha256": "7bb8b61647e07d3356ed6836950fe34e97a66f33a048a13242c51e186537c839",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 1,
+      "events": 18
+    },
+    {
+      "file": "C02/C02-05-acquired-nightwatchman.game.json",
+      "kind": "game",
+      "sha256": "f103c590e5bf48ba190d17458ae73a95b60af5e85baf1ea1919d2365d0b02403",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 24
+    },
+    {
+      "file": "C02/C02-06-acquired-used.game.json",
+      "kind": "game",
+      "sha256": "d0e3dead8feb4340e58ca04e68043c7640ea3d6e4e81f9371801ea7b46fe9f16",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 25
+    },
+    {
+      "file": "C02/C02-07-failed-madness.game.json",
+      "kind": "game",
+      "sha256": "684557a3aeec1e0894d329f6a8db8e2fa388a2d759c2bdb72e46b53b53a40230",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 1,
+      "events": 18
+    },
+    {
+      "file": "C02/C02-08-poisoned-target-death.game.json",
+      "kind": "game",
+      "sha256": "fd0a62b03ae5a2a23af41dd48333d74d1981b34a8cb34cdb31e88b8ed95e7a93",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 19
+    },
+    {
+      "file": "C02/C02-09-recovered-no-acquisition.game.json",
+      "kind": "game",
+      "sha256": "839b913a85ccd20395221959bd29ca20ccc57afa41a7afe4213f9a16309b3ff8",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 3,
+      "events": 30
+    },
+    {
+      "file": "C02/C02-10-target-character-change.game.json",
+      "kind": "game",
+      "sha256": "b85cc125e9469b8347689461e62c9ee42036a89f3020b2c1d2d3ccb7ec44118e",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 18
+    },
+    {
+      "file": "C02/C02-11-original-ability-after-change.game.json",
+      "kind": "game",
+      "sha256": "1a50a126e6fd02b8f454dcf1ab00565c41674327d2e5a838f9353887f0fd3c66",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 22
+    },
+    {
+      "file": "C02/C02-12-native-nightwatchman-used.game.json",
+      "kind": "game",
+      "sha256": "ba76649a07f174dd8e5d9ce04e66955b92a5cbd12ed78a4f3e61a81e2980cbe3",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 8
+    },
+    {
+      "file": "C02/C02-13-poisoned-nightwatchman.game.json",
+      "kind": "game",
+      "sha256": "01f1bd94bb8f4529a05dd57126ff9b495f1d45c82011eadf4f3e36c0fbf34d81",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 7
+    },
+    {
+      "file": "C02/C02-14-poisoned-nightwatchman-used.game.json",
+      "kind": "game",
+      "sha256": "e53ade0030c0e1e67a022713ebdade009cb572c0ec827f3d776cfa775612f2d0",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 8
+    },
+    {
+      "file": "C02/C02-15-recovered-nightwatchman-spent.game.json",
+      "kind": "game",
+      "sha256": "27c87df74dba83106eaf2be67e3959c06cf73f95d134815844457e32082128b7",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 20
+    },
+    {
+      "file": "C02/C02-16-pixie-died-first.game.json",
+      "kind": "game",
+      "sha256": "94428b8441384fafc25b6c878b5e2644bb39792834de8de024e4d277fd692aba",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 3,
+      "events": 32
+    },
+    {
+      "file": "C02/C02.scenario.json",
+      "kind": "scenario",
+      "sha256": "0db90db3a393e5111a917287a8058144905d9e7bb452d2e3002a90b00e33b2a1",
+      "orderValidation": "passed"
+    },
+    {
+      "file": "C03/C03-A-acquired-nightwatchman.game.json",
+      "kind": "game",
+      "sha256": "f0d77dc1a2dc94ee06a422eae5e95198b4d1083cb901bb9e0d14beb511018ae5",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 20
+    },
+    {
+      "file": "C03/C03-A-acquired.game.json",
+      "kind": "game",
+      "sha256": "089cb0672413be9cc8bb7fcd0a94d41e1fa23bcb62d923662af98ed75e07ad2e",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 1,
+      "events": 16
+    },
+    {
+      "file": "C03/C03-A-balloonist-night2.game.json",
+      "kind": "game",
+      "sha256": "56743cf0b9b58af59881c7a8a6d314d08018b2e2b7a49947f9eafa471294af55",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 19
+    },
+    {
+      "file": "C03/C03-A-balloonist.game.json",
+      "kind": "game",
+      "sha256": "9ec6324af3edc5db4db365f1f80fc20929aad0e959ac0517b591989176b81cc7",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 4
+    },
+    {
+      "file": "C03/C03-A-night2.game.json",
+      "kind": "game",
+      "sha256": "8bb34ab3502c0f0a5760ae0f5228876c872d977ee69e4cce38ca6c21b0cb3152",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 17
+    },
+    {
+      "file": "C03/C03-A-pixie-death.game.json",
+      "kind": "game",
+      "sha256": "4433e5e2f859ab761843629566b1adb174912bc50546ae13da507c5b1ecaaf4c",
+      "coreReplay": "passed",
+      "phase": "day",
+      "night": 1,
+      "events": 7
+    },
+    {
+      "file": "C03/C03-A-pixie-info.game.json",
+      "kind": "game",
+      "sha256": "fa2bfa80183008da4f2b91d069109097b1e4022bd0aa10790f8f299332ab62a2",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 3
+    },
+    {
+      "file": "C03/C03-A-start.game.json",
+      "kind": "game",
+      "sha256": "7beb25f5d0aa26a3632455d392251ad844c45f273088a2dc695ce084e651bd54",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 1
+    },
+    {
+      "file": "C03/C03-A-used-acquired-ability.game.json",
+      "kind": "game",
+      "sha256": "7604cb25ea0b56b6737c61b9e9dd03197ebb18ea8ba4fa88aa1942c2eeca4624",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 21
+    },
+    {
+      "file": "C03/C03-A.scenario.json",
+      "kind": "scenario",
+      "sha256": "4776b4a5ee5cf40eb1452eda5217d3303c51af1086b072d12b32d875bcc52dc6",
+      "orderValidation": "passed"
+    },
+    {
+      "file": "C03/C03-A1-start.game.json",
+      "kind": "game",
+      "sha256": "12064464275370c48ec175929c018f8c210269f0ce868eabd01575fbda3285e7",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 1
+    },
+    {
+      "file": "C03/C03-A1.scenario.json",
+      "kind": "scenario",
+      "sha256": "ee0946741bdcd786c58a4f2550950337d101bdd2695732e148ed753bd19a9aa9",
+      "orderValidation": "passed"
+    },
+    {
+      "file": "C03/C03-B-choose-shown.game.json",
+      "kind": "game",
+      "sha256": "942b3bcf8a796f3a558edf0ab89aa7e53fc63fadb72c423f1345a2f2d3826a01",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 11
+    },
+    {
+      "file": "C03/C03-B-create-marionette.game.json",
+      "kind": "game",
+      "sha256": "1b2a94b59c70d16ac7a8359435080387fe6212eb48b570ba9378d2073162bd13",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 10
+    },
+    {
+      "file": "C03/C03-B-private-reveals.game.json",
+      "kind": "game",
+      "sha256": "cf892e97e164b864bd131d6e358ea2596c725405f6c027c6d956e1d402b0d837",
+      "coreReplay": "passed",
+      "phase": "night",
+      "night": 2,
+      "events": 12
+    },
+    {
+      "file": "C03/C03-B-start.game.json",
+      "kind": "game",
+      "sha256": "9993b18e3579f362f6c7b4abeab4d7d4ef48bdc54f9878e99b942ad04fce5bf8",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 1
+    },
+    {
+      "file": "C03/C03-B.scenario.json",
+      "kind": "scenario",
+      "sha256": "36397e819c57ad5fc28c5b8ebed5ddc4d59fdf593948a827c21c06cf5f2590cf",
+      "orderValidation": "passed"
+    },
+    {
+      "file": "C03/C03-C-fake-nightwatchman.game.json",
+      "kind": "game",
+      "sha256": "9bbfe2d635339e1c47c89a4b6005ac8f08551f25ea20574ef9742abff5b8bd95",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 2
+    },
+    {
+      "file": "C03/C03-C-math-one.game.json",
+      "kind": "game",
+      "sha256": "2811997458d96e9bb59d128d91d174f41b56497cbb1f22298038342d59da358b",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 3
+    },
+    {
+      "file": "C03/C03-C-math-zero.game.json",
+      "kind": "game",
+      "sha256": "ae65555cc5e1bbdaf06cc00f1d97b38041872acc7ef3c098a4130fc2c9eb915e",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 3
+    },
+    {
+      "file": "C03/C03-C-start.game.json",
+      "kind": "game",
+      "sha256": "dccff9c3e531c00cbade97bc313510e2679f84735c3f664ebd42c044b1cb62e6",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 1
+    },
+    {
+      "file": "C03/C03-C.scenario.json",
+      "kind": "scenario",
+      "sha256": "bd74ac5c3da9a8dcf8631c390ec59bd5ccbb86dacf66497d9231376dcc3e4fa2",
+      "orderValidation": "passed"
+    },
+    {
+      "file": "C03/C03-D-poisoned-pixie.game.json",
+      "kind": "game",
+      "sha256": "0f6049648de29cc1e4dafa55006a7685295cb91a3aa80535208d8d829e231161",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 4
+    },
+    {
+      "file": "C03/C03-D-start.game.json",
+      "kind": "game",
+      "sha256": "11ea804bbf10fd0a53622bbb2346d7d16d9c40b23367d19e8ca9eb5467f32519",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 1
+    },
+    {
+      "file": "C03/C03-D-told-absent.game.json",
+      "kind": "game",
+      "sha256": "371fb3c45446be49685c8455a8a20c193394da5fbcc37d1577a94428c9a942b2",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 5
+    },
+    {
+      "file": "C03/C03-D-told-inplay.game.json",
+      "kind": "game",
+      "sha256": "e366d8aa1398c9870a819ebf979a8ef184026d84a6006914fe884f02859c21a4",
+      "coreReplay": "passed",
+      "phase": "firstNight",
+      "night": 1,
+      "events": 5
+    },
+    {
+      "file": "C03/C03-D.scenario.json",
+      "kind": "scenario",
+      "sha256": "8a454ff48a8cb8df5753e59e537323534c43ff008578f56a94015e47f26ca1b1",
+      "orderValidation": "passed"
+    }
+  ],
+  "browserImports": [
+    {
+      "file": "C01/C01-start.game.json",
+      "result": "imported-in-browser",
+      "publicRevealAutomaticallyOpened": false
+    },
+    {
+      "file": "C01/C01-new-demon.game.json",
+      "result": "imported-in-browser",
+      "publicRevealAutomaticallyOpened": false
+    },
+    {
+      "file": "C02/C02-00-start.game.json",
+      "result": "imported-in-browser",
+      "publicRevealAutomaticallyOpened": false
+    },
+    {
+      "file": "C02/C02-05-acquired-nightwatchman.game.json",
+      "result": "imported-in-browser",
+      "publicRevealAutomaticallyOpened": false
+    },
+    {
+      "file": "C03/C03-A-start.game.json",
+      "result": "imported-in-browser",
+      "publicRevealAutomaticallyOpened": false
+    },
+    {
+      "file": "C03/C03-B-private-reveals.game.json",
+      "result": "imported-in-browser",
+      "publicRevealAutomaticallyOpened": false
+    }
+  ],
+  "knownLimitations": [
+    "꼭두각시 랜덤 배치가 이웃 조건을 자동 보정하지 않을 수 있음. 비이웃 최종 배치는 거부되므로 수동 배치 필요.",
+    "모든 부여 능력·계승 방식·등록/상태 조합의 전수 검증 아님."
+  ]
+}
