@@ -16,17 +16,64 @@ pub(crate) struct ImpairmentEffect {
     pub(crate) demon_harm: bool,
 }
 pub(crate) fn impaired(facts: &CustomGameFacts, player: &str) -> bool {
+    facts.active_impairments.iter().any(|e| {
+        e.player_id == player && !crate::characters::carousel::scoped_self_impairment(facts, e)
+    })
+}
+pub(crate) fn ability_impaired(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
+    !ability_impairments(facts, source).is_empty()
+}
+pub(crate) fn ability_impairments<'a>(
+    facts: &'a CustomGameFacts,
+    source: &AbilityUseRef,
+) -> Vec<&'a ActiveImpairment> {
+    let granted = crate::characters::carousel::boffin_granted(facts, source);
     facts
         .active_impairments
         .iter()
-        .any(|e| e.player_id == player)
+        .filter(|e| {
+            e.player_id == source.owner_player_id
+                && crate::characters::carousel::scoped_self_impairment(facts, e) == granted
+        })
+        .collect()
+}
+pub(crate) fn occurrence_impairment_kinds(
+    facts: &CustomGameFacts,
+    o: &crate::state::ActionOccurrence,
+) -> Vec<ImpairmentKind> {
+    let impairments = if let Some(source) = &o.ability_use {
+        ability_impairments(facts, source)
+    } else {
+        facts
+            .active_impairments
+            .iter()
+            .filter(|e| Some(e.player_id.as_str()) == o.actor_player_id())
+            .collect()
+    };
+    let mut kinds = vec![];
+    for impairment in impairments {
+        if !kinds.contains(&impairment.kind) {
+            kinds.push(impairment.kind);
+        }
+    }
+    kinds
+}
+pub(crate) fn occurrence_impaired(
+    facts: &CustomGameFacts,
+    o: &crate::state::ActionOccurrence,
+) -> bool {
+    o.simulation_source.is_some()
+        || o.ability_use
+            .as_ref()
+            .is_some_and(|s| ability_impaired(facts, s))
 }
 pub(crate) fn effective(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
     current_ability_instance(facts, source)
+        && crate::characters::carousel::grant_enabled(facts, source)
         && facts.player(&source.owner_player_id).is_some_and(|p| {
             p.alive || crate::characters::sects_and_violets::vigor_retains(facts, source)
         })
-        && !impaired(facts, &source.owner_player_id)
+        && !ability_impaired(facts, source)
 }
 pub(crate) fn impairment_causes(facts: &CustomGameFacts, player: &str) -> Vec<AbilityUseRef> {
     let mut result = vec![];

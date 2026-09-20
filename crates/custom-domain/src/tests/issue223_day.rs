@@ -145,7 +145,9 @@ pub(super) fn production(roster: &[&str], inputs: Value) -> Value {
     }
     for input in ["assignShownCharacter", "chooseAbility"] {
         if let Some(chosen) = inputs[input]["characterIds"][0].as_str() {
-            if !pool.contains(&chosen) { pool.push(chosen); }
+            if !pool.contains(&chosen) {
+                pool.push(chosen);
+            }
         }
     }
     let mut definition = json!({"id":"day-223","name":"낮 검증","characterIds":pool});
@@ -788,15 +790,28 @@ fn scarlet_successor_keeps_source_token_after_identity_changes_and_undo_removes_
     assert_eq!(token["tokenId"], "isTheDemon");
     assert_eq!(token["playerId"], "p4");
     assert_eq!(token["sourceEventId"], death["id"]);
-    assert!(state["pendingIdentityReveals"].as_array().is_none_or(Vec::is_empty));
+    assert!(state["pendingIdentityReveals"]
+        .as_array()
+        .is_none_or(Vec::is_empty));
     let before_night = game.clone();
     let night = confirm(&mut game, json!({"kind":"beginNight"}));
     let at_night = replay(&game);
-    assert_eq!(at_night["pendingIdentityReveals"][0]["sourceEventId"], death["id"]);
-    assert_eq!(at_night["pendingIdentityReveals"][0]["deliveryEventId"], night["id"]);
-    assert_eq!(at_night["pendingIdentityReveals"][0]["payload"]["characterId"], "imp");
+    assert_eq!(
+        at_night["pendingIdentityReveals"][0]["sourceEventId"],
+        death["id"]
+    );
+    assert_eq!(
+        at_night["pendingIdentityReveals"][0]["deliveryEventId"],
+        night["id"]
+    );
+    assert_eq!(
+        at_night["pendingIdentityReveals"][0]["payload"]["characterId"],
+        "imp"
+    );
     game = before_night;
-    assert!(replay(&game)["pendingIdentityReveals"].as_array().is_none_or(Vec::is_empty));
+    assert!(replay(&game)["pendingIdentityReveals"]
+        .as_array()
+        .is_none_or(Vec::is_empty));
     game["game"]["events"].as_array_mut().unwrap().pop();
     assert!(replay(&game)["ruleState"]["automaticReminders"]
         .as_array()

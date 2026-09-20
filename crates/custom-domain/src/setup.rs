@@ -11,9 +11,19 @@ pub(crate) fn custom_setup_distribution(
     player_count: usize,
     actual_characters: &[String],
 ) -> Result<SetupDistribution, CoreError> {
-    Ok(custom_setup_projection(context, player_count, actual_characters)?.distribution)
+    Ok(
+        custom_setup_projection(context, player_count, actual_characters, None, None, None)?
+            .distribution,
+    )
 }
-fn custom_setup_projection(context: &ResolvedScriptContext, player_count: usize, actual_characters: &[String]) -> Result<SetupDistributionResult, CoreError> {
+pub(crate) fn custom_setup_projection(
+    context: &ResolvedScriptContext,
+    player_count: usize,
+    actual_characters: &[String],
+    choice: Option<&str>,
+    boffin_ability: Option<&str>,
+    marionette_character: Option<&str>,
+) -> Result<SetupDistributionResult, CoreError> {
     if actual_characters
         .iter()
         .any(|character| !context.contains(character))
@@ -22,7 +32,37 @@ fn custom_setup_projection(context: &ResolvedScriptContext, player_count: usize,
     }
 
     let base = base_distribution(player_count);
-    let modifiers = context.setup_modifiers(actual_characters);
+    let mut effective_characters = actual_characters.to_vec();
+    if let Some(ability) = boffin_ability {
+        if !actual_characters.iter().any(|c| c == "boffin")
+            || !crate::characters::carousel::boffin_choices(context, actual_characters)?
+                .iter()
+                .any(|c| c == ability)
+        {
+            return Err(ErrorKind::InvalidSetupChoice.into_error());
+        }
+        effective_characters.push(ability.into());
+    }
+    let mut modifiers = context.setup_modifiers(&effective_characters);
+    if let Some(shown) = marionette_character {
+        if !actual_characters.iter().any(|c| c == "marionette")
+            || !context
+                .character_kind(shown)
+                .is_some_and(|k| k.alignment() == Alignment::Good)
+        {
+            return Err(ErrorKind::InvalidSetupChoice.into_error());
+        }
+        effective_characters.extend(
+            crate::jinxes::production()?
+                .shown_setup_abilities("marionette", shown)
+                .into_iter()
+                .map(str::to_owned),
+        );
+    }
+    modifiers.extend(crate::characters::carousel::setup_modifiers(
+        &effective_characters,
+        choice,
+    )?);
     let requested_delta: i32 = modifiers.iter().map(|m| m.delta.outsider).sum();
     let applied_delta = requested_delta.clamp(-(base.outsider as i32), base.townsfolk as i32);
     let expected = SetupDistribution {
@@ -43,10 +83,28 @@ fn custom_setup_projection(context: &ResolvedScriptContext, player_count: usize,
         return Err(ErrorKind::InsufficientSetupRoster.into_error());
     }
 
-    Ok(SetupDistributionResult { distribution: expected, adjustment: SetupAdjustment {
-        base, modifiers, requested_delta: SetupCountDelta::outsider(requested_delta),
-        applied_delta: SetupCountDelta::outsider(applied_delta), limited: requested_delta != applied_delta,
-    } })
+    Ok(SetupDistributionResult {
+        setup_adjacencies: crate::characters::carousel::setup_adjacencies(
+            context,
+            actual_characters,
+        ),
+        boffin_ability_choices: if actual_characters.iter().any(|id| id == "boffin") {
+            Some(crate::characters::carousel::boffin_choices(
+                context,
+                actual_characters,
+            )?)
+        } else {
+            None
+        },
+        distribution: expected,
+        adjustment: SetupAdjustment {
+            base,
+            modifiers,
+            requested_delta: SetupCountDelta::outsider(requested_delta),
+            applied_delta: SetupCountDelta::outsider(applied_delta),
+            limited: requested_delta != applied_delta,
+        },
+    })
 }
 
 pub(crate) fn validate_setup_inputs_for_custom(
@@ -66,7 +124,8 @@ pub(crate) fn validate_setup_inputs_for_custom(
         players,
         |character| context.character_kind(character),
         |character| context.character_kind(character) == Some(CharacterKind::Townsfolk),
-    )
+    )?;
+    crate::characters::carousel::validate_marionette_setup(context, players)
 }
 
 /// Validate membership in the resolved custom definition, as distinct from membership in the
@@ -126,6 +185,9 @@ pub(crate) fn normalized_setup_player_for_custom(
     context: &ResolvedScriptContext,
     player: &SetupPlayerInput,
 ) -> Result<SetupPlayerInput, CoreError> {
+    if let Some(result) = crate::characters::carousel::normalize_marionette(context, player) {
+        return result;
+    }
     normalized_setup_player_with_townsfolk(player, |character| {
         context.character_kind(character) == Some(CharacterKind::Townsfolk)
     })
@@ -333,8 +395,21 @@ pub(crate) fn setup_distribution(
     }
     let context = crate::characters::resolve_custom_script(&request.custom_definition)?;
     crate::first_night::plan_for_definition(&request.custom_definition)?;
-    let mut result = custom_setup_projection(&context, request.player_count, &request.actual_characters)?;
-    result.adjustment.modifiers.sort_by_key(|m| request.custom_definition.character_ids.iter().position(|id| id == &m.character_id));
+    let mut result = custom_setup_projection(
+        &context,
+        request.player_count,
+        &request.actual_characters,
+        request.setup_choice_id.as_deref(),
+        request.boffin_ability.as_deref(),
+        request.marionette_character.as_deref(),
+    )?;
+    result.adjustment.modifiers.sort_by_key(|m| {
+        request
+            .custom_definition
+            .character_ids
+            .iter()
+            .position(|id| id == &m.character_id)
+    });
     Ok(result)
 }
 pub(crate) fn propose_create_game(
@@ -348,10 +423,12 @@ pub(crate) fn propose_create_game(
     let setup_choice_id = payload.setup_choice_id.clone();
     let ScriptReference::Custom { definition } = &game_file.script;
     let players = {
-        if setup_choice_id.is_some() {
-            return Err(ErrorKind::InvalidSetupChoice.into_error());
-        }
         let context = crate::characters::resolve_custom_script(definition)?;
+        crate::characters::carousel::validate_boffin_setup(
+            &context,
+            &payload.players,
+            payload.boffin_ability.as_deref(),
+        )?;
         crate::first_night::plan_for_definition(definition)?;
         validate_setup_inputs_for_custom(&context, &payload.players)?;
         let players = payload
@@ -367,7 +444,18 @@ pub(crate) fn propose_create_game(
             .iter()
             .map(|player| player.actual_character.clone())
             .collect::<Vec<_>>();
-        let expected = custom_setup_distribution(&context, players.len(), &actual_characters)?;
+        let expected = custom_setup_projection(
+            &context,
+            players.len(),
+            &actual_characters,
+            setup_choice_id.as_deref(),
+            payload.boffin_ability.as_deref(),
+            players
+                .iter()
+                .find(|p| p.actual_character == "marionette")
+                .and_then(|p| p.shown_character.as_deref()),
+        )?
+        .distribution;
         validate_new_setup_distribution(
             &derived_players,
             |character| context.character_kind(character),
@@ -384,6 +472,7 @@ pub(crate) fn propose_create_game(
                 payload: SetupEventPayload {
                     players,
                     setup_choice_id,
+                    boffin_ability: payload.boffin_ability,
                 },
             },
             phase: Phase::Setup,

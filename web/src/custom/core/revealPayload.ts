@@ -24,12 +24,23 @@ export function proposalRevealPayload(proposal?: Proposal): RevealPayload | unde
 export function isRevealPayload(value: unknown): value is RevealPayload {
   if (!value || typeof value !== "object") return false;
   const payload = value as Record<string, unknown>;
+  if(payload.kind==='marionetteInformation')return hasExactKeys(payload,['kind','marionettePlayer','recipientPlayer'])&&isRevealPlayer(payload.recipientPlayer)&&isRevealPlayer(payload.marionettePlayer);
+  if(payload.kind==='grantedAbilityInformation')return hasExactKeys(payload,['characterId','kind','recipientIsSource','recipientPlayer','sourceCharacterId'])&&typeof payload.recipientIsSource==='boolean'&&payload.sourceCharacterId==='boffin'&&typeof payload.characterId==='string'&&characterIds.has(payload.characterId)&&isRevealPlayer(payload.recipientPlayer);
+  if(payload.kind==='learnedPlayer')return hasExactKeys(payload,['kind','player','sourceCharacterId'])&&payload.sourceCharacterId==='balloonist'&&isRevealPlayer(payload.player);
+  if(payload.kind==='learnedCharacter')return hasExactKeys(payload,['characterId','kind','sourceCharacterId'])&&payload.sourceCharacterId==='pixie'&&typeof payload.characterId==='string'&&characterIds.has(payload.characterId);
+  if (isNightwatchmanRevealPayload(payload)) return true;
   if (payload.kind === "mutantExecution") return hasExactKeys(payload,["died","executed","kind","player"]) && isRevealPlayer(payload.player) && payload.executed === true && typeof payload.died === "boolean";
   if ("kind" in payload) return isSpyGrimoireRevealPayload(payload) || isRoleInformationRevealPayload(payload) || isEvilTwinPairRevealPayload(payload) || isMadnessAssignmentRevealPayload(payload);
   if (!nonEmptyString(payload.messageKo)) return false;
   if (!optionalNonEmptyString(payload.previewMessageKo)) return false;
   if (!optionalNonEmptyString(payload.labelKo) || !optionalNonEmptyString(payload.valueKo)) return false;
   return (payload.labelKo === undefined) === (payload.valueKo === undefined);
+}
+
+export function isNightwatchmanRevealPayload(value: unknown): value is import('./types').NightwatchmanRevealPayload {
+  if (!value || typeof value !== 'object') return false;
+  const p=value as Record<string,unknown>;
+  return p.kind==='nightwatchmanInformation' && hasExactKeys(p,['kind','nightwatchmanPlayer','recipientPlayer']) && isRevealPlayer(p.recipientPlayer) && isRevealPlayer(p.nightwatchmanPlayer);
 }
 
 export function isEvilTwinPairRevealPayload(value: unknown): value is EvilTwinPairRevealPayload {
@@ -75,7 +86,8 @@ export function isRoleInformationRevealPayload(value: unknown): value is RoleInf
       && isRevealIdentities(payload.minionPlayers);
   }
   if (payload.kind === "demonInformation") {
-    return hasExactKeys(payload, ["bluffCharacterIds", "kind", "minionPlayers"])
+    return hasExactKeys(payload, ["bluffCharacterIds", "kind", ...(payload.marionettePlayers!==undefined?["marionettePlayers"]:[]), "minionPlayers"])
+      && (payload.marionettePlayers===undefined||isRevealIdentities(payload.marionettePlayers))
       && isRevealIdentities(payload.minionPlayers)
       && Array.isArray(payload.bluffCharacterIds)
       && payload.bluffCharacterIds.length <= 3

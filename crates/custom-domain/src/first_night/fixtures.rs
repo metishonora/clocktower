@@ -702,9 +702,10 @@ fn project_instance(
 ) -> Result<PhaseStep, CoreError> {
     let occurrence = ActionOccurrence::character(action_ref.clone(), instance.ability_use.clone())?;
     Ok(PhaseStep {
-                    execution: None,
-                    information_flow: None,
-                    madness: None,
+        ability_impairments: None,
+        execution: None,
+        information_flow: None,
+        madness: None,
         simulation_source: None,
         follow_up_cause: None,
         action_cause: None,

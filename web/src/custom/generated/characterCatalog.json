@@ -186,5 +186,29 @@
   {
     "id": "vortox",
     "kind": "Demon"
+  },
+  {
+    "id": "zealot",
+    "kind": "Outsider"
+  },
+  {
+    "id": "nightwatchman",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "pixie",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "balloonist",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "boffin",
+    "kind": "Minion"
+  },
+  {
+    "id": "marionette",
+    "kind": "Minion"
   }
 ]

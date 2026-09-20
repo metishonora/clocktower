@@ -14,6 +14,15 @@ pub(crate) struct Guidance {
     pub(crate) source: PhilosopherSimulationSource,
     pub(crate) character_id: String,
 }
+pub(crate) fn townsfolk_observer(o: &ActionOccurrence) -> bool {
+    o.simulation_source
+        .as_ref()
+        .is_none_or(guidance_is_townsfolk)
+}
+pub(crate) fn guidance_is_townsfolk(source: &PhilosopherSimulationSource) -> bool {
+    crate::characters::character_kind(&source.source_ability_use.character_id)
+        == Some(crate::model::CharacterKind::Townsfolk)
+}
 fn living(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
     current_ability_instance(facts, source)
         && facts
@@ -22,6 +31,7 @@ fn living(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
 }
 pub(crate) fn sources(facts: &CustomGameFacts) -> Vec<Guidance> {
     let mut roots = vec![];
+    roots.extend(crate::characters::carousel::marionette_guidance(facts));
     for choice in &facts.philosopher_choices {
         if choice.outcome == PhilosopherChoiceOutcome::Failed
             && choice.character_id != "philosopher"
@@ -83,34 +93,51 @@ pub(crate) fn sources(facts: &CustomGameFacts) -> Vec<Guidance> {
             }
         }
     }
-    for choice in &facts.confirmed_actions {
-        let CustomActionResult::SimulationChoice {
-            character_id: Some(character_id),
-            spent: true,
-        } = &choice.result
-        else {
-            continue;
-        };
-        if character_id == "philosopher" {
-            continue;
+    loop {
+        let before = roots.len();
+        for grant in crate::characters::carousel::simulated_pixie_grants(facts, &roots) {
+            if !roots.iter().any(|g| g.source == grant.source) {
+                roots.push(grant);
+            }
         }
-        let Some(parent) = &choice.occurrence.simulation_source else {
-            continue;
-        };
-        if roots
-            .iter()
-            .any(|g| g.source == *parent && g.character_id == "philosopher")
-        {
-            roots.push(Guidance {
-                source: PhilosopherSimulationSource {
-                    selection_event_id: choice.event_id.clone(),
-                    source_ability_use: parent.source_ability_use.clone(),
-                    guidance: Some(GuidanceCause::Choice {
-                        parent_event_id: parent.selection_event_id.clone(),
-                    }),
-                },
-                character_id: character_id.clone(),
-            });
+        for choice in &facts.confirmed_actions {
+            let CustomActionResult::SimulationChoice {
+                character_id: Some(character_id),
+                spent: true,
+            } = &choice.result
+            else {
+                continue;
+            };
+            if character_id == "philosopher" {
+                continue;
+            }
+            if roots
+                .iter()
+                .any(|g| g.source.selection_event_id == choice.event_id)
+            {
+                continue;
+            }
+            let Some(parent) = &choice.occurrence.simulation_source else {
+                continue;
+            };
+            if roots
+                .iter()
+                .any(|g| g.source == *parent && g.character_id == "philosopher")
+            {
+                roots.push(Guidance {
+                    source: PhilosopherSimulationSource {
+                        selection_event_id: choice.event_id.clone(),
+                        source_ability_use: parent.source_ability_use.clone(),
+                        guidance: Some(GuidanceCause::Choice {
+                            parent_event_id: parent.selection_event_id.clone(),
+                        }),
+                    },
+                    character_id: character_id.clone(),
+                });
+            }
+        }
+        if roots.len() == before {
+            break;
         }
     }
     roots.sort_by_key(|g| {

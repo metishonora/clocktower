@@ -13,6 +13,7 @@ pub(crate) fn simple_step(
     can_skip: bool,
 ) -> PhaseStep {
     PhaseStep {
+        ability_impairments: None,
         execution: None,
         information_flow: None,
         madness: None,
@@ -42,6 +43,7 @@ pub(crate) fn phase_transition_step(
     next_phase: RequiredInputKind,
 ) -> PhaseStep {
     PhaseStep {
+        ability_impairments: None,
         execution: None,
         information_flow: None,
         madness: None,

@@ -9,6 +9,11 @@ under `scripts/` are official assets downloaded from the Blood on the Clocktower
 
 They are bundled locally so the personal-use helper remains available offline.
 
+Carousel character portraits use the same official source:
+`https://release.botc.app/resources/characters/carousel/<character>_g.webp`
+(Balloonist, Nightwatchman, Pixie, Zealot), and `<character>_e.webp`
+(Boffin, Marionette).
+
 Their inclusion does not imply endorsement by The Pandemonium Institute. The in-app notice links to
 the official Community Content policy. The Clocktower app icon under `icons/` is original to this
 project and is not an official Blood on the Clocktower asset.

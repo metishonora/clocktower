@@ -189,7 +189,7 @@ export type MathematicianAuditOutcome =
     | "noDashiiPoison"
     | "vigormortisOngoingEffect"
     | "vortoxFalseInformation"
-    | "vortoxExecution";
+    | "vortoxExecution" | "nightwatchmanNotification";
   };
 
 
@@ -282,7 +282,7 @@ export type PhaseStepCommandPayload = PhaseStepConfirmation & {
   stepId: string;
   expectedEventCount?: number;
 };
-export type Command = {type:"confirmDay";payload:{stepId:string;expectedEventCount:number;input:DayInput}} | { type: "createGame"; payload: { players: SetupPlayerInput[]; setupChoiceId?: never } } | { type: "confirmStep"; payload: PhaseStepCommandPayload };
+export type Command = {type:"confirmDay";payload:{stepId:string;expectedEventCount:number;input:DayInput}} | { type: "createGame"; payload: { players: SetupPlayerInput[]; setupChoiceId?: string;boffinAbility?:string } } | { type: "confirmStep"; payload: PhaseStepCommandPayload };
 
 
 export type CoreResult<T> =
@@ -299,7 +299,7 @@ export type PendingIdentityReveal = {
   deliveryEventId?: string;
   sourceEventId: string;
   sequence: number;
-  payload: CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload;
+  payload: CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload | NightwatchmanRevealPayload | GrantedAbilityRevealPayload | MarionetteRevealPayload;
 };
 export type RuleState = {
   automaticReminders?: AutomaticReminder[];
@@ -405,6 +405,7 @@ export type EvilInformationRevealPayload =
   | {
     kind: "demonInformation";
     minionPlayers: RevealIdentity[];
+    marionettePlayers?: RevealIdentity[];
     bluffCharacterIds: string[];
   };
 
@@ -514,8 +515,13 @@ export type RoleInformationRevealPayload =
 
 
 export type MutantExecutionRevealPayload = { kind: "mutantExecution"; player: RevealPlayer; executed: boolean; died: boolean };
-export type RevealPayload = MutantExecutionRevealPayload | TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload | MadnessAssignmentRevealPayload;
-export type SetupDistributionRequest = { customDefinition: CustomScriptDefinition; playerCount: number; actualCharacters: string[] };
+export type NightwatchmanRevealPayload = {kind:'nightwatchmanInformation';recipientPlayer:RevealPlayer;nightwatchmanPlayer:RevealPlayer};
+export type LearnedCharacterRevealPayload={kind:'learnedCharacter';sourceCharacterId:'pixie';characterId:string};
+export type LearnedPlayerRevealPayload={kind:'learnedPlayer';sourceCharacterId:'balloonist';player:RevealPlayer};
+export type GrantedAbilityRevealPayload={kind:'grantedAbilityInformation';recipientPlayer:RevealPlayer;recipientIsSource:boolean;characterId:string;sourceCharacterId:'boffin'};
+export type MarionetteRevealPayload={kind:'marionetteInformation';recipientPlayer:RevealPlayer;marionettePlayer:RevealPlayer};
+export type RevealPayload = MarionetteRevealPayload | GrantedAbilityRevealPayload | LearnedPlayerRevealPayload | LearnedCharacterRevealPayload | NightwatchmanRevealPayload | MutantExecutionRevealPayload | TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload | MadnessAssignmentRevealPayload;
+export type SetupDistributionRequest = { customDefinition: CustomScriptDefinition; playerCount: number; actualCharacters: string[]; setupChoiceId?:string;boffinAbility?:string;marionetteCharacter?:string };
 
 
 export type SetupDistribution = {
@@ -526,7 +532,7 @@ export type SetupDistribution = {
 };
 export type SetupCountDelta = { Townsfolk:number; Outsider:number; Minion:number; Demon:number };
 export type SetupAdjustment = { base:SetupDistribution; modifiers:Array<{characterId:string;delta:SetupCountDelta}>; requestedDelta:SetupCountDelta; appliedDelta:SetupCountDelta; limited:boolean };
-export type SetupDistributionResult = SetupDistribution & { adjustment:SetupAdjustment };
+export type SetupDistributionResult = SetupDistribution & { adjustment:SetupAdjustment;boffinAbilityChoices?:string[];setupAdjacencies?:[string,string][] };
 
 
 type EventCommon = {
@@ -549,10 +555,16 @@ export type ActionCause =
   | { kind: "requiredPreparation"; triggerEventId: string; previousPreparationEventId: string | null }
   | { kind: "delivery"; preparationEventId: string }
   | { kind: "optional"; prefixEventId: string };
-export type GuidanceCause = { kind: "initialDrunk" | "acquiredDrunk" } | { kind: "choice"; parentEventId: string };
+export type GuidanceCause = { kind: "initialDrunk" | "acquiredDrunk" | "marionette" } | { kind: "choice"; parentEventId: string } | {kind:'pixieAcquisition';bondEventId:string};
 export type CustomGameEnd = { winningAlignment: "good" | "evil"; reason: "goodTwinExecuted"|"saintExecuted"|"mayorNoExecution"|"vortoxNoExecution"|"demonAbsent"|"twoLivingPlayers"|"klutzChoice"|"storytellerDecision"; sourceEventId: string };
 export type InformationPreparation = { information: InformationResult; correctPlayerId: string | null };
 export type CustomActionResult =
+  | {kind:'pixieLearned';targetPlayerId:string;characterId:string}
+  | {kind:'balloonistLearned';targetPlayerId:string;registeredKind:'Townsfolk'|'Outsider'|'Minion'|'Demon'}
+  | {kind:'boffinGranted';targetPlayerId:string;characterId:string}
+  | {kind:'marionetteShown';characterId:string}
+  | {kind:'pixieJudgment';result:'clear'|'violation'}
+  | {kind:'nightwatchmanUsed';targetPlayerId:string;revealedPlayerId:string|null}
   | { kind: "monkProtection" | "sweetheartDrunk"; targetPlayerId: string; effective: boolean }
   | { kind: "nightAttack"; targetPlayerId: string; killedPlayerId: string | null; died: boolean; identityChanges: {playerId:string;before:IdentityState;after:IdentityState}[] }
   | { kind: "pitHagChange"; targetPlayerId:string;characterId:string;changed:boolean;createdDemon:boolean }
@@ -596,7 +608,7 @@ export type CustomActionConfirmedPayload = CustomActionSource & {
   input: PhaseStepInput;
   result: CustomActionResult;
 };
-export type GameEvent = EventCommon & ({type:"dayConfirmed";payload:DayConfirmed} | { type: "setupConfirmed"; payload: { players: SetupPlayerInput[]; setupChoiceId?: never } } | { type: "phaseStepConfirmed"; payload: { stepId: string; actionRef?: FirstNightActionRef; abilityUse?: AbilityUseRef; input: PhaseStepInput; information?: ConfirmedInformation } } | { type: "customActionConfirmed"; payload: CustomActionConfirmedPayload });
+export type GameEvent = EventCommon & ({type:"dayConfirmed";payload:DayConfirmed} | { type: "setupConfirmed"; payload: { players: SetupPlayerInput[]; setupChoiceId?: string;boffinAbility?:string } } | { type: "phaseStepConfirmed"; payload: { stepId: string; actionRef?: FirstNightActionRef; abilityUse?: AbilityUseRef; input: PhaseStepInput; information?: ConfirmedInformation } } | { type: "customActionConfirmed"; payload: CustomActionConfirmedPayload });
 
 
 export type Phase = "setup" | "firstNight" | "day" | "night";
@@ -686,8 +698,9 @@ export type CoreWarning = {
 
 
 export type PhaseStep = {
+  abilityImpairments?: ("drunk" | "poisoned")[];
   execution: StepExecution;
-  madness?: {check:"clear"|"violation"|null;sourceEffective:boolean;canCheck:boolean;canExecute:boolean};
+  madness?: {characterId?:string;check:"clear"|"violation"|null;sourceEffective:boolean;canCheck:boolean;canExecute:boolean};
   informationFlow?: {id:string;preparationEventId?:string};
   id: string;
   phase: Phase;

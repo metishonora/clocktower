@@ -162,6 +162,7 @@ impl DayProgress {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DayView {
+    pub(crate) forced_voter_ids: Vec<String>,
     pub(crate) vote_dependencies: Vec<DayVoteDependency>,
     pub(crate) townsfolk_registration_nominator_ids: Vec<String>,
     pub(crate) first_nomination_target_ids: Vec<String>,
@@ -283,6 +284,8 @@ pub(crate) struct DayConsequence {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DayMadness {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) observer_character_id: Option<String>,
     pub(crate) id: String,
     pub(crate) source: AbilityUseRef,
     pub(crate) target_player_id: String,

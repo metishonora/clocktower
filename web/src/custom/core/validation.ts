@@ -3,7 +3,7 @@ import {isDayConfirmed,isDayView} from './dayValidation.js';
 import { isActionCause, isGuidanceCause, isCustomGameEnd } from "./customActionResultValidationBase.js";
 import type { Phase, PhaseStep, CoreResult, GameEvent, ReplayState, Proposal, SetupDistributionResult, FirstNightOrderPlan, CustomFirstNightPlanResult, SetupDistribution, FirstNightActionRef, PhaseStepInput, AbilityUseRef, AbilityOrigin, InformationPrompt, ConfirmedInformation, InformationResult, DeliveryReason, ActiveImpairment, NumberChoice, RegistrationJudgment } from "./types.js";
 import { customScriptCharacters } from "../characterCatalog.js";
-import { isCharacterChangeRevealPayload, isEvilTwinPairRevealPayload, isMadnessAssignmentRevealPayload, isRevealPayload } from "./revealPayload.js";
+import { isCharacterChangeRevealPayload, isEvilTwinPairRevealPayload, isMadnessAssignmentRevealPayload, isNightwatchmanRevealPayload, isRevealPayload } from "./revealPayload.js";
 import { isCustomActionResult as validateCustomActionResult } from "./customActionResultValidation.js";
 
 
@@ -126,7 +126,8 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "setupConfirmed":
       if (
-        !hasOnlyKeys(payload, ["players", "setupChoiceId"]) ||
+        !hasOnlyKeys(payload, ["players", "setupChoiceId","boffinAbility"]) ||
+        (payload.boffinAbility !== undefined && !isKnownCharacter(payload.boffinAbility)) ||
         !Array.isArray(payload.players) ||
         !payload.players.every(isSetupPlayer) ||
         (payload.setupChoiceId !== undefined && !isSetupChoiceId(payload.setupChoiceId))
@@ -149,7 +150,7 @@ export function parseGameEvent(value: unknown): GameEvent {
         !hasOnlyKeys(payload, ["stepId", "actionRef", "abilityUse", "simulationSource", "followUpCause", "actionCause", "deliveredResult", "registrationJudgments", "input", "result"]) ||
         typeof payload.stepId !== "string" || payload.stepId.trim().length === 0 ||
         !isFirstNightActionRef(payload.actionRef) || !isOccurrenceSource(payload) ||
-        !isRecord(payload.result) || ((payload.simulationSource !== undefined) !== (["simulation", "simulationChoice"].includes(payload.result.kind as string)) && !(payload.simulationSource !== undefined && ["informationPrepared", "preparedInformationDelivered"].includes(payload.result.kind as string))) ||
+        !isRecord(payload.result) || ((payload.simulationSource !== undefined) !== (["simulation", "simulationChoice"].includes(payload.result.kind as string)) && !(payload.simulationSource !== undefined && ["informationPrepared", "preparedInformationDelivered", "pixieLearned", "pixieJudgment", "balloonistLearned"].includes(payload.result.kind as string))) ||
         !isCustomPhaseStepInput(payload.input) ||
         (payload.deliveredResult !== undefined && !isInformationResult(payload.deliveredResult)) ||
         (payload.registrationJudgments !== undefined && (!Array.isArray(payload.registrationJudgments) || !payload.registrationJudgments.every(isRegistrationJudgment))) ||
@@ -222,7 +223,9 @@ export function parseProposal(value: unknown): Proposal {
 export function parseSetupDistribution(value: unknown): SetupDistributionResult {
   const kinds = ['Townsfolk','Outsider','Minion','Demon'] as const;
   const signed = (v: unknown): v is Record<typeof kinds[number],number> => isRecord(v) && hasExactKeys(v,[...kinds]) && kinds.every(k=>Number.isSafeInteger(v[k]));
-  if (!isRecord(value) || !hasExactKeys(value,[...kinds,'adjustment']) || !kinds.every(k=>Number.isSafeInteger(value[k]) && (value[k] as number)>=0)) throw invalidCoreResponse();
+  if (!isRecord(value) || !hasExactKeys(value,[...kinds,'adjustment',...(value.boffinAbilityChoices!==undefined?['boffinAbilityChoices']:[]),...(value.setupAdjacencies!==undefined?['setupAdjacencies']:[])]) || !kinds.every(k=>Number.isSafeInteger(value[k]) && (value[k] as number)>=0)) throw invalidCoreResponse();
+  if(value.setupAdjacencies!==undefined&&(!Array.isArray(value.setupAdjacencies)||!value.setupAdjacencies.every(pair=>Array.isArray(pair)&&pair.length===2&&pair.every(isKnownCharacter)&&pair[0]!==pair[1])))throw invalidCoreResponse();
+  if(value.boffinAbilityChoices!==undefined&&(!Array.isArray(value.boffinAbilityChoices)||!value.boffinAbilityChoices.every(isKnownCharacter)||new Set(value.boffinAbilityChoices).size!==value.boffinAbilityChoices.length))throw invalidCoreResponse();
   const a=value.adjustment;
   if (!isRecord(a) || !hasExactKeys(a,['base','modifiers','requestedDelta','appliedDelta','limited']) || !isSetupDistribution(a.base) || !signed(a.requestedDelta) || !signed(a.appliedDelta) || typeof a.limited!=='boolean' || !Array.isArray(a.modifiers)) throw invalidCoreResponse();
   const ids=new Set<string>(), sums={Townsfolk:0,Outsider:0,Minion:0,Demon:0};
@@ -368,7 +371,7 @@ function isAbilityOrigin(value: unknown): value is AbilityOrigin {
 function isAbilityContext(abilityUse: unknown, origin: unknown): abilityUse is AbilityUseRef {
   if (!isAbilityUseRef(abilityUse) || !isAbilityOrigin(origin)) return false;
   return origin.kind !== "acquired"
-    || (isRecord(origin.source) && origin.source.ownerPlayerId === abilityUse.ownerPlayerId);
+    || (isRecord(origin.source) && (origin.source.ownerPlayerId === abilityUse.ownerPlayerId || origin.source.characterId === 'boffin'));
 }
 
 
@@ -511,7 +514,7 @@ function isMathematicianAuditOutcome(value: unknown): boolean {
       "poisonerPoison", "butlerMaster", "mutantExecution", "philosopherAcquisition", "witchCurse", "cerenovusMadness", "evilTwinRelationship",
       "snakeCharmerSwap", "witchDeath", "sweetheartDrunkenness", "demonDeath",
       "pitHagCharacterChange", "noDashiiPoison", "vigormortisOngoingEffect",
-      "vortoxFalseInformation", "vortoxExecution",
+      "vortoxFalseInformation", "vortoxExecution", "nightwatchmanNotification",
     ].includes(String(value.effect));
 }
 
@@ -1016,7 +1019,7 @@ function isPendingIdentityReveal(value: unknown): boolean {
     typeof value.sourceEventId === "string" &&
     Number.isInteger(value.sequence) &&
     (value.sequence as number) >= 0 &&
-    (isCharacterChangeRevealPayload(value.payload) || isMadnessAssignmentRevealPayload(value.payload) || isEvilTwinPairRevealPayload(value.payload));
+    (isCharacterChangeRevealPayload(value.payload) || isMadnessAssignmentRevealPayload(value.payload) || isEvilTwinPairRevealPayload(value.payload) || isNightwatchmanRevealPayload(value.payload) || (isRecord(value.payload)&&['grantedAbilityInformation','marionetteInformation'].includes(String(value.payload.kind))&&isRevealPayload(value.payload)));
 }
 
 
@@ -1073,8 +1076,8 @@ function isPhase(value: unknown): value is Phase {
 }
 
 
-function isSetupChoiceId(value: unknown): value is "addOutsider" | "removeOutsider" {
-  return value === "addOutsider" || value === "removeOutsider";
+function isSetupChoiceId(value: unknown): value is "balloonist:0" | "balloonist:1" {
+  return value === "balloonist:0" || value === "balloonist:1";
 }
 
 
@@ -1142,7 +1145,7 @@ function nonempty(value: unknown): value is string { return typeof value === "st
 function isSimulationSource(value: unknown): boolean {
   return isRecord(value) && hasOnlyKeys(value, ["selectionEventId", "sourceAbilityUse", "guidance"]) && (value.guidance === undefined || isGuidanceCause(value.guidance)) &&
     nonempty(value.selectionEventId) && isAbilityUseRef(value.sourceAbilityUse) &&
-    (value.guidance === undefined ? value.sourceAbilityUse.characterId === "philosopher" : isRecord(value.guidance) && (value.guidance.kind === "choice" ? ["philosopher", "drunk"].includes(value.sourceAbilityUse.characterId) : value.sourceAbilityUse.characterId === "drunk")) && nonempty(value.sourceAbilityUse.ownerPlayerId) &&
+    (value.guidance === undefined ? value.sourceAbilityUse.characterId === "philosopher" : isRecord(value.guidance) && (value.guidance.kind === "marionette" ? value.sourceAbilityUse.characterId === "marionette" : ["choice","pixieAcquisition"].includes(String(value.guidance.kind)) || value.sourceAbilityUse.characterId === "drunk")) && nonempty(value.sourceAbilityUse.ownerPlayerId) &&
     nonempty(value.sourceAbilityUse.abilityInstanceId);
 }
 function isOccurrenceSource(value: Record<string, unknown>): boolean {
@@ -1163,8 +1166,9 @@ function isOccurrenceSource(value: Record<string, unknown>): boolean {
   return true;
 }
 function isStepSource(value: Record<string, unknown>): boolean {
+  if(value.abilityImpairments !== undefined && (!Array.isArray(value.abilityImpairments) || !value.abilityImpairments.every(kind=>kind==='drunk'||kind==='poisoned')))return false;
   if (!isStepExecution(value.execution)) return false;
-  if(value.madness !== undefined && (!isRecord(value.madness) || !hasExactKeys(value.madness,["check","sourceEffective","canCheck","canExecute"]) || ![null,"clear","violation"].includes(value.madness.check as null|string) || ![value.madness.sourceEffective,value.madness.canCheck,value.madness.canExecute].every(v=>typeof v === "boolean"))) return false;
+  if(value.madness !== undefined && (!isRecord(value.madness) || !hasExactKeys(value.madness,["check","sourceEffective","canCheck","canExecute",...(value.madness.characterId===undefined?[]:['characterId'])]) || (value.madness.characterId!==undefined&&!isKnownCharacter(value.madness.characterId)) || ![null,"clear","violation"].includes(value.madness.check as null|string) || ![value.madness.sourceEffective,value.madness.canCheck,value.madness.canExecute].every(v=>typeof v === "boolean"))) return false;
   if(value.informationFlow !== undefined && (!isRecord(value.informationFlow) || !hasOnlyKeys(value.informationFlow,["id","preparationEventId"]) || !nonempty(value.informationFlow.id) || (value.informationFlow.preparationEventId !== undefined && !nonempty(value.informationFlow.preparationEventId)))) return false;
   if (isCustomCharacterActionRef(value.actionRef)) {
     if (!isOccurrenceSource(value)) return false;

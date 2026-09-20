@@ -12,15 +12,22 @@ fn production_prefixes_and_proposals_preserve_frozen_baseline() {
         let replay: Value =
             serde_json::from_str(&replay_json(&prefix["game"].to_string())).unwrap();
         assert_eq!(replay["ok"], true, "prefix {index}: {replay}");
-        let mut legacy=replay["value"].clone();
+        let mut legacy = replay["value"].clone();
         legacy.as_object_mut().unwrap().remove("actionExecutions");
         legacy.as_object_mut().unwrap().remove("latestUndoUnit");
         // #223 adds a separately tested daytime projection; every legacy field stays frozen.
         legacy.as_object_mut().unwrap().remove("day");
         // #222 adds separately tested current-night presentation metadata.
         legacy.as_object_mut().unwrap().remove("nightNumber");
-        if let Some(step)=legacy["currentStep"].as_object_mut() {step.remove("execution");}
-        for step in legacy["phaseOverview"].as_array_mut().unwrap() {step.as_object_mut().unwrap().remove("execution");}
+        if let Some(step) = legacy["currentStep"].as_object_mut() {
+            step.remove("execution");
+            // #237 adds ability-scoped presentation metadata, tested by Carousel contracts.
+            step.remove("abilityImpairments");
+        }
+        for step in legacy["phaseOverview"].as_array_mut().unwrap() {
+            step.as_object_mut().unwrap().remove("execution");
+            step.as_object_mut().unwrap().remove("abilityImpairments");
+        }
         assert_eq!(legacy, prefix["replay"], "prefix {index}");
         if index > 0 {
             let previous = trace[index - 1]["game"].to_string();
@@ -43,7 +50,16 @@ fn complete_catalog_matches_frozen_production_order_and_kinds() {
     ))
     .unwrap();
     let current: Value = serde_json::from_str(&custom_script_catalog_json()).unwrap();
-    assert_eq!(current, baseline);
+    let mut expected = baseline.as_array().unwrap().clone();
+    expected.extend([
+        serde_json::json!({"id":"zealot","kind":"Outsider"}),
+        serde_json::json!({"id":"nightwatchman","kind":"Townsfolk"}),
+        serde_json::json!({"id":"pixie","kind":"Townsfolk"}),
+        serde_json::json!({"id":"balloonist","kind":"Townsfolk"}),
+        serde_json::json!({"id":"boffin","kind":"Minion"}),
+        serde_json::json!({"id":"marionette","kind":"Minion"}),
+    ]);
+    assert_eq!(current, serde_json::Value::Array(expected));
 }
 
 #[test]

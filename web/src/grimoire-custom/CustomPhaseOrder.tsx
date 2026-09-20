@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import {marionetteProgressNotification} from '../custom/grimoire/carouselPresentation';
 import { phaseOverviewLabel, stepLabel } from '../custom/grimoire/historyModel';
 import type { FirstNightController } from '../custom/grimoire/firstNightController';
 
@@ -6,9 +7,12 @@ import type { FirstNightController } from '../custom/grimoire/firstNightControll
 export function CustomPhaseOrder({controller}:{controller:FirstNightController}) {
   const state=useSyncExternalStore(controller.subscribe,controller.getSnapshot);
   const step=controller.step;
+  const last=state.file.game.events.at(-1);
+  const notificationStep=marionetteProgressNotification(state)&&last?.type==='customActionConfirmed'?last.payload.stepId:undefined;
+  const activeExecution=notificationStep?state.replay.actionExecutions.find(e=>e.stepIds.includes(notificationStep))?.id:step?.execution.id;
   return <section className="customPhaseOrder" aria-label="밤 행동">
     <ol className="snvPhaseOverview bmrPhaseOrder" aria-label="진행 순서">{groupedOverview(state.replay).map((s,i)=>{
-      const active=s.execution.id===step?.execution.id;
+      const active=s.execution.id===activeExecution;
       return <li key={`${s.id}:${i}`} className={active?'current':s.status==='complete'?'complete':''} aria-current={active?'step':undefined} title={stepLabel(s,state.replay)}>
         <span>{active?'현재':({waiting:'대기',current:'대기',complete:'완료',skipped:'건너뜀',needsFollowUp:'후속',interrupted:'중단',manualComplete:'완료',notApplicable:'해당 없음'})[s.status]}</span>
         <span className="snvPhaseOverviewAction"><strong>{phaseOverviewLabel(s,state.replay)}</strong></span>

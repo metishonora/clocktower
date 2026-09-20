@@ -18,6 +18,12 @@ export function isCustomActionResult(
   const effect = typeof value.effective === "boolean";
   const day = Number.isInteger(value.day) && (value.day as number) >= 1 && (value.day as number) <= 65535;
   switch (value.kind) {
+    case 'marionetteShown':return hasExactKeys(value,['kind','characterId'])&&isKnownCharacter(value.characterId);
+    case 'boffinGranted':return hasExactKeys(value,['kind','targetPlayerId','characterId'])&&target&&isKnownCharacter(value.characterId);
+    case 'balloonistLearned':return hasExactKeys(value,['kind','targetPlayerId','registeredKind'])&&target&&['Townsfolk','Outsider','Minion','Demon'].includes(String(value.registeredKind));
+    case 'pixieLearned': return hasExactKeys(value,['kind','targetPlayerId','characterId'])&&target&&isKnownCharacter(value.characterId);
+    case 'pixieJudgment': return hasExactKeys(value,['kind','result'])&&['clear','violation'].includes(String(value.result));
+    case "nightwatchmanUsed": return hasExactKeys(value,["kind","targetPlayerId","revealedPlayerId"]) && target && (value.revealedPlayerId===null||textId(value.revealedPlayerId));
     case "simulationChoice": return hasExactKeys(value, ["kind", "characterId", "spent"]) && (value.characterId === null || isKnownCharacter(value.characterId)) && typeof value.spent === "boolean";
     case "monkProtection": case "sweetheartDrunk": return hasExactKeys(value,["kind","targetPlayerId","effective"]) && target && effect;
     case "vigormortisPoison": return hasExactKeys(value,["kind","deathEventId","targetPlayerId"]) && target && textId(value.deathEventId);
@@ -162,8 +168,9 @@ export function isActionCause(v: unknown): boolean {
 }
 export function isGuidanceCause(v: unknown): boolean {
   if (!isRecord(v)) return false;
+  if(v.kind==='pixieAcquisition')return hasExactKeys(v,['kind','bondEventId'])&&textId(v.bondEventId);
   return v.kind === "choice" ? hasExactKeys(v, ["kind", "parentEventId"]) && textId(v.parentEventId) :
-    (v.kind === "initialDrunk" || v.kind === "acquiredDrunk") && hasExactKeys(v, ["kind"]);
+    (v.kind === "initialDrunk" || v.kind === "acquiredDrunk" || v.kind === "marionette") && hasExactKeys(v, ["kind"]);
 }
 export function isCustomGameEnd(v: unknown): boolean {
   return isRecord(v) && hasExactKeys(v, ["winningAlignment", "reason", "sourceEventId"]) &&

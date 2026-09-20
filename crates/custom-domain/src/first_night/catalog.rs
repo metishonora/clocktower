@@ -8,16 +8,17 @@ pub(crate) const SYSTEM_ACTIONS: [SystemFirstNightActionId; 4] = [
 ];
 
 // Snapshot of TPI botc-release resources/data/nightsheet.json `firstNight`, filtered to the
-// currently supported TB/S&V action catalog. This is deliberately not a merge of script-local
+// currently supported TB/S&V/Carousel action catalog. This is deliberately not a merge of script-local
 // ranks. The ordered snapshot is used only when authoring a draft omits its order; the same
 // catalog supplies the Character action set used to validate completed definitions.
-pub(crate) const ORDERED_ACTIONS: [(&str, &str); 18] = [
+pub(crate) const ORDERED_ACTIONS: [(&str, &str); 21] = [
     ("philosopher", "chooseAbility"),
     ("poisoner", "choosePoisonTarget"),
     ("snakeCharmer", "choosePlayer"),
     ("evilTwin", "learnTwin"),
     ("witch", "chooseCursedPlayer"),
     ("cerenovus", "assignMadness"),
+    ("pixie", "learnTownsfolk"),
     ("washerwoman", "learnTownsfolk"),
     ("librarian", "learnOutsider"),
     ("investigator", "learnMinion"),
@@ -28,12 +29,17 @@ pub(crate) const ORDERED_ACTIONS: [(&str, &str); 18] = [
     ("clockmaker", "learnSteps"),
     ("dreamer", "learnCharacters"),
     ("seamstress", "compareAlignments"),
+    ("balloonist", "learnPlayer"),
+    ("nightwatchman", "choosePlayer"),
     ("spy", "inspectGrimoire"),
     ("mathematician", "learnCount"),
 ];
 
 /// Registered keys outside the regular night order. Dependencies belong to ActionSpec.
-pub(crate) const ADDITIONAL_ACTIONS: [(&str, &str); 7] = [
+pub(crate) const ADDITIONAL_ACTIONS: [(&str, &str); 10] = [
+    ("marionette", "assignShownCharacter"),
+    ("boffin", "grantAbility"),
+    ("pixie", "assessMadness"),
     ("fortuneTeller", "assignRedHerring"),
     ("washerwoman", "prepareInformation"),
     ("librarian", "prepareInformation"),
@@ -50,7 +56,9 @@ pub(crate) const TRIGGER_ACTIONS: [(&str, &str); 5] = [
     ("vigormortis", "choosePoison"),
 ];
 pub(crate) fn is_other_or_trigger(action: &FirstNightActionRef) -> bool {
-    if *action == FirstNightActionRef::system("resolveNightDeaths") { return true; }
+    if *action == FirstNightActionRef::system("resolveNightDeaths") {
+        return true;
+    }
     matches!(action,FirstNightActionRef::Character {character_id,action_id} if OTHER_ORDERED_ACTIONS.iter().chain(TRIGGER_ACTIONS.iter()).any(|(c,a)|c==character_id&&a==action_id))
 }
 pub(crate) fn is_additional(action: &crate::contracts::FirstNightActionRef) -> bool {
@@ -90,7 +98,7 @@ pub(crate) fn production_actions() -> Vec<(FirstNightActionRef, bool)> {
 // 3d6d930a9e600321f93b2567a2e88948a675bc1e, otherNight. D3 excludes
 // Scarlet Woman, Sweetheart, Sage and Ravenkeeper (event-triggered actions).
 // Barber retains its conditional nighttime choice, separate from its death trigger.
-pub(crate) const OTHER_ORDERED_ACTIONS: [(&str, &str); 25] = [
+pub(crate) const OTHER_ORDERED_ACTIONS: [(&str, &str); 27] = [
     ("philosopher", "chooseAbility"),
     ("poisoner", "choosePoisonTarget"),
     ("snakeCharmer", "choosePlayer"),
@@ -113,6 +121,8 @@ pub(crate) const OTHER_ORDERED_ACTIONS: [(&str, &str); 25] = [
     ("oracle", "learnDeadEvilCount"),
     ("seamstress", "compareAlignments"),
     ("juggler", "learnJuggles"),
+    ("balloonist", "learnPlayer"),
+    ("nightwatchman", "choosePlayer"),
     ("butler", "chooseMaster"),
     ("spy", "inspectGrimoire"),
     ("mathematician", "learnCount"),

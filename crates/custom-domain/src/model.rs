@@ -344,6 +344,7 @@ pub(crate) enum AbnormalAbilityOutcome {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum AbnormalAbilityEffect {
+    NightwatchmanNotification,
     PoisonerPoison,
     ButlerMaster,
     MutantExecution,
@@ -478,6 +479,8 @@ pub(crate) enum MayorDecisionInput {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PhaseStep {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_impairments: Option<Vec<crate::contracts::ImpairmentKind>>,
     pub(crate) execution: Option<crate::first_night::execution::StepExecution>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) madness: Option<MadnessState>,
@@ -612,6 +615,8 @@ pub(crate) struct MayorDecisionPrompt {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PhaseOverviewItem {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_impairments: Option<Vec<crate::contracts::ImpairmentKind>>,
     pub(crate) execution: Option<crate::first_night::execution::StepExecution>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) information_flow: Option<InformationFlow>,
@@ -848,6 +853,8 @@ pub(crate) enum MadnessCheckResult {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct MadnessState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) character_id: Option<String>,
     pub(crate) check: Option<MadnessCheckResult>,
     pub(crate) source_effective: bool,
     pub(crate) can_check: bool,

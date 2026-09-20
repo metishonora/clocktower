@@ -1,4 +1,40 @@
 {
+  "marionette": {
+    "label": "꼭두각시",
+    "englishLabel": "Marionette",
+    "ability": "당신은 자신이 선한 캐릭터라고 생각하지만, 실제로는 아닙니다. 악마는 당신이 누구인지 압니다. [악마의 이웃에서 시작]",
+    "source": "carousel",
+    "image": "assets/characters/carousel/marionette_e.webp"
+  },
+  "boffin": {"label":"과학자","englishLabel":"Boffin","ability":"악마는 (취하거나 중독되어도) 게임에 없는 선한 직업의 능력을 가집니다. 당신과 악마는 어떤 능력인지 압니다.","source":"carousel","image":"assets/characters/carousel/boffin_e.webp"},
+  "balloonist": {
+    "label": "열기구 조종사",
+    "englishLabel": "Balloonist",
+    "ability": "매일 밤, 지난밤과 다른 유형의 직업인 플레이어 한 명을 알게 됩니다. [외지인 +0 또는 +1]",
+    "source": "carousel",
+    "image": "assets/characters/carousel/balloonist_g.webp"
+  },
+  "pixie": {
+    "label": "픽시",
+    "englishLabel": "Pixie",
+    "ability": "게임에 있는 주민 하나를 알고 시작합니다. 그 직업이라고 충분히 집착했다면, 그 플레이어가 죽었을 때 그 능력을 얻습니다.",
+    "source": "carousel",
+    "image": "assets/characters/carousel/pixie_g.webp"
+  },
+  "nightwatchman": {
+    "label": "야경꾼",
+    "englishLabel": "Nightwatchman",
+    "ability": "게임당 한 번, 밤에 플레이어를 선택합니다. 그 플레이어는 당신이 야경꾼임을 알게 됩니다.",
+    "source": "carousel",
+    "image": "assets/characters/carousel/nightwatchman_g.webp"
+  },
+  "zealot": {
+    "label": "광신자",
+    "englishLabel": "Zealot",
+    "ability": "살아 있는 플레이어가 5명 이상이면 모든 지명에 투표해야 합니다.",
+    "source": "carousel",
+    "image": "assets/characters/carousel/zealot_g.webp"
+  },
   "washerwoman": {
     "label": "세탁부",
     "englishLabel": "Washerwoman",

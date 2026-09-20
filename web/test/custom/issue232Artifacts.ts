@@ -49,7 +49,9 @@ function instruction(t:AcceptanceGame['trace'][number]) {
 }
 export async function validateCoverage(games:AcceptanceGame[]) {
   const catalogue=await customScriptCatalog();
-  expect(characterRequirements.map(r=>r.characterId).sort()).toEqual(catalogue.map(c=>c.id).sort());
+  // #232 is the frozen TB/SnV acceptance matrix. Carousel commands and UI
+  // have their own #237 coverage; do not claim these games exercise them.
+  expect([...characterRequirements.map(r=>r.characterId),'nightwatchman','zealot','pixie','balloonist','boffin','marionette'].sort()).toEqual(catalogue.map(c=>c.id).sort());
   expect(characterRequirements).toHaveLength(47);
   const covered=new Set(games.flatMap(g=>g.checks.flatMap(c=>c.requirements)));
   for(const r of characterRequirements)expect(covered.has(r.id),r.id).toBe(true);
