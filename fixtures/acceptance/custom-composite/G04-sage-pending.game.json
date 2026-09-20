@@ -1,0 +1,2682 @@
+{
+  "schemaVersion": 5,
+  "game": {
+    "script": {
+      "type": "custom",
+      "definition": {
+        "id": "issue232-G04",
+        "name": "건너간 악마",
+        "characterIds": [
+          "clockmaker",
+          "dreamer",
+          "snakeCharmer",
+          "philosopher",
+          "sage",
+          "monk",
+          "fortuneTeller",
+          "mathematician",
+          "recluse",
+          "sweetheart",
+          "barber",
+          "scarletWoman",
+          "pitHag",
+          "poisoner",
+          "fangGu",
+          "seamstress",
+          "librarian",
+          "chef",
+          "washerwoman",
+          "artist",
+          "juggler"
+        ],
+        "firstNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "character",
+            "characterId": "philosopher",
+            "actionId": "chooseAbility"
+          },
+          {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "snakeCharmer",
+            "actionId": "choosePlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "washerwoman",
+            "actionId": "learnTownsfolk"
+          },
+          {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "learnOutsider"
+          },
+          {
+            "kind": "character",
+            "characterId": "chef",
+            "actionId": "learnEvilPairs"
+          },
+          {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "clockmaker",
+            "actionId": "learnSteps"
+          },
+          {
+            "kind": "character",
+            "characterId": "dreamer",
+            "actionId": "learnCharacters"
+          },
+          {
+            "kind": "character",
+            "characterId": "seamstress",
+            "actionId": "compareAlignments"
+          },
+          {
+            "kind": "character",
+            "characterId": "mathematician",
+            "actionId": "learnCount"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ],
+        "otherNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "character",
+            "characterId": "philosopher",
+            "actionId": "chooseAbility"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "snakeCharmer",
+            "actionId": "choosePlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "monk",
+            "actionId": "protectPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "pitHag",
+            "actionId": "changeCharacter"
+          },
+          {
+            "kind": "character",
+            "characterId": "fangGu",
+            "actionId": "attackPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "barber",
+            "actionId": "swapCharacters"
+          },
+          {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "dreamer",
+            "actionId": "learnCharacters"
+          },
+          {
+            "kind": "character",
+            "characterId": "seamstress",
+            "actionId": "compareAlignments"
+          },
+          {
+            "kind": "character",
+            "characterId": "juggler",
+            "actionId": "learnJuggles"
+          },
+          {
+            "kind": "character",
+            "characterId": "mathematician",
+            "actionId": "learnCount"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ]
+      }
+    },
+    "id": "issue232-G04",
+    "name": "건너간 악마",
+    "createdAt": "2026-09-16T12:00:00.000Z",
+    "updatedAt": "2026-09-16T11:17:26.482Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "seat": 1,
+              "name": "1번",
+              "actualCharacter": "clockmaker",
+              "shownCharacter": "clockmaker"
+            },
+            {
+              "id": "p2",
+              "seat": 2,
+              "name": "2번",
+              "actualCharacter": "dreamer",
+              "shownCharacter": "dreamer"
+            },
+            {
+              "id": "p3",
+              "seat": 3,
+              "name": "3번",
+              "actualCharacter": "snakeCharmer",
+              "shownCharacter": "snakeCharmer"
+            },
+            {
+              "id": "p4",
+              "seat": 4,
+              "name": "4번",
+              "actualCharacter": "philosopher",
+              "shownCharacter": "philosopher"
+            },
+            {
+              "id": "p5",
+              "seat": 5,
+              "name": "5번",
+              "actualCharacter": "sage",
+              "shownCharacter": "sage"
+            },
+            {
+              "id": "p6",
+              "seat": 6,
+              "name": "6번",
+              "actualCharacter": "monk",
+              "shownCharacter": "monk"
+            },
+            {
+              "id": "p7",
+              "seat": 7,
+              "name": "7번",
+              "actualCharacter": "fortuneTeller",
+              "shownCharacter": "fortuneTeller"
+            },
+            {
+              "id": "p8",
+              "seat": 8,
+              "name": "8번",
+              "actualCharacter": "mathematician",
+              "shownCharacter": "mathematician"
+            },
+            {
+              "id": "p9",
+              "seat": 9,
+              "name": "9번",
+              "actualCharacter": "recluse",
+              "shownCharacter": "recluse"
+            },
+            {
+              "id": "p10",
+              "seat": 10,
+              "name": "10번",
+              "actualCharacter": "sweetheart",
+              "shownCharacter": "sweetheart"
+            },
+            {
+              "id": "p11",
+              "seat": 11,
+              "name": "11번",
+              "actualCharacter": "barber",
+              "shownCharacter": "barber"
+            },
+            {
+              "id": "p12",
+              "seat": 12,
+              "name": "12번",
+              "actualCharacter": "scarletWoman",
+              "shownCharacter": "scarletWoman"
+            },
+            {
+              "id": "p13",
+              "seat": 13,
+              "name": "13번",
+              "actualCharacter": "pitHag",
+              "shownCharacter": "pitHag"
+            },
+            {
+              "id": "p14",
+              "seat": 14,
+              "name": "14번",
+              "actualCharacter": "poisoner",
+              "shownCharacter": "poisoner"
+            },
+            {
+              "id": "p15",
+              "seat": 15,
+              "name": "15번",
+              "actualCharacter": "fangGu",
+              "shownCharacter": "fangGu"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 15명",
+        "createdAt": "2026-09-16T12:00:00.000Z"
+      },
+      {
+        "id": "phase-step-2",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:philosopher:chooseAbility:owner2:p4:instance8:setup:p4",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "philosopher",
+            "actionId": "chooseAbility"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p4",
+            "characterId": "philosopher",
+            "abilityInstanceId": "setup:p4"
+          },
+          "input": {
+            "characterIds": [
+              "seamstress"
+            ]
+          },
+          "result": {
+            "kind": "philosopherChoice",
+            "characterId": "seamstress",
+            "outcome": "acquired"
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:philosopher:chooseAbility:owner2:p4:instance8:setup:p4",
+        "createdAt": "2026-09-16T11:17:25.201Z"
+      },
+      {
+        "id": "phase-step-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:minionInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:minionInfo",
+        "createdAt": "2026-09-16T11:17:25.218Z"
+      },
+      {
+        "id": "phase-step-4",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          "input": {
+            "characterIds": [
+              "washerwoman",
+              "artist",
+              "juggler"
+            ]
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:demonInfo",
+        "createdAt": "2026-09-16T11:17:25.241Z"
+      },
+      {
+        "id": "phase-step-5",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:poisoner:choosePoisonTarget:owner3:p14:instance9:setup:p14",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p14",
+            "characterId": "poisoner",
+            "abilityInstanceId": "setup:p14"
+          },
+          "input": {
+            "playerIds": [
+              "p1"
+            ]
+          },
+          "result": {
+            "kind": "poisoner",
+            "targetPlayerId": "p1",
+            "day": 1,
+            "effective": true
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:poisoner:choosePoisonTarget:owner3:p14:instance9:setup:p14",
+        "createdAt": "2026-09-16T11:17:25.264Z"
+      },
+      {
+        "id": "phase-step-6",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:snakeCharmer:choosePlayer:owner2:p3:instance8:setup:p3",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "snakeCharmer",
+            "actionId": "choosePlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p3",
+            "characterId": "snakeCharmer",
+            "abilityInstanceId": "setup:p3"
+          },
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          },
+          "result": {
+            "kind": "snakeCharmer",
+            "targetPlayerId": "p9",
+            "outcome": "notDemon"
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:snakeCharmer:choosePlayer:owner2:p3:instance8:setup:p3",
+        "createdAt": "2026-09-16T11:17:25.292Z"
+      },
+      {
+        "id": "phase-step-7",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:fortuneTeller:assignRedHerring:owner2:p7:instance8:setup:p7:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "assignRedHerring"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p7",
+            "characterId": "fortuneTeller",
+            "abilityInstanceId": "setup:p7"
+          },
+          "actionCause": {
+            "kind": "initialPreparation",
+            "sourceEventId": "setup"
+          },
+          "input": {
+            "playerIds": [
+              "p6"
+            ]
+          },
+          "result": {
+            "kind": "redHerringAssigned",
+            "targetPlayerId": "p6"
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:fortuneTeller:assignRedHerring:owner2:p7:instance8:setup:p7:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+        "createdAt": "2026-09-16T11:17:25.315Z"
+      },
+      {
+        "id": "phase-step-8",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:fortuneTeller:checkDemon:owner2:p7:instance8:setup:p7",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p7",
+            "characterId": "fortuneTeller",
+            "abilityInstanceId": "setup:p7"
+          },
+          "input": {
+            "playerIds": [
+              "p6",
+              "p12"
+            ]
+          },
+          "result": {
+            "kind": "informationDelivered",
+            "information": {
+              "actor": {
+                "playerId": "p7",
+                "characterId": "fortuneTeller"
+              },
+              "targetPlayerIds": [
+                "p6",
+                "p12"
+              ],
+              "computedResult": {
+                "kind": "boolean",
+                "value": true
+              },
+              "deliveredResult": {
+                "kind": "boolean",
+                "value": true
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:fortuneTeller:checkDemon:owner2:p7:instance8:setup:p7",
+        "createdAt": "2026-09-16T11:17:25.341Z"
+      },
+      {
+        "id": "phase-step-9",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:clockmaker:learnSteps:owner2:p1:instance8:setup:p1",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "clockmaker",
+            "actionId": "learnSteps"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p1",
+            "characterId": "clockmaker",
+            "abilityInstanceId": "setup:p1"
+          },
+          "input": null,
+          "result": {
+            "kind": "informationDelivered",
+            "information": {
+              "actor": {
+                "playerId": "p1",
+                "characterId": "clockmaker"
+              },
+              "targetPlayerIds": [],
+              "computedResult": {
+                "kind": "number",
+                "value": 1
+              },
+              "deliveredResult": {
+                "kind": "number",
+                "value": 0
+              },
+              "deliveryContext": {
+                "type": "discretionary",
+                "reasons": [
+                  {
+                    "type": "poisoned",
+                    "poisonerPlayerId": "p14",
+                    "poisonEventId": "phase-step-5"
+                  }
+                ]
+              }
+            },
+            "spent": false
+          },
+          "deliveredResult": {
+            "kind": "number",
+            "value": 0
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:clockmaker:learnSteps:owner2:p1:instance8:setup:p1",
+        "createdAt": "2026-09-16T11:17:25.377Z"
+      },
+      {
+        "id": "phase-step-10",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:dreamer:learnCharacters:owner2:p2:instance8:setup:p2",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "dreamer",
+            "actionId": "learnCharacters"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p2",
+            "characterId": "dreamer",
+            "abilityInstanceId": "setup:p2"
+          },
+          "input": {
+            "playerIds": [
+              "p12"
+            ]
+          },
+          "result": {
+            "kind": "informationDelivered",
+            "information": {
+              "actor": {
+                "playerId": "p2",
+                "characterId": "dreamer"
+              },
+              "targetPlayerIds": [
+                "p12"
+              ],
+              "computedResult": {
+                "kind": "characterPair",
+                "characterIds": [
+                  "clockmaker",
+                  "scarletWoman"
+                ]
+              },
+              "deliveredResult": {
+                "kind": "characterPair",
+                "characterIds": [
+                  "washerwoman",
+                  "scarletWoman"
+                ]
+              },
+              "deliveryContext": {
+                "type": "discretionary",
+                "reasons": [
+                  {
+                    "type": "abilityChoice"
+                  }
+                ]
+              }
+            },
+            "spent": false
+          },
+          "deliveredResult": {
+            "kind": "characterPair",
+            "characterIds": [
+              "washerwoman",
+              "scarletWoman"
+            ]
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:dreamer:learnCharacters:owner2:p2:instance8:setup:p2",
+        "createdAt": "2026-09-16T11:17:25.410Z"
+      },
+      {
+        "id": "phase-step-11",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:seamstress:compareAlignments:owner2:p4:instance73:customGrant:12#phase-step-22#p411#philosopher8#setup:p410#seamstress:2#p4",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "seamstress",
+            "actionId": "compareAlignments"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p4",
+            "characterId": "seamstress",
+            "abilityInstanceId": "customGrant:12#phase-step-22#p411#philosopher8#setup:p410#seamstress:2#p4"
+          },
+          "input": {
+            "playerIds": [
+              "p6",
+              "p12"
+            ]
+          },
+          "result": {
+            "kind": "informationDelivered",
+            "information": {
+              "actor": {
+                "playerId": "p4",
+                "characterId": "seamstress"
+              },
+              "targetPlayerIds": [
+                "p6",
+                "p12"
+              ],
+              "computedResult": {
+                "kind": "boolean",
+                "value": false
+              },
+              "deliveredResult": {
+                "kind": "boolean",
+                "value": false
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": true
+          },
+          "deliveredResult": {
+            "kind": "boolean",
+            "value": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:seamstress:compareAlignments:owner2:p4:instance73:customGrant:12#phase-step-22#p411#philosopher8#setup:p410#seamstress:2#p4",
+        "createdAt": "2026-09-16T11:17:25.456Z"
+      },
+      {
+        "id": "phase-step-12",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:mathematician:learnCount:owner2:p8:instance8:setup:p8",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "mathematician",
+            "actionId": "learnCount"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p8",
+            "characterId": "mathematician",
+            "abilityInstanceId": "setup:p8"
+          },
+          "input": null,
+          "result": {
+            "kind": "informationDelivered",
+            "information": {
+              "actor": {
+                "playerId": "p8",
+                "characterId": "mathematician"
+              },
+              "targetPlayerIds": [],
+              "computedResult": {
+                "kind": "number",
+                "value": 1
+              },
+              "deliveredResult": {
+                "kind": "number",
+                "value": 1
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:mathematician:learnCount:owner2:p8:instance8:setup:p8",
+        "createdAt": "2026-09-16T11:17:25.514Z"
+      },
+      {
+        "id": "phase-step-13",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:dawn",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "dawn"
+          },
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:dawn",
+        "createdAt": "2026-09-16T11:17:25.568Z"
+      },
+      {
+        "id": "day-event-14",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:Announcement:after13:phase-step-13",
+          "day": 1,
+          "input": {
+            "kind": "advance"
+          },
+          "result": {
+            "stage": "whisper",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "clockmaker",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "clockmaker",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": [
+                  {
+                    "kind": "poisoned",
+                    "playerId": "p1",
+                    "sourceEventId": "phase-step-5",
+                    "sourceCharacterId": "poisoner",
+                    "expires": "whileSourceAbilityActive"
+                  }
+                ]
+              },
+              {
+                "playerId": "p2",
+                "characterId": "dreamer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "dreamer",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "snakeCharmer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "snakeCharmer",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "philosopher",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "philosopher",
+                    "abilityInstanceId": "setup:p4"
+                  },
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "seamstress",
+                    "abilityInstanceId": "customGrant:12#phase-step-22#p411#philosopher8#setup:p410#seamstress:2#p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "sage",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "sage",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "fortuneTeller",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "fortuneTeller",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "mathematician",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "mathematician",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "sweetheart",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "sweetheart",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "barber",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "barber",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "scarletWoman",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "scarletWoman",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p13",
+                "characterId": "pitHag",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p13",
+                    "characterId": "pitHag",
+                    "abilityInstanceId": "setup:p13"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p14",
+                "characterId": "poisoner",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p14",
+                    "characterId": "poisoner",
+                    "abilityInstanceId": "setup:p14"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p15",
+                "characterId": "fangGu",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p15",
+                    "characterId": "fangGu",
+                    "abilityInstanceId": "setup:p15"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "낮 진행",
+        "createdAt": "2026-09-16T11:17:25.616Z"
+      },
+      {
+        "id": "day-event-15",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:Whisper:after12:day-event-14",
+          "day": 1,
+          "input": {
+            "kind": "advance"
+          },
+          "result": {
+            "stage": "discussion",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "clockmaker",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "clockmaker",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": [
+                  {
+                    "kind": "poisoned",
+                    "playerId": "p1",
+                    "sourceEventId": "phase-step-5",
+                    "sourceCharacterId": "poisoner",
+                    "expires": "whileSourceAbilityActive"
+                  }
+                ]
+              },
+              {
+                "playerId": "p2",
+                "characterId": "dreamer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "dreamer",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "snakeCharmer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "snakeCharmer",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "philosopher",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "philosopher",
+                    "abilityInstanceId": "setup:p4"
+                  },
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "seamstress",
+                    "abilityInstanceId": "customGrant:12#phase-step-22#p411#philosopher8#setup:p410#seamstress:2#p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "sage",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "sage",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "fortuneTeller",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "fortuneTeller",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "mathematician",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "mathematician",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "sweetheart",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "sweetheart",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "barber",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "barber",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "scarletWoman",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "scarletWoman",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p13",
+                "characterId": "pitHag",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p13",
+                    "characterId": "pitHag",
+                    "abilityInstanceId": "setup:p13"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p14",
+                "characterId": "poisoner",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p14",
+                    "characterId": "poisoner",
+                    "abilityInstanceId": "setup:p14"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p15",
+                "characterId": "fangGu",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p15",
+                    "characterId": "fangGu",
+                    "abilityInstanceId": "setup:p15"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "낮 진행",
+        "createdAt": "2026-09-16T11:17:25.661Z"
+      },
+      {
+        "id": "day-event-16",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:Discussion:after12:day-event-15",
+          "day": 1,
+          "input": {
+            "kind": "advance"
+          },
+          "result": {
+            "stage": "nomination",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "clockmaker",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "clockmaker",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": [
+                  {
+                    "kind": "poisoned",
+                    "playerId": "p1",
+                    "sourceEventId": "phase-step-5",
+                    "sourceCharacterId": "poisoner",
+                    "expires": "whileSourceAbilityActive"
+                  }
+                ]
+              },
+              {
+                "playerId": "p2",
+                "characterId": "dreamer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "dreamer",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "snakeCharmer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "snakeCharmer",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "philosopher",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "philosopher",
+                    "abilityInstanceId": "setup:p4"
+                  },
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "seamstress",
+                    "abilityInstanceId": "customGrant:12#phase-step-22#p411#philosopher8#setup:p410#seamstress:2#p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "sage",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "sage",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "fortuneTeller",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "fortuneTeller",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "mathematician",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "mathematician",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "sweetheart",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "sweetheart",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "barber",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "barber",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "scarletWoman",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "scarletWoman",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p13",
+                "characterId": "pitHag",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p13",
+                    "characterId": "pitHag",
+                    "abilityInstanceId": "setup:p13"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p14",
+                "characterId": "poisoner",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p14",
+                    "characterId": "poisoner",
+                    "abilityInstanceId": "setup:p14"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p15",
+                "characterId": "fangGu",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p15",
+                    "characterId": "fangGu",
+                    "abilityInstanceId": "setup:p15"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "낮 진행",
+        "createdAt": "2026-09-16T11:17:25.707Z"
+      },
+      {
+        "id": "day-event-17",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:Nomination:after12:day-event-16",
+          "day": 1,
+          "input": {
+            "kind": "closeNominations"
+          },
+          "result": {
+            "stage": "execution",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "clockmaker",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "clockmaker",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": [
+                  {
+                    "kind": "poisoned",
+                    "playerId": "p1",
+                    "sourceEventId": "phase-step-5",
+                    "sourceCharacterId": "poisoner",
+                    "expires": "whileSourceAbilityActive"
+                  }
+                ]
+              },
+              {
+                "playerId": "p2",
+                "characterId": "dreamer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "dreamer",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "snakeCharmer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "snakeCharmer",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "philosopher",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "philosopher",
+                    "abilityInstanceId": "setup:p4"
+                  },
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "seamstress",
+                    "abilityInstanceId": "customGrant:12#phase-step-22#p411#philosopher8#setup:p410#seamstress:2#p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "sage",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "sage",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "fortuneTeller",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "fortuneTeller",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "mathematician",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "mathematician",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "sweetheart",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "sweetheart",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "barber",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "barber",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "scarletWoman",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "scarletWoman",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p13",
+                "characterId": "pitHag",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p13",
+                    "characterId": "pitHag",
+                    "abilityInstanceId": "setup:p13"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p14",
+                "characterId": "poisoner",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p14",
+                    "characterId": "poisoner",
+                    "abilityInstanceId": "setup:p14"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p15",
+                "characterId": "fangGu",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p15",
+                    "characterId": "fangGu",
+                    "abilityInstanceId": "setup:p15"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-09-16T11:17:25.752Z"
+      },
+      {
+        "id": "day-event-18",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:Execution:after12:day-event-17",
+          "day": 1,
+          "input": {
+            "kind": "confirmExecution"
+          },
+          "result": {
+            "stage": "nightReady",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "clockmaker",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "clockmaker",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": [
+                  {
+                    "kind": "poisoned",
+                    "playerId": "p1",
+                    "sourceEventId": "phase-step-5",
+                    "sourceCharacterId": "poisoner",
+                    "expires": "whileSourceAbilityActive"
+                  }
+                ]
+              },
+              {
+                "playerId": "p2",
+                "characterId": "dreamer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "dreamer",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "snakeCharmer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "snakeCharmer",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "philosopher",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "philosopher",
+                    "abilityInstanceId": "setup:p4"
+                  },
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "seamstress",
+                    "abilityInstanceId": "customGrant:12#phase-step-22#p411#philosopher8#setup:p410#seamstress:2#p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "sage",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "sage",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "fortuneTeller",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "fortuneTeller",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "mathematician",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "mathematician",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "sweetheart",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "sweetheart",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "barber",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "barber",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "scarletWoman",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "scarletWoman",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p13",
+                "characterId": "pitHag",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p13",
+                    "characterId": "pitHag",
+                    "abilityInstanceId": "setup:p13"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p14",
+                "characterId": "poisoner",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p14",
+                    "characterId": "poisoner",
+                    "abilityInstanceId": "setup:p14"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p15",
+                "characterId": "fangGu",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p15",
+                    "characterId": "fangGu",
+                    "abilityInstanceId": "setup:p15"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "투표 결과에 따른 처형 처리",
+        "createdAt": "2026-09-16T11:17:25.799Z"
+      },
+      {
+        "id": "day-event-19",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:NightReady:after12:day-event-18",
+          "day": 1,
+          "input": {
+            "kind": "beginNight"
+          },
+          "result": {
+            "stage": "night",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "clockmaker",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "clockmaker",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": [
+                  {
+                    "kind": "poisoned",
+                    "playerId": "p1",
+                    "sourceEventId": "phase-step-5",
+                    "sourceCharacterId": "poisoner",
+                    "expires": "whileSourceAbilityActive"
+                  }
+                ]
+              },
+              {
+                "playerId": "p2",
+                "characterId": "dreamer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "dreamer",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "snakeCharmer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "snakeCharmer",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "philosopher",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "philosopher",
+                    "abilityInstanceId": "setup:p4"
+                  },
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "seamstress",
+                    "abilityInstanceId": "customGrant:12#phase-step-22#p411#philosopher8#setup:p410#seamstress:2#p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "sage",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "sage",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "fortuneTeller",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "fortuneTeller",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "mathematician",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "mathematician",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "sweetheart",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "sweetheart",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "barber",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "barber",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "scarletWoman",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "scarletWoman",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p13",
+                "characterId": "pitHag",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p13",
+                    "characterId": "pitHag",
+                    "abilityInstanceId": "setup:p13"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p14",
+                "characterId": "poisoner",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p14",
+                    "characterId": "poisoner",
+                    "abilityInstanceId": "setup:p14"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p15",
+                "characterId": "fangGu",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p15",
+                    "characterId": "fangGu",
+                    "abilityInstanceId": "setup:p15"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "다음 밤 시작",
+        "createdAt": "2026-09-16T11:17:25.848Z"
+      },
+      {
+        "id": "phase-step-20",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:poisoner:choosePoisonTarget:owner3:p14:instance9:setup:p14",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p14",
+            "characterId": "poisoner",
+            "abilityInstanceId": "setup:p14"
+          },
+          "input": {
+            "playerIds": [
+              "p1"
+            ]
+          },
+          "result": {
+            "kind": "poisoner",
+            "targetPlayerId": "p1",
+            "day": 2,
+            "effective": true
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:poisoner:choosePoisonTarget:owner3:p14:instance9:setup:p14",
+        "createdAt": "2026-09-16T11:17:25.897Z"
+      },
+      {
+        "id": "phase-step-21",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:snakeCharmer:choosePlayer:owner2:p3:instance8:setup:p3",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "snakeCharmer",
+            "actionId": "choosePlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p3",
+            "characterId": "snakeCharmer",
+            "abilityInstanceId": "setup:p3"
+          },
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          },
+          "result": {
+            "kind": "snakeCharmer",
+            "targetPlayerId": "p9",
+            "outcome": "notDemon"
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:snakeCharmer:choosePlayer:owner2:p3:instance8:setup:p3",
+        "createdAt": "2026-09-16T11:17:25.959Z"
+      },
+      {
+        "id": "phase-step-22",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:monk:protectPlayer:owner2:p6:instance8:setup:p6",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "monk",
+            "actionId": "protectPlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p6",
+            "characterId": "monk",
+            "abilityInstanceId": "setup:p6"
+          },
+          "input": {
+            "playerIds": [
+              "p2"
+            ]
+          },
+          "result": {
+            "kind": "monkProtection",
+            "targetPlayerId": "p2",
+            "effective": true
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:monk:protectPlayer:owner2:p6:instance8:setup:p6",
+        "createdAt": "2026-09-16T11:17:26.021Z"
+      },
+      {
+        "id": "phase-step-23",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:pitHag:changeCharacter:owner3:p13:instance9:setup:p13",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "pitHag",
+            "actionId": "changeCharacter"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p13",
+            "characterId": "pitHag",
+            "abilityInstanceId": "setup:p13"
+          },
+          "input": {
+            "playerIds": [
+              "p4"
+            ],
+            "characterIds": [
+              "librarian"
+            ]
+          },
+          "result": {
+            "kind": "pitHagChange",
+            "targetPlayerId": "p4",
+            "characterId": "librarian",
+            "changed": true,
+            "createdDemon": false
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:pitHag:changeCharacter:owner3:p13:instance9:setup:p13",
+        "createdAt": "2026-09-16T11:17:26.083Z"
+      },
+      {
+        "id": "phase-step-24",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:librarian:prepareInformation:owner2:p4:instance16:phase-step-23:p4:cause61:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"phase-step-23\"}",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "prepareInformation"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p4",
+            "characterId": "librarian",
+            "abilityInstanceId": "phase-step-23:p4"
+          },
+          "actionCause": {
+            "kind": "initialPreparation",
+            "sourceEventId": "phase-step-23"
+          },
+          "input": {
+            "correctPlayerId": "p9",
+            "playerIds": [
+              "p9",
+              "p10"
+            ],
+            "characterId": "recluse"
+          },
+          "result": {
+            "kind": "informationPrepared",
+            "preparation": {
+              "information": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p9",
+                  "p10"
+                ],
+                "characterId": "recluse",
+                "zeroOutsiders": false
+              },
+              "correctPlayerId": "p9"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:librarian:prepareInformation:owner2:p4:instance16:phase-step-23:p4:cause61:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"phase-step-23\"}",
+        "createdAt": "2026-09-16T11:17:26.148Z"
+      },
+      {
+        "id": "phase-step-25",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:librarian:learnOutsider:owner2:p4:instance16:phase-step-23:p4",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "learnOutsider"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p4",
+            "characterId": "librarian",
+            "abilityInstanceId": "phase-step-23:p4"
+          },
+          "input": null,
+          "result": {
+            "kind": "preparedInformationDelivered",
+            "preparationEventId": "phase-step-24",
+            "information": {
+              "actor": {
+                "playerId": "p4",
+                "characterId": "librarian"
+              },
+              "targetPlayerIds": [
+                "p9",
+                "p10"
+              ],
+              "computedResult": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p9",
+                  "p10"
+                ],
+                "characterId": "recluse",
+                "zeroOutsiders": false
+              },
+              "deliveredResult": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p9",
+                  "p10"
+                ],
+                "characterId": "recluse",
+                "zeroOutsiders": false
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:librarian:learnOutsider:owner2:p4:instance16:phase-step-23:p4",
+        "createdAt": "2026-09-16T11:17:26.218Z"
+      },
+      {
+        "id": "phase-step-26",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:fangGu:attackPlayer:owner3:p15:instance9:setup:p15",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "fangGu",
+            "actionId": "attackPlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p15",
+            "characterId": "fangGu",
+            "abilityInstanceId": "setup:p15"
+          },
+          "input": {
+            "playerIds": [
+              "p5"
+            ]
+          },
+          "result": {
+            "kind": "nightAttack",
+            "targetPlayerId": "p5",
+            "killedPlayerId": "p5",
+            "died": true,
+            "identityChanges": []
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:fangGu:attackPlayer:owner3:p15:instance9:setup:p15",
+        "createdAt": "2026-09-16T11:17:26.411Z"
+      }
+    ]
+  },
+  "exportedAt": "2026-09-16T12:00:00.000Z"
+}

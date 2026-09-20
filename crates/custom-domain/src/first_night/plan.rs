@@ -101,15 +101,18 @@ pub(crate) fn plan_for_draft(
     definition: &CustomScriptDefinitionDraft,
 ) -> Result<CustomFirstNightPlanResult, CoreError> {
     validate_custom_script_definition_draft(definition)?;
-    let context = resolve_custom_script_ids(&definition.character_ids)?;
+    let mut context = resolve_custom_script_ids(&definition.character_ids)?;
+    context.scheduled_night_deaths = definition.night_order_version == Some(2);
     if let Some(plan) = definition.first_night_order.clone() {
         validate_plan(&context, &plan)?;
         Ok(CustomFirstNightPlanResult {
+            upgrade_night_order_version: None,
             source: FirstNightPlanSource::Definition,
             plan,
         })
     } else {
         Ok(CustomFirstNightPlanResult {
+            upgrade_night_order_version: None,
             source: FirstNightPlanSource::Default,
             plan: default_plan(&context),
         })
@@ -120,7 +123,7 @@ pub(crate) fn plan_for_draft(
 pub(crate) fn default_other_plan(
     context: &ResolvedScriptContext,
 ) -> crate::contracts::OtherNightOrderPlan {
-    crate::contracts::OtherNightOrderPlan(
+    let mut plan = crate::contracts::OtherNightOrderPlan(
         std::iter::once(FirstNightActionRef::system("dusk"))
             .chain(
                 super::catalog::OTHER_ORDERED_ACTIONS
@@ -130,7 +133,18 @@ pub(crate) fn default_other_plan(
             )
             .chain(std::iter::once(FirstNightActionRef::system("dawn")))
             .collect(),
-    )
+    );
+    let rules = crate::night_deaths::rules_for(context);
+    if context.scheduled_night_deaths && !rules.is_empty() {
+        let index = plan
+            .0
+            .iter()
+            .rposition(|action| rules.iter().any(|r| r.default_after.contains(action)))
+            .expect("registered death source has an ordered trigger");
+        plan.0
+            .insert(index + 1, FirstNightActionRef::system("resolveNightDeaths"));
+    }
+    plan
 }
 pub(crate) fn validate_other_plan(
     context: &ResolvedScriptContext,
@@ -146,6 +160,13 @@ pub(crate) fn validate_other_plan(
         || entries.last() != Some(&FirstNightActionRef::system("dawn"))
         || actual.len() != entries.len()
         || actual != expected
+        || (context.scheduled_night_deaths
+            && crate::night_deaths::rules_for(context).iter().any(|rule| {
+                entries
+                    .iter()
+                    .position(|a| *a == FirstNightActionRef::system("resolveNightDeaths"))
+                    <= entries.iter().position(|a| a == &rule.trigger)
+            }))
     {
         return Err(ErrorKind::InvalidOtherNightOrderPlan.into_error());
     }
@@ -155,7 +176,8 @@ pub(crate) fn other_plan_for_draft(
     definition: &CustomScriptDefinitionDraft,
 ) -> Result<CustomFirstNightPlanResult, CoreError> {
     validate_custom_script_definition_draft(definition)?;
-    let context = resolve_custom_script_ids(&definition.character_ids)?;
+    let mut context = resolve_custom_script_ids(&definition.character_ids)?;
+    context.scheduled_night_deaths = definition.night_order_version == Some(2);
     let (source, plan) = if let Some(plan) = &definition.other_night_order {
         validate_other_plan(&context, plan)?;
         (FirstNightPlanSource::Definition, plan.clone())
@@ -163,6 +185,9 @@ pub(crate) fn other_plan_for_draft(
         (FirstNightPlanSource::Default, default_other_plan(&context))
     };
     Ok(CustomFirstNightPlanResult {
+        upgrade_night_order_version: (definition.night_order_version.is_none()
+            && !crate::night_deaths::rules_for(&context).is_empty())
+        .then_some(2),
         source,
         plan: FirstNightOrderPlan(plan.0),
     })

@@ -70,10 +70,12 @@ fn declining_optional_execution_keeps_regular_step_and_changes_request_prefix() 
         .unwrap()
         .push(proposal["value"]["event"].clone());
     let after = replay(&game);
-    let mut old_step=before["currentStep"].clone(); let mut new_step=after["currentStep"].clone();
-    old_step.as_object_mut().unwrap().remove("execution");new_step.as_object_mut().unwrap().remove("execution");
-    assert_eq!(new_step,old_step);
-    assert_eq!(after["currentStep"]["execution"]["relation"],"reference");
+    let mut old_step = before["currentStep"].clone();
+    let mut new_step = after["currentStep"].clone();
+    old_step.as_object_mut().unwrap().remove("execution");
+    new_step.as_object_mut().unwrap().remove("execution");
+    assert_eq!(new_step, old_step);
+    assert_eq!(after["currentStep"]["execution"]["relation"], "reference");
     assert_ne!(after["availableActions"], before["availableActions"]);
     assert!(after["gameEnd"].is_null());
 }

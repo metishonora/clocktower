@@ -6,7 +6,7 @@ import { actionKey } from './reconcileFirstNightOrder.js';
 import { characterPresentation } from './characterPresentation.js';
 type Night = 'first' | 'other';
 type OrderEntry = { id: string; label: string; kind: 'boundary' | 'system' | 'character'; characterId?: string; conditional?: boolean; invalid?: 'unknown' | 'duplicate' };
-const labels = { dusk: '해질녘', dawn: '새벽', minionInfo: '하수인 정보', demonInfo: '악마 정보' };
+const labels = { dusk: '해질녘', dawn: '새벽', minionInfo: '하수인 정보', demonInfo: '악마 정보', resolveNightDeaths: '예측불허의 죽음' };
 function assetFor(id?: string) { const entry = id ? characterPresentation(id) : undefined; return entry ? { src: entry.image } : undefined; }
 export function FirstNightOrderSheet({ state, controller }: { state: ScenarioEditorState; controller: ScenarioEditorController }) {
   const [night, setNight] = useState<Night>('first');

@@ -70,7 +70,7 @@ impl ActionHandler for SystemHandler {
                 "dawn",
                 RequiredInputKind::Day,
             ),
-            SystemFirstNightActionId::Unknown => {
+            SystemFirstNightActionId::ResolveNightDeaths | SystemFirstNightActionId::Unknown => {
                 return Err(ErrorKind::FirstNightActionHandlerUnavailable.into_error())
             }
         };
@@ -148,6 +148,7 @@ fn validate_input(
         SystemFirstNightActionId::Dusk
         | SystemFirstNightActionId::MinionInfo
         | SystemFirstNightActionId::Dawn
+        | SystemFirstNightActionId::ResolveNightDeaths
         | SystemFirstNightActionId::Unknown => crate::input::required_none(),
     };
     crate::input::validate_required_input(&required, input, &[])

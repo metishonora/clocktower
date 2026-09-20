@@ -1,0 +1,25 @@
+import {afterEach,expect,it} from 'vitest';
+import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
+import {CustomGrimoirePlay} from '../src/grimoire-custom/CustomGrimoirePlay';
+import {scheduledDeathsFixture} from './custom/issue232ScheduledDeathsSupport';
+afterEach(cleanup);
+it('scheduled deaths have a separate task, only the activating character in progress, seat selection and explicit no deaths',async()=>{
+ const {controller:c}=await scheduledDeathsFixture();
+ render(<CustomGrimoirePlay controller={c} onNewGame={()=>{}} onImport={()=>{}}/>);
+ const progress=screen.getByRole('button',{name:'진행'});fireEvent.click(progress);
+ await screen.findByRole('heading',{name:'예측불허의 죽음'});
+ expect(screen.getByLabelText('예측불허의 죽음 유발자').textContent).toBe('유발: 마귀할멈 · 6번 P6');
+ expect(screen.queryByLabelText('이번 밤 공격 대상')).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'사망 대상 선택'}));
+ const confirm=await screen.findByRole('button',{name:'사망 확정'});
+ expect(screen.queryByLabelText('예측불허의 죽음 유발자')).toBeNull();
+ expect(screen.queryByLabelText('이번 밤 공격 대상')).toBeNull();
+ expect((confirm as HTMLButtonElement).disabled).toBe(true);
+ const seat=screen.getByRole('button',{name:/^4번 P4,/});expect((seat as HTMLButtonElement).disabled).toBe(false);
+ fireEvent.click(seat);expect((confirm as HTMLButtonElement).disabled).toBe(false);
+ fireEvent.click(screen.getByRole('button',{name:'사망 없음'}));
+ await waitFor(()=>expect(c.getSnapshot().handoff?.result).toMatchObject({kind:'nightDeathsResolved',playerIds:[]}));
+ expect(c.getSnapshot().replay.players.every(p=>p.alive)).toBe(true);
+ expect(screen.getByText('예측불허의 죽음 결과')).toBeTruthy();
+ expect(screen.getByText('사망 없음')).toBeTruthy();c.dispose();
+});

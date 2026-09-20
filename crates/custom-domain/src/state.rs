@@ -16,6 +16,8 @@ use crate::{
 /// ability or an impairment's provenance.
 #[derive(Debug, Default, Clone)]
 pub(crate) struct CustomGameFacts {
+    pub(crate) boffin_assignments: Vec<crate::characters::carousel::BoffinAssignment>,
+    pub(crate) pixie_resolutions: Vec<crate::characters::carousel::PixieResolution>,
     pub(crate) canonical_event_index: Option<usize>,
     pub(crate) night_deaths: Vec<NightDeathRecord>,
     pub(crate) monk_protections: Vec<crate::contracts::TargetAssignment>,
@@ -134,6 +136,7 @@ pub(crate) enum MalfunctionOutcome {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FailedEffect {
+    NightwatchmanNotification,
     DemonDeath,
     PitHagCharacterChange,
     PoisonerPoison,
@@ -267,7 +270,8 @@ impl ActionOccurrence {
             (FirstNightActionRef::Character { .. }, None, Some(source))
                 if (source.source_ability_use.character_id == "philosopher"
                     || (source.guidance.is_some()
-                        && source.source_ability_use.character_id == "drunk"))
+                        && ["drunk", "marionette"]
+                            .contains(&source.source_ability_use.character_id.as_str())))
                     && valid_source(&source.source_ability_use)
                     && !source.selection_event_id.trim().is_empty() => {}
             _ => return Err(invalid_occurrence()),
@@ -316,6 +320,12 @@ impl ActionOccurrence {
         if let Some(source) = &value.simulation_source {
             use crate::contracts::GuidanceCause;
             let valid = match &source.guidance {
+                Some(GuidanceCause::Marionette) => {
+                    source.source_ability_use.character_id == "marionette"
+                }
+                Some(GuidanceCause::PixieAcquisition { bond_event_id }) => {
+                    !bond_event_id.trim().is_empty()
+                }
                 None => source.source_ability_use.character_id == "philosopher",
                 Some(GuidanceCause::InitialDrunk | GuidanceCause::AcquiredDrunk) => {
                     source.source_ability_use.character_id == "drunk"
@@ -611,6 +621,7 @@ fn system_action_id(
         SystemFirstNightActionId::MinionInfo => Ok("minionInfo"),
         SystemFirstNightActionId::DemonInfo => Ok("demonInfo"),
         SystemFirstNightActionId::Dawn => Ok("dawn"),
+        SystemFirstNightActionId::ResolveNightDeaths => Ok("resolveNightDeaths"),
         SystemFirstNightActionId::Unknown => {
             Err(crate::error::ErrorKind::InvalidFirstNightActionProvenance.into_error())
         }

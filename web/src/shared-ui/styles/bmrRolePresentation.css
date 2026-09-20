@@ -63,3 +63,6 @@
 .bmrProductionShell .snvUndoHistoryDialog {color:var(--role-ink);border-color:var(--role-line);background:var(--role-input);}
 .bmrProductionShell .snvUndoHistoryDialog :is(p,.snvUndoLabel) {color:var(--role-muted);}
 .bmrProductionShell .snvUndoEventStack li p {color:var(--role-ink);}
+
+.customPublicReveal.customBooleanReveal {container-type:inline-size;}
+.customBooleanReveal .snvInformationRevealValue {font-size:clamp(1rem,14cqw,6.2rem);white-space:nowrap;line-height:1.15;}

@@ -35,7 +35,7 @@ export function taskPresentationModel(controller:FirstNightController) {
    zeroAllowed:!!step.requiredInput.zeroAllowed,ready:!!selectedSetupChoice(step,draft),
   }:{kind:'unavailable',message:'정보 준비 후보가 없습니다. Core 연결을 확인해 주세요.'};
  }
- if(action?.editor==='information'&&!step?.informationPrompt&&!result)editor={kind:'unavailable',message:'전달 정보가 연결되지 않았습니다.'};
+ if(action?.editor==='information'&&adapter?.revealView!=='none'&&!step?.informationPrompt&&!result)editor={kind:'unavailable',message:'전달 정보가 연결되지 않았습니다.'};
  if(step&&action) {
   const kind=step.requiredInput.kind;
   const expected=adapter?.acceptedInputs??[];
@@ -53,7 +53,7 @@ export function taskPresentationModel(controller:FirstNightController) {
  const choice=pairInformation?(draft.choiceIndex!==''?choices[Number(draft.choiceIndex)]:undefined):registration.kind?registration.choice:draft.choiceIndex!==''?choices[Number(draft.choiceIndex)]:choices.length===1||choices[0]?.result.kind==='characterPair'?choices[0]:undefined;
  const registrationChoices=editor.kind==='setup'?candidates.map(c=>c.registrationJudgments):choices.map(c=>c.registrationJudgments);
  return {identity:actionInputIdentity(state.file,step),actor,ability,stage,editor,result,reprepareId:reprepare?.id,warnings:editor.kind==='unavailable'?[editor.message]:[],
-  actions:{confirmLabel:stage==='delivery'?'정보 공개':stage==='transition'?'낮 시작':'확인',skip:!!step&&(step.canSkip||step.requiredInput.optional)},
+  actions:{confirmLabel:stage==='delivery'?'정보 공개':stage==='transition'?'낮 시작':'확인',skip:!!step&&!adapter?.emptySelection&&(step.canSkip||step.requiredInput.optional)},
   selection:{needsPlayers,minPlayers,maxPlayers},choices,choice,fixedCharacterId:check?.fixedCharacterId,
   treatments:treatmentGroups(registrationChoices,draft.judgments,state.replay.players),
  };

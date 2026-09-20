@@ -1,3 +1,4 @@
+import { parseScenarioJinxes, type ScenarioJinx } from './scenarioJinxes.js';
 import { isRevealPayload } from './revealPayload.js';
 import type { RevealPayload } from './types.js';
 import type {
@@ -24,6 +25,7 @@ import {
   parseSetupDistribution,
 } from "./validation.js";
 import init, {
+  scenario_jinxes as wasmScenarioJinxes,
   confirmed_event_reveal as wasmConfirmedEventReveal,
   custom_script_catalog as wasmCustomScriptCatalog,
   custom_first_night_plan as wasmCustomFirstNightPlan,
@@ -164,3 +166,8 @@ export const wasmCoreAdapter: CoreAdapter = {
   setupDistribution,
   setupDistributionSync,
 };
+
+export async function scenarioJinxes(characterIds: string[]): Promise<CoreResult<ScenarioJinx[]>> {
+  await ensureWasm();
+  return parseCoreResult(JSON.parse(wasmScenarioJinxes(JSON.stringify({ characterIds }))), parseScenarioJinxes);
+}

@@ -7,7 +7,6 @@ import {GrimoireToolbar} from '../shared-ui/GrimoireToolbar';
 import {GrimoireSelectionPanel} from '../shared-ui/GrimoireSelectionPanel';
 import {GrimoireSeatContent} from '../shared-ui/GrimoireSeatContent';
 import {NominationArrow} from '../shared-ui/NominationArrow';
-import {GhostVoteIcon} from '../features/grimoire/SeatStateIcons';
 import '../features/grimoire/sectsAndVioletsSeatStates.css';
 import '../shared-ui/styles/liveTargetStates.css';
 
@@ -34,15 +33,16 @@ export function CustomDayBoard({controller}:{controller:FirstNightController}) {
         const role=customSeatCharacter(p);
         const self=!voting&&h.nominatorId===p.id&&h.nomineeId===p.id;
         const selected=voting?h.voterIds.includes(p.id):h.nominatorId===p.id||h.nomineeId===p.id;
-        const selectionLabel=voting?selected?'투표':undefined:self?'지명자 · 피지명자':h.nominatorId===p.id?'지명자':h.nomineeId===p.id?'피지명자':undefined;
+        const forced=voting&&!h.complete&&day.forcedVoterIds.includes(p.id);
+        const selectionLabel=voting?forced?'강제 투표':selected?'투표':undefined:self?'지명자 · 피지명자':h.nominatorId===p.id?'지명자':h.nomineeId===p.id?'피지명자':undefined;
         const selectionClass=voting?selected?' issue116VoterSeat':'':self?' issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat':h.nominatorId===p.id?' issue116NominatorSeat':h.nomineeId===p.id?' issue116NomineeSeat':'';
         const eligible=voting?day.eligibleVoterIds.includes(p.id):(h.nominatorId?day.eligibleNomineeIds:day.eligibleNominatorIds).includes(p.id);
         const ghost=voting&&!p.alive&&!p.ghostVoteUsed,spent=voting&&!p.alive&&p.ghostVoteUsed;
-        return {id:p.id,position:desktop[i],mobilePosition:mobile[i],pressed:selected,disabled:busy||h.complete||!eligible,
+        return {id:p.id,position:desktop[i],mobilePosition:mobile[i],pressed:selected,disabled:busy||h.complete||!eligible||forced,
           ariaLabel:`${p.seat}번 좌석, ${p.name}, ${role?.label}, ${p.alive?'생존':p.ghostVoteUsed?'사망 · 유령표 사용함':'사망 · 유령표 사용 가능'}${selectionLabel?`, ${selectionLabel}`:''}`,
-          className:`assigned alignment-${p.alignment} kind-${characterPresentation(p.actualCharacter)?.kind.toLowerCase()}${!p.alive?' snvDeadSeat':''}${ghost?' snvGhostVoteAvailable':''}${spent?' snvGhostVoteSpent':''}${selected?' issue116SelectedSeat snvSeatStateSelected':''}${selected&&!p.alive?' snvSeatStateStrong':''}${selectionClass}${!eligible?' issue116IneligibleSeat':''}`,
+          className:`assigned alignment-${p.alignment} kind-${characterPresentation(p.actualCharacter)?.kind.toLowerCase()}${!p.alive?' snvDeadSeat':''}${ghost?' snvGhostVoteAvailable':''}${spent?' snvGhostVoteSpent':''}${selected?' issue116SelectedSeat snvSeatStateSelected':''}${selected&&!p.alive?' snvSeatStateStrong':''}${selectionClass}${forced?' customForcedVoteSeat':''}${!eligible?' issue116IneligibleSeat':''}`,
           onSelect:()=>controller.selectDayPlayer(p.id),
-          content:<GrimoireSeatContent seat={p.seat} name={p.name} alive={p.alive} icon={ghost?<GhostVoteIcon/>:<img src={role?.image} alt=""/>} label={selectionLabel??role?.label??''}/>};
+          content:<GrimoireSeatContent seat={p.seat} name={p.name} alive={p.alive} ghostVoteUsed={p.ghostVoteUsed} icon={<img src={role?.image} alt=""/>} label={selectionLabel??role?.label??''}/>};
       })}
       overlay={!voting&&nominator&&nominee?<NominationArrow nominatorIndex={players.indexOf(nominator)} nomineeIndex={players.indexOf(nominee)} desktopPositions={desktop} mobilePositions={mobile} label={`${nominator.name} → ${nominee.name} 지명`} markerPrefix="customDayNomination"/>:undefined}/>} 
     inspector={<GrimoireSelectionPanel title={h.complete?'투표 결과':voting?'투표':'지명'} completed={h.complete}

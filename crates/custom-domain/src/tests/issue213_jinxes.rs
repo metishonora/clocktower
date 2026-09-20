@@ -117,8 +117,11 @@ fn official_coverage_rejects_missing_duplicate_metadata_only_and_unknown_binding
     assert_eq!(
         production_registry_related(&supported),
         vec![
+            "balloonist--marionette",
+            "boffin--drunk",
             "drunk--mathematician",
             "fanggu--scarletwoman",
+            "marionette--mathematician",
             "recluse--sage"
         ]
     );

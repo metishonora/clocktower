@@ -105,7 +105,8 @@ pub(crate) fn project(facts: &CustomGameFacts) -> Vec<AutomaticReminder> {
     {
         let handlers = crate::characters::trouble_brewing::reminder_handlers()
             .into_iter()
-            .chain(crate::characters::sects_and_violets::reminder_handlers());
+            .chain(crate::characters::sects_and_violets::reminder_handlers())
+            .chain(crate::characters::carousel::reminder_handlers());
         let guidance = crate::simulation::sources(facts);
         let mut sources: Vec<(String, ActionSource, bool)> = facts
             .ability_provenance

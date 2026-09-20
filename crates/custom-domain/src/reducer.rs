@@ -48,6 +48,9 @@ pub(crate) fn reduce_custom_facts(
     let mut next = previous.clone();
     apply_changes(&mut next, event)?;
     apply_snv_facts(&mut next, event)?;
+    crate::characters::carousel::apply_marionette(&mut next, event)?;
+    crate::characters::carousel::apply_boffin_assignment(&mut next, event)?;
+    crate::characters::carousel::resolve_pixie_deaths(previous, &mut next, event.id());
     if event.phase() == crate::model::Phase::Night {
         for death in event
             .fact_changes()
@@ -65,6 +68,7 @@ pub(crate) fn reduce_custom_facts(
         }
     }
     crate::effects::resolve_effects(context, &mut next)?;
+    crate::characters::carousel::notify_new_demons(context, previous, &mut next, event.id());
     Ok(next)
 }
 
@@ -312,7 +316,11 @@ fn apply_changes(
                 event_id: event.id().into(),
                 night: next.night_number(),
                 player,
-                source: event.occurrence()?,
+                source: event
+                    .fact_changes()
+                    .death_source()
+                    .cloned()
+                    .unwrap_or(event.occurrence()?),
                 guidance: crate::simulation::sources(next)
                     .into_iter()
                     .filter(|g| g.source.source_ability_use.owner_player_id == change.player_id)
@@ -343,25 +351,7 @@ fn apply_changes(
         }
     }
     for change in event.fact_changes().ability_grants() {
-        let ability_instance_id = grant_instance_id(event.id(), change);
-        next.ability_grants.push(crate::model::AbilityGrant {
-            owner_player_id: change.owner_player_id.clone(),
-            character_id: change.character_id.clone(),
-            source_event_id: event.id().to_string(),
-            source_ability_instance_id: change.source.ability_instance_id.clone(),
-            ability_instance_id: ability_instance_id.clone(),
-        });
-        next.ability_provenance.push(AbilityProvenance {
-            ability_use: AbilityUseRef {
-                owner_player_id: change.owner_player_id.clone(),
-                character_id: change.character_id.clone(),
-                ability_instance_id,
-            },
-            origin: AbilityOrigin::Acquired {
-                acquisition_event_id: event.id().to_string(),
-                source: change.source.clone(),
-            },
-        });
+        apply_ability_grant(next, event.id(), change);
     }
     for ability_use in event.fact_changes().ability_removals() {
         next.ability_grants.retain(|grant| {
@@ -421,6 +411,33 @@ fn apply_identity_change(
     Ok(())
 }
 
+/// Called only with validated action facts or character-owned automatic death
+/// consequences. Does not accept a player/UI-authored grant.
+pub(crate) fn apply_ability_grant(
+    next: &mut CustomGameFacts,
+    event_id: &str,
+    change: &AbilityGrantChange,
+) {
+    let ability_instance_id = grant_instance_id(event_id, change);
+    next.ability_grants.push(crate::model::AbilityGrant {
+        owner_player_id: change.owner_player_id.clone(),
+        character_id: change.character_id.clone(),
+        source_event_id: event_id.into(),
+        source_ability_instance_id: change.source.ability_instance_id.clone(),
+        ability_instance_id: ability_instance_id.clone(),
+    });
+    next.ability_provenance.push(AbilityProvenance {
+        ability_use: AbilityUseRef {
+            owner_player_id: change.owner_player_id.clone(),
+            character_id: change.character_id.clone(),
+            ability_instance_id,
+        },
+        origin: AbilityOrigin::Acquired {
+            acquisition_event_id: event_id.into(),
+            source: change.source.clone(),
+        },
+    });
+}
 fn grant_instance_id(event_id: &str, change: &AbilityGrantChange) -> AbilityInstanceId {
     // `AbilityInstanceId::new` supplies the canonical opaque ID wrapper.  Encode every identity
     // component with its byte length before concatenating it: raw `:` (or any other delimiter)
@@ -516,6 +533,7 @@ pub(crate) fn current_ability_instance(
         grant.owner_player_id == ability_use.owner_player_id
             && grant.ability_instance_id == ability_use.ability_instance_id
             && grant.character_id == ability_use.character_id
+            && crate::characters::carousel::grant_source_available(facts, ability_use)
     })
 }
 
@@ -714,7 +732,12 @@ fn apply_snv_facts(
         next.malfunction_audit.push(evidence.clone());
     }
     for (sequence, transition) in event.fact_changes().identity_changes().iter().enumerate() {
-        if crate::characters::notifies_identity_change(&event.payload().result) {
+        if crate::characters::notifies_identity_change(&event.payload().result)
+            && !crate::characters::carousel::needs_apparent_identity(
+                &transition.after.actual_character,
+                &transition.after.shown_character,
+            )
+        {
             next.pending_identity_reveals
                 .push(crate::contracts::PendingIdentityReveal {
                     delivery_event_id: None,
@@ -734,6 +757,68 @@ fn apply_snv_facts(
         }
     }
     let common = event.fact_changes();
+    for (index, notification) in common.player_notifications().iter().enumerate() {
+        let reveal_player = |id: &str| -> Result<crate::contracts::RevealPlayer, CoreError> {
+            let p = next.player(id).ok_or_else(invalid_fact)?;
+            Ok(crate::contracts::RevealPlayer {
+                player_id: p.id.clone(),
+                seat: p.seat,
+                name: p.name.clone(),
+            })
+        };
+        let payload = match notification {
+            crate::event::PlayerNotification::ApparentIdentity {
+                recipient_id,
+                character_id,
+                alignment,
+            } => crate::contracts::RevealPayload::CharacterChange {
+                kind: "characterChange",
+                player_id: recipient_id.clone(),
+                character_id: character_id.clone(),
+                alignment: if *alignment == crate::model::Alignment::Good {
+                    "good"
+                } else {
+                    "evil"
+                }
+                .into(),
+            },
+            crate::event::PlayerNotification::Marionette {
+                recipient_id,
+                marionette_id,
+            } => crate::contracts::RevealPayload::MarionetteInformation {
+                kind: "marionetteInformation",
+                recipient_player: reveal_player(recipient_id)?,
+                marionette_player: reveal_player(marionette_id)?,
+            },
+            crate::event::PlayerNotification::GrantedAbility {
+                recipient_id,
+                recipient_is_source,
+                character_id,
+                source_character_id,
+            } => crate::contracts::RevealPayload::GrantedAbilityInformation {
+                kind: "grantedAbilityInformation",
+                recipient_is_source: *recipient_is_source,
+                recipient_player: reveal_player(recipient_id)?,
+                character_id: character_id.clone(),
+                source_character_id: source_character_id.clone(),
+            },
+            crate::event::PlayerNotification::Nightwatchman {
+                recipient_id,
+                revealed_player_id,
+            } => crate::contracts::RevealPayload::NightwatchmanInformation {
+                kind: "nightwatchmanInformation",
+                recipient_player: reveal_player(recipient_id)?,
+                nightwatchman_player: reveal_player(revealed_player_id)?,
+            },
+        };
+        next.pending_identity_reveals
+            .push(crate::contracts::PendingIdentityReveal {
+                delivery_event_id: None,
+                source_event_id: event.id().into(),
+                sequence: (common.identity_changes().len() + index) as u8,
+                payload,
+            });
+    }
     for choice in [common.poisoner_choice(), common.master_choice()]
         .into_iter()
         .flatten()

@@ -12,7 +12,8 @@ export class DefinitionInputError extends Error {
 
 // Shared by stored definitions and authoring; do not duplicate these checks in file codecs.
 export function parseCustomScriptDefinition(value: unknown): CustomScriptDefinition {
-  if (!isRecord(value) || !hasExactKeys(value, ['id', 'name', 'characterIds', 'firstNightOrder', 'otherNightOrder'])
+  if (!isRecord(value) || !hasExactKeys(value, ['id', 'name', 'characterIds', 'firstNightOrder', 'otherNightOrder', ...(Object.hasOwn(value,'nightOrderVersion')?['nightOrderVersion']:[])])
+    || (value.nightOrderVersion !== undefined && value.nightOrderVersion !== 2)
     || typeof value.id !== 'string' || value.id.trim().length === 0) {
     throw new DefinitionInputError('characters', '커스텀 시나리오 정의가 올바르지 않습니다.');
   }
@@ -34,7 +35,7 @@ export function parseCustomScriptDefinition(value: unknown): CustomScriptDefinit
     throw new DefinitionInputError('characters', '커스텀 시나리오에서 지원하지 않는 캐릭터입니다.', { cause });
   }
   try {
-    return { ...definition, firstNightOrder: structuredClone(parseFirstNightOrderPlan(value.firstNightOrder)),
+    return { ...definition, ...(value.nightOrderVersion===2?{nightOrderVersion:2 as const}:{}), firstNightOrder: structuredClone(parseFirstNightOrderPlan(value.firstNightOrder)),
       otherNightOrder: structuredClone(parseFirstNightOrderPlan(value.otherNightOrder)) };
   } catch (cause) {
     throw new DefinitionInputError('order', '밤 행동 순서가 올바르지 않습니다.', { cause });

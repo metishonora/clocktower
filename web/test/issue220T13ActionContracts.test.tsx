@@ -87,14 +87,14 @@ it('T13 P3: unknown action cannot become a generic working editor',async()=>{
 });
 
 it('T13 P3: every approved action has exactly one explicit adapter',()=>{
- expect(Object.keys(actionAdapters).sort()).toEqual([...actionCases.map(c=>`${c[1]}.${c[2]}`), 'monk.protectPlayer','imp.attackPlayer','ravenkeeper.learnCharacter','undertaker.learnExecutedCharacter','pitHag.changeCharacter','pitHag.chooseDeaths','fangGu.attackPlayer','noDashii.attackPlayer','vortox.attackPlayer','vigormortis.attackPlayer','vigormortis.choosePoison','barber.swapCharacters','sweetheart.makeDrunk','sage.learnDemon','flowergirl.learnDemonVoted','townCrier.learnMinionNominated','oracle.learnDeadEvilCount','juggler.learnJuggles'].sort());
+ expect(Object.keys(actionAdapters).sort()).toEqual([...actionCases.map(c=>`${c[1]}.${c[2]}`), 'nightwatchman.choosePlayer','pixie.learnTownsfolk','pixie.assessMadness','balloonist.learnPlayer','boffin.grantAbility','marionette.assignShownCharacter','system.resolveNightDeaths','monk.protectPlayer','imp.attackPlayer','ravenkeeper.learnCharacter','undertaker.learnExecutedCharacter','pitHag.changeCharacter','pitHag.chooseDeaths','fangGu.attackPlayer','noDashii.attackPlayer','vortox.attackPlayer','vigormortis.attackPlayer','vigormortis.choosePoison','barber.swapCharacters','sweetheart.makeDrunk','sage.learnDemon','flowergirl.learnDemonVoted','townCrier.learnMinionNominated','oracle.learnDeadEvilCount','juggler.learnJuggles'].sort());
 });
 
 it('T13 P3 A05: an independent interruption is displayed from Core and Undo resumes the original row',async()=>{
  const {newScenario,confirmAction}=await import('./custom/issue220ScenarioOrderSupport');
  const {t11Definition}=await import('./custom/issue220T11Support');
  const definition=structuredClone((await t11Definition()).definition);
- const information=definition.firstNightOrder.find(x=>x.actionId==='learnTownsfolk')!;
+ const information=definition.firstNightOrder.find(x=>x.kind==='character'&&x.characterId==='washerwoman'&&x.actionId==='learnTownsfolk')!;
  definition.firstNightOrder=[{kind:'system',actionId:'dusk'},{kind:'system',actionId:'minionInfo'},{kind:'system',actionId:'demonInfo'},information,...definition.firstNightOrder.filter(x=>x.kind==='character'&&x!==information),{kind:'system',actionId:'dawn'}];
  const {session}=await newScenario(definition,['washerwoman','mayor','monk','virgin','slayer','mutant','poisoner','imp']);
  await confirmAction(session,'minionInfo',null);await confirmAction(session,'demonInfo',{characterIds:['librarian','chef','empath']});

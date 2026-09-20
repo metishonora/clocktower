@@ -645,6 +645,7 @@ impl SnvHandler {
             })
             .transpose()?;
         Ok(PhaseStep {
+            ability_impairments: None,
             execution: None,
             information_flow: None,
             madness: if self.character() == "mutant" {
@@ -654,6 +655,7 @@ impl SnvHandler {
                     .as_ref()
                     .is_some_and(|source| effective(facts, source));
                 Some(crate::model::MadnessState {
+                    character_id: None,
                     check,
                     source_effective,
                     can_check: check != Some(crate::model::MadnessCheckResult::Violation),
@@ -844,7 +846,9 @@ impl SnvHandler {
                 }
                 if occurrence.simulation_source.is_some() {
                     let mut causes = crate::jinxes::production()?.simulation_causes(occurrence);
-                    if causes.is_empty() { causes = impairment_causes(facts, &actor.id); }
+                    if causes.is_empty() {
+                        causes = impairment_causes(facts, &actor.id);
+                    }
                     if !causes.is_empty() {
                         audit.push(MalfunctionEvidence {
                             daytime_step_id: None,
@@ -870,7 +874,7 @@ impl SnvHandler {
                     .ability_use
                     .clone()
                     .ok_or_else(provenance_error)?;
-                let outcome = if impaired(facts, &actor.id) {
+                let outcome = if crate::effects::occurrence_impaired(facts, occurrence) {
                     PhilosopherChoiceOutcome::Failed
                 } else if choices[0] == "philosopher" {
                     PhilosopherChoiceOutcome::SelfDrunk
@@ -928,7 +932,9 @@ impl SnvHandler {
                     .ok_or_else(invalid)?;
                 if occurrence.simulation_source.is_some() {
                     let mut causes = crate::jinxes::production()?.simulation_causes(occurrence);
-                    if causes.is_empty() { causes = impairment_causes(facts, &actor.id); }
+                    if causes.is_empty() {
+                        causes = impairment_causes(facts, &actor.id);
+                    }
                     if definition.character_kind(&target.actual_character)
                         == Some(CharacterKind::Demon)
                         && !causes.is_empty()
@@ -961,7 +967,7 @@ impl SnvHandler {
                     == Some(CharacterKind::Demon);
                 let outcome = if !demon {
                     SnakeCharmerOutcome::NotDemon
-                } else if impaired(facts, &actor.id) {
+                } else if crate::effects::occurrence_impaired(facts, occurrence) {
                     SnakeCharmerOutcome::Impaired
                 } else {
                     SnakeCharmerOutcome::Swapped
@@ -1178,6 +1184,22 @@ impl ActionHandler for SnvHandler {
         c: &ActionContext<'_>,
         _: &crate::state::FirstNightProgress,
     ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        if self.character() == "clockmaker" && c.night_number() > 1 {
+            let mut occurrences = c
+                .rule_service
+                .try_owned_instances(&self.action_ref)?
+                .into_iter()
+                .map(|i| ActionOccurrence::character(self.action_ref.clone(), i.ability_use))
+                .collect::<Result<Vec<_>, _>>()?;
+            occurrences.extend(c.rule_service.simulation_occurrences(&self.action_ref)?);
+            let mut result = vec![];
+            for o in occurrences {
+                if self.eligible(c, &o)? {
+                    result.push(o);
+                }
+            }
+            return Ok(result);
+        }
         self.twin_candidates(c)
     }
 
@@ -1339,9 +1361,6 @@ fn good_kind(kind: Option<CharacterKind>) -> bool {
     )
 }
 fn registration_source(facts: &CustomGameFacts, player_id: &str) -> Option<AbilityUseRef> {
-    if impaired(facts, player_id) {
-        return None;
-    }
     // Both native misregistration abilities explicitly continue while dead.
     facts
         .ability_provenance
@@ -1351,6 +1370,8 @@ fn registration_source(facts: &CustomGameFacts, player_id: &str) -> Option<Abili
             source.owner_player_id == player_id
                 && matches!(source.character_id.as_str(), "spy" | "recluse")
                 && current_ability_instance(facts, source)
+                && crate::characters::carousel::grant_enabled(facts, source)
+                && !crate::effects::ability_impaired(facts, source)
         })
 }
 impl SnvHandler {
@@ -1589,11 +1610,9 @@ impl SnvHandler {
         let judged = self.truth(definition, facts, occurrence, targets, judgments)?;
         let mut reasons = vec![];
         let mut causes = vec![];
-        for impairment in facts
-            .active_impairments
-            .iter()
-            .filter(|e| e.player_id == actor)
-        {
+        for impairment in facts.active_impairments.iter().filter(|e| {
+            e.player_id == actor && crate::effects::occurrence_impaired(facts, occurrence)
+        }) {
             let reason = match impairment.kind {
                 ImpairmentKind::Drunk => DeliveryReason::Drunk,
                 ImpairmentKind::Poisoned => {
@@ -1613,20 +1632,21 @@ impl SnvHandler {
                 reasons.push(reason);
             }
         }
-        causes.extend(impairment_causes(facts, actor));
+        if crate::effects::occurrence_impaired(facts, occurrence) {
+            causes.extend(impairment_causes(facts, actor));
+        }
         if occurrence.simulation_source.is_some() {
             if !reasons.contains(&DeliveryReason::Drunk) {
                 reasons.push(DeliveryReason::Drunk);
             }
             for source in crate::jinxes::production()?.simulation_causes(occurrence) {
-                if !causes.contains(&source) { causes.push(source); }
+                if !causes.contains(&source) {
+                    causes.push(source);
+                }
             }
         }
-        let vortox_applies = !facts.vortox_sources.is_empty()
-            && !occurrence
-                .simulation_source
-                .as_ref()
-                .is_some_and(|s| s.source_ability_use.character_id == "drunk");
+        let vortox_applies =
+            !facts.vortox_sources.is_empty() && crate::simulation::townsfolk_observer(occurrence);
         for source in facts.vortox_sources.iter().filter(|_| vortox_applies) {
             reasons.push(DeliveryReason::Vortox {
                 demon_player_id: source.owner_player_id.clone(),
@@ -1655,7 +1675,7 @@ impl SnvHandler {
             }
         }
         let mut allowed =
-            if impaired(facts, actor) || occurrence.simulation_source.is_some() || vortox_applies {
+            if crate::effects::occurrence_impaired(facts, occurrence) || vortox_applies {
                 match self.character() {
                     "clockmaker" => (0..=(facts.players.len() / 2) as u64)
                         .map(|value| InformationResult::Number { value })
@@ -2080,6 +2100,9 @@ fn mathematician_audit(
             }
             MalfunctionOutcome::EffectFailure { effect } => AbnormalAbilityOutcome::EffectFailure {
                 effect: match effect {
+                    FailedEffect::NightwatchmanNotification => {
+                        AbnormalAbilityEffect::NightwatchmanNotification
+                    }
                     FailedEffect::DemonDeath => AbnormalAbilityEffect::DemonDeath,
                     FailedEffect::PitHagCharacterChange => {
                         AbnormalAbilityEffect::PitHagCharacterChange
@@ -2284,6 +2307,7 @@ pub(crate) fn day_madness(facts: &CustomGameFacts) -> Vec<crate::day::contracts:
                 })
             });
         items.push(DayMadness {
+            observer_character_id: None,
             id,
             source: source.clone(),
             target_player_id: source.owner_player_id.clone(),
@@ -2311,6 +2335,7 @@ pub(crate) fn day_madness(facts: &CustomGameFacts) -> Vec<crate::day::contracts:
             .find(|(key, _)| key == &id)
             .map(|(_, v)| *v);
         items.push(DayMadness {
+            observer_character_id: None,
             id,
             source: assignment.ability_use.clone(),
             target_player_id: assignment.target_player_id.clone(),
@@ -2370,6 +2395,7 @@ pub(crate) fn day_death_consequences(
         let source = &r.ability_use;
         if source.owner_player_id != player_id
             || !current_ability_instance(prior, source)
+            || !crate::characters::carousel::grant_enabled(prior, source)
             || !["sweetheart", "klutz", "barber"].contains(&source.character_id.as_str())
         {
             continue;
@@ -2383,7 +2409,7 @@ pub(crate) fn day_death_consequences(
                 ),
                 death_event_id: event_id.into(),
                 source: source.clone(),
-                impaired_at_death: impaired(prior, player_id),
+                impaired_at_death: crate::effects::ability_impaired(prior, source),
                 alignment_at_death: prior.player(player_id).expect("death player").alignment,
                 resolved: false,
                 target_player_id: None,
@@ -2562,7 +2588,8 @@ pub(crate) fn day_record_malfunctions(
                     if r.ability_use.character_id == "sweetheart"
                         && r.ability_use.owner_player_id == death.player_id
                         && current_ability_instance(prior, &r.ability_use)
-                        && impaired(prior, &death.player_id)
+                        && crate::characters::carousel::grant_enabled(prior, &r.ability_use)
+                        && crate::effects::ability_impaired(prior, &r.ability_use)
                     {
                         failures.push((
                             r.ability_use.clone(),
@@ -3228,9 +3255,20 @@ impl SnvNightHandler {
             .and_then(|a| recorded_ability(facts, a))
             .map(|r| r.origin.clone());
         if self.id() == "attackPlayer" {
-            super::trouble_brewing::enrich_attack_input(facts, if o.simulation_source.is_some() { None } else { o.ability_use.as_ref() }, &mut step.required_input, &[]);
+            super::trouble_brewing::enrich_attack_input(
+                facts,
+                if o.simulation_source.is_some() {
+                    None
+                } else {
+                    o.ability_use.as_ref()
+                },
+                &mut step.required_input,
+                &[],
+            );
         }
-        if self.character() == "barber" { step.required_input.allowed_selection_counts = Some(vec![0, 2]); }
+        if self.character() == "barber" {
+            step.required_input.allowed_selection_counts = Some(vec![0, 2]);
+        }
         if self.character() == "sage" {
             let (choices, reasons) = self.sage_options(facts, definition, o)?;
             let computed = choices
@@ -3242,7 +3280,12 @@ impl SnvNightHandler {
                 computed_result: computed.clone(),
                 delivery_mode: InformationDeliveryMode::Selectable,
                 active_reasons: reasons,
-                registration_candidate_player_ids: choices.iter().flat_map(|c| c.registration_judgments.iter().map(|j| j.player_id.clone())).collect::<std::collections::BTreeSet<_>>().into_iter().collect(),
+                registration_candidate_player_ids: choices
+                    .iter()
+                    .flat_map(|c| c.registration_judgments.iter().map(|j| j.player_id.clone()))
+                    .collect::<std::collections::BTreeSet<_>>()
+                    .into_iter()
+                    .collect(),
                 number_choices: vec![],
                 number_constraint: None,
                 boolean_choices: vec![],
@@ -3269,11 +3312,7 @@ impl SnvNightHandler {
         o: &ActionOccurrence,
     ) -> Result<(Vec<TargetInformationChoice>, Vec<DeliveryReason>), CoreError> {
         let active = self.death_effective(facts, o);
-        let vortox = !facts.vortox_sources.is_empty()
-            && !o
-                .simulation_source
-                .as_ref()
-                .is_some_and(|s| s.source_ability_use.character_id == "drunk");
+        let vortox = !facts.vortox_sources.is_empty() && crate::simulation::townsfolk_observer(o);
         let mut reasons = vec![DeliveryReason::AbilityChoice];
         if !active {
             if let Some(ActionCause::Death { death_event_id }) = &o.action_cause {
@@ -3300,8 +3339,11 @@ impl SnvNightHandler {
         }
         // The actual killer comes from the triggering death, independent of later identities.
         let killer = match &o.action_cause {
-            Some(ActionCause::Death { death_event_id }) => facts.night_deaths.iter()
-                .find(|d| d.event_id == *death_event_id).and_then(|d| d.source.actor_player_id()),
+            Some(ActionCause::Death { death_event_id }) => facts
+                .night_deaths
+                .iter()
+                .find(|d| d.event_id == *death_event_id)
+                .and_then(|d| d.source.actor_player_id()),
             _ => None,
         };
         let registry = crate::jinxes::production()?;
@@ -3309,16 +3351,30 @@ impl SnvNightHandler {
         for (i, a) in facts.players.iter().enumerate() {
             for b in facts.players.iter().skip(i + 1) {
                 let truthful = [a, b].iter().any(|p| Some(p.id.as_str()) == killer);
-                let result = InformationResult::PlayerPair { player_ids: vec![a.id.clone(), b.id.clone()] };
+                let result = InformationResult::PlayerPair {
+                    player_ids: vec![a.id.clone(), b.id.clone()],
+                };
                 if (!active || truthful) && !vortox || vortox && !truthful {
-                    choices.push(TargetInformationChoice { result: result.clone(), is_computed: truthful, registration_judgments: vec![] });
+                    choices.push(TargetInformationChoice {
+                        result: result.clone(),
+                        is_computed: truthful,
+                        registration_judgments: vec![],
+                    });
                 }
                 if active && !vortox {
                     for target in [a, b] {
-                        for judgment in registry.registrations(&crate::jinxes::RegistrationContext {
-                            facts, observer: o, target_id: &target.id,
-                        }) {
-                            choices.push(TargetInformationChoice { result: result.clone(), is_computed: truthful, registration_judgments: vec![judgment] });
+                        for judgment in
+                            registry.registrations(&crate::jinxes::RegistrationContext {
+                                facts,
+                                observer: o,
+                                target_id: &target.id,
+                            })
+                        {
+                            choices.push(TargetInformationChoice {
+                                result: result.clone(),
+                                is_computed: truthful,
+                                registration_judgments: vec![judgment],
+                            });
                         }
                     }
                 }
@@ -3357,10 +3413,15 @@ impl SnvNightHandler {
             let (choices, mut reasons) = self.sage_options(facts, definition, o)?;
             let selected = choices
                 .iter()
-                .find(|c| equivalent(&c.result, delivered) && c.registration_judgments == input.registration_judgments)
+                .find(|c| {
+                    equivalent(&c.result, delivered)
+                        && c.registration_judgments == input.registration_judgments
+                })
                 .ok_or_else(|| ErrorKind::InvalidDeliveredInformation.into_error())?;
             if !input.registration_judgments.is_empty() {
-                reasons.push(DeliveryReason::RegistrationJudgment { judgments: input.registration_judgments.clone() });
+                reasons.push(DeliveryReason::RegistrationJudgment {
+                    judgments: input.registration_judgments.clone(),
+                });
             }
             let information = crate::model::ConfirmedInformation {
                 actor: Some(crate::model::InformationActor {
@@ -3464,10 +3525,8 @@ impl SnvNightHandler {
                     .players
                     .iter()
                     .any(|p| p.actual_character == character);
-            let created_demon = changed
-                && definition.character_kind(&character) == Some(CharacterKind::Demon)
-                && definition.character_kind(&target.actual_character)
-                    != Some(CharacterKind::Demon);
+            let created_demon =
+                changed && definition.character_kind(&character) == Some(CharacterKind::Demon);
             let changes = if changed {
                 vec![night_identity(target, &character, target.alignment)]
             } else {
@@ -3723,6 +3782,13 @@ impl crate::first_night::FollowUpRule for SnvNightHandler {
         ) {
             return Ok(vec![]);
         }
+        if self.id() == "chooseDeaths"
+            && c.plan
+                .0
+                .contains(&FirstNightActionRef::system("resolveNightDeaths"))
+        {
+            return Ok(vec![]);
+        }
         if self.character() == "barber"
             && c.plan
                 .0
@@ -3760,6 +3826,13 @@ impl ActionHandler for SnvNightHandler {
         Some(self)
     }
     fn project(&self, _: &ActionSpec, c: &ActionContext<'_>) -> Result<Vec<PhaseStep>, CoreError> {
+        if self.id() == "chooseDeaths"
+            && c.rule_service
+                .definition()
+                .is_some_and(|d| d.scheduled_night_deaths)
+        {
+            return Ok(vec![]);
+        }
         self.occurrences(c.rule_service.facts().ok_or_else(invalid)?)?
             .iter()
             .map(|o| self.step(c, o))
@@ -3891,27 +3964,32 @@ impl ActionHandler for SnvNightHandler {
                             );
                         }
                     }
-                    if !o
-                        .simulation_source
-                        .as_ref()
-                        .is_some_and(|s| s.source_ability_use.character_id == "drunk")
-                    {
+                    if crate::simulation::townsfolk_observer(o) {
                         causes.extend(facts.vortox_sources.iter().cloned());
                     }
                     if let Some(sim) = &o.simulation_source {
-                        if sim.source_ability_use.character_id != "drunk" { causes.push(sim.source_ability_use.clone()); }
+                        if sim.source_ability_use.character_id != "drunk" {
+                            causes.push(sim.source_ability_use.clone());
+                        }
                     }
                     causes.extend(crate::jinxes::production()?.simulation_causes(o));
                     for judgment in &d.registration_judgments {
-                        if let Some(source) = registration_source(facts, &judgment.player_id) { causes.push(source); }
+                        if let Some(source) = registration_source(facts, &judgment.player_id) {
+                            causes.push(source);
+                        }
                     }
                     causes.dedup();
                     if !causes.is_empty() {
                         audit.push(MalfunctionEvidence {
                             daytime_step_id: None,
-                            cause_details: reasons.into_iter()
+                            cause_details: reasons
+                                .into_iter()
                                 .filter(|r| !matches!(r, DeliveryReason::AbilityChoice))
-                                .chain((!d.registration_judgments.is_empty()).then(|| DeliveryReason::RegistrationJudgment { judgments: d.registration_judgments.clone() }))
+                                .chain((!d.registration_judgments.is_empty()).then(|| {
+                                    DeliveryReason::RegistrationJudgment {
+                                        judgments: d.registration_judgments.clone(),
+                                    }
+                                }))
                                 .collect(),
                             event_id: c.event_id.into(),
                             occurrence: o.clone(),
@@ -3956,6 +4034,7 @@ fn is_minion(character: &str) -> bool {
     custom_registry_entries()
         .into_iter()
         .chain(super::trouble_brewing::custom_registry_entries())
+        .chain(super::carousel::custom_registry_entries())
         .any(|(id, kind)| id == character && kind == CharacterKind::Minion)
 }
 pub(crate) fn vigor_can_act(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
@@ -4059,7 +4138,10 @@ pub(crate) fn night_impairment_failure(
     } else {
         facts
     };
-    let causes = impairment_causes(facts, actor);
+    let mut causes = impairment_causes(facts, actor);
+    if let Ok(jinxes) = crate::jinxes::production() {
+        causes.extend(jinxes.simulation_causes(o));
+    }
     if causes.is_empty() {
         return vec![];
     }
@@ -4198,8 +4280,14 @@ fn historical_day_variants(
 }
 
 pub(crate) fn notifies_identity_change(result: &CustomActionResult) -> bool {
-    matches!(result, CustomActionResult::SnakeCharmer { outcome: SnakeCharmerOutcome::Swapped, .. }
-        | CustomActionResult::PitHagChange { .. } | CustomActionResult::BarberSwap { .. })
+    matches!(
+        result,
+        CustomActionResult::SnakeCharmer {
+            outcome: SnakeCharmerOutcome::Swapped,
+            ..
+        } | CustomActionResult::PitHagChange { .. }
+            | CustomActionResult::BarberSwap { .. }
+    )
 }
 
 pub(crate) fn jinx_registrations() -> Vec<crate::jinxes::RegisteredJinx> {
@@ -4214,4 +4302,40 @@ fn drunk_mathematician_jinx(o: &ActionOccurrence) -> Option<AbilityUseRef> {
         .as_ref()
         .filter(|s| s.source_ability_use.character_id == "drunk")
         .map(|s| s.source_ability_use.clone())
+}
+
+/// Trigger ownership and order preferences belong to the character, not the scheduler.
+pub(crate) fn arbitrary_death_rule() -> crate::night_deaths::SourceRule {
+    let action = |character: &str, id: &str| FirstNightActionRef::Character {
+        character_id: character.into(),
+        action_id: id.into(),
+    };
+    crate::night_deaths::SourceRule {
+        trigger: action("pitHag", "changeCharacter"),
+        default_after: vec![
+            action("pitHag", "changeCharacter"),
+            action("imp", "attackPlayer"),
+            action("fangGu", "attackPlayer"),
+            action("noDashii", "attackPlayer"),
+            action("vigormortis", "attackPlayer"),
+            action("vortox", "attackPlayer"),
+        ],
+        sources: arbitrary_death_sources,
+    }
+}
+fn arbitrary_death_sources(facts: &CustomGameFacts) -> Vec<&crate::state::ConfirmedActionFact> {
+    facts
+        .confirmed_actions
+        .iter()
+        .filter(|event| {
+            event.occurrence.night == facts.night_number()
+                && matches!(
+                    event.result,
+                    CustomActionResult::PitHagChange {
+                        created_demon: true,
+                        ..
+                    }
+                )
+        })
+        .collect()
 }

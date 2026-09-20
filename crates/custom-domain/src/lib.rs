@@ -7,10 +7,11 @@ mod first_night;
 mod game;
 mod identity;
 mod information;
-mod jinxes;
 mod input;
+mod jinxes;
 mod messages;
 mod model;
+mod night_deaths;
 mod projection;
 mod reducer;
 mod reminders;
@@ -52,4 +53,9 @@ mod day;
 /// Read-only authoring query; completed files must already carry the explicit order.
 pub fn custom_other_night_plan_json(request: &str) -> String {
     boundary::custom_other_night_plan_json(request)
+}
+
+mod scenario_reference;
+pub fn scenario_jinxes_json(request: &str) -> String {
+    scenario_reference::query_json(request)
 }

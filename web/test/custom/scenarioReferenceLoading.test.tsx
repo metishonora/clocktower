@@ -1,0 +1,25 @@
+import { act, cleanup, render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { afterEach, expect, test, vi } from 'vitest';
+import type { CoreResult } from '../../src/custom/core/types';
+import type { ScenarioJinx } from '../../src/custom/core/scenarioJinxes';
+const query = vi.hoisted(() => vi.fn());
+vi.mock('../../src/custom/core/wasmClient', () => ({ scenarioJinxes: query }));
+import { ScenarioReviewReference } from '../../src/custom/reference/ReferenceDocumentButton';
+afterEach(() => { cleanup(); query.mockReset(); });
+const pair: ScenarioJinx = { id:'drunk--mathematician',characterIds:['drunk','mathematician'],reasonKo:'규칙',sourceCharacterId:'mathematician',sourceRevision:'r' };
+test('old results cannot enable a new pool; failure is retryable and empty success enables the reference', async () => {
+  let resolveOld!: (value: CoreResult<ScenarioJinx[]>) => void;
+  query.mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; })).mockRejectedValueOnce(Error('offline'));
+  const { rerender } = render(<ScenarioReviewReference definition={{name:'A',characterIds:['drunk','mathematician']}} disabled={false}/>);
+  expect((screen.getByRole('button',{name:'직업 일람'}) as HTMLButtonElement).disabled).toBe(true);
+  rerender(<ScenarioReviewReference definition={{name:'B',characterIds:['imp']}} disabled={false}/>);
+  await screen.findByRole('alert');
+  await act(async () => resolveOld({ok:true,value:[pair]}));
+  expect((screen.getByRole('button',{name:'직업 일람'}) as HTMLButtonElement).disabled).toBe(true);
+  query.mockResolvedValueOnce({ok:true,value:[]});
+  fireEvent.click(screen.getByRole('button',{name:'다시 시도'}));
+  await waitFor(() => expect((screen.getByRole('button',{name:'직업 일람'}) as HTMLButtonElement).disabled).toBe(false));
+  expect(screen.queryByRole('alert')).toBeNull();
+  rerender(<ScenarioReviewReference definition={{name:'',characterIds:['imp']}} disabled/>);
+  expect((screen.getByRole('button',{name:'직업 일람'}) as HTMLButtonElement).disabled).toBe(true);
+});

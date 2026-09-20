@@ -41,7 +41,7 @@ export class ScenarioEditorController {
   private importRequest = 0;
   private pendingOrderReset: boolean | NightOrderKind | undefined;
   constructor(private readonly dependencies: ScenarioEditorDependencies) {
-    this.state = freezeSnapshot({ step: 'scenario', source: 'new', draft: { id: dependencies.createId(), name: '', characterIds: [] },
+    this.state = freezeSnapshot({ step: 'scenario', source: 'new', draft: { id: dependencies.createId(), name: '', characterIds: [], nightOrderVersion: 2 },
       change: 0, validation: 'idle', orderPending: false, importStatus: 'idle', downloadStatus: 'idle' });
   }
   getSnapshot = (): ScenarioEditorState => this.state;
@@ -59,7 +59,7 @@ export class ScenarioEditorController {
   startNew = () => {
     this.cancelPending();
     this.pendingOrderReset = undefined;
-    this.patch({ step: 'characters', source: 'new', draft: { id: this.dependencies.createId(), name: '', characterIds: [] },
+    this.patch({ step: 'characters', source: 'new', draft: { id: this.dependencies.createId(), name: '', characterIds: [], nightOrderVersion: 2 },
       change: this.state.change + 1, validated: undefined, validation: 'idle', error: undefined,
       orderPending: false, importedGame: undefined, importStatus: 'idle', importError: undefined, importName: undefined,
       downloadStatus: 'idle', downloadError: undefined });
@@ -102,11 +102,20 @@ export class ScenarioEditorController {
       downloadStatus: 'idle', downloadError: undefined });
     const { id, characterIds } = this.state.draft;
     try {
-      const draft = { id, name: this.state.draft.name.trim() ? this.state.draft.name : '새 시나리오', characterIds: [...characterIds] };
-      const [result, other] = await Promise.all([this.dependencies.proposeOrder(draft), this.dependencies.proposeOtherOrder(draft)]);
+      const draft = { id, name: this.state.draft.name.trim() ? this.state.draft.name : '새 시나리오', characterIds: [...characterIds], ...(this.state.draft.nightOrderVersion===2?{nightOrderVersion:2 as const}:{}) };
+      let [result, other] = await Promise.all([this.dependencies.proposeOrder(draft), this.dependencies.proposeOtherOrder(draft)]);
       if (request !== this.orderRequest) return;
       if (!result.ok) throw new CustomDefinitionValidationError(result.error.code, result.error.messageKo);
       if (!other.ok) throw new CustomDefinitionValidationError(other.error.code, other.error.messageKo);
+      // Only an explicit other-night reset accepts Core's contract upgrade recommendation.
+      if(reset==='other'&&other.value.upgradeNightOrderVersion===2) {
+        const upgraded={...draft,nightOrderVersion:2 as const};
+        [result,other]=await Promise.all([this.dependencies.proposeOrder(upgraded),this.dependencies.proposeOtherOrder(upgraded)]);
+        if(request!==this.orderRequest)return;
+        if(!result.ok)throw new CustomDefinitionValidationError(result.error.code,result.error.messageKo);
+        if(!other.ok)throw new CustomDefinitionValidationError(other.error.code,other.error.messageKo);
+        this.patch({draft:{...this.state.draft,nightOrderVersion:2}});
+      }
       this.pendingOrderReset = undefined;
       const plan = reset === true || reset === 'first' || !this.state.draft.firstNightOrder ? result.value.plan
         : reconcileFirstNightOrder(this.state.draft.firstNightOrder, result.value.plan);

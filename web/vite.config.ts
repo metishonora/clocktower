@@ -44,7 +44,7 @@ export default defineConfig({
       },
       workbox: {
         cleanupOutdatedCaches: true,
-        globPatterns: ["**/*.{js,css,wasm,png,svg,webp}"],
+        globPatterns: ["**/*.{js,mjs,css,wasm,png,svg,webp}", "**/ClocktowerReferenceSans-*.ttf", "**/NanumGothic-*.ttf"],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: null,
         runtimeCaching: [

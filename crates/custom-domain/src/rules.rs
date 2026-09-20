@@ -111,6 +111,11 @@ impl<'a> CustomRuleService<'a> {
             {
                 return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
             }
+            if !crate::reducer::current_ability_instance(self.facts, &grant_use)
+                || !crate::characters::carousel::grant_enabled(self.facts, &grant_use)
+            {
+                continue;
+            }
             instances.push(ActiveAbilityInstance {
                 seat: owner.seat,
                 ability_use: record.ability_use.clone(),
@@ -207,6 +212,9 @@ impl FirstNightRuleService for CustomRuleService<'_> {
     fn has_minion(&self) -> bool {
         self.facts.players.iter().any(|player| {
             self.context.character_kind(&player.actual_character) == Some(CharacterKind::Minion)
+                && crate::characters::carousel::receives_minion_information(
+                    &player.actual_character,
+                )
         })
     }
 

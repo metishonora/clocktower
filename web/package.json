@@ -49,14 +49,18 @@
     "test:browser:run": "tsc -p tsconfig.browser.json --noEmit && playwright test",
     "test:smoke:run": "tsc -p tsconfig.browser.json --noEmit && playwright test production-smoke.spec.ts --workers=2",
     "test:custom": "tsc -p tsconfig.custom-test.json && vitest run --config vitest.custom.config.ts",
-    "test:custom:fixtures": "vitest run --config vitest.custom-fixtures.config.ts"
+    "test:custom:fixtures": "vitest run --config vitest.custom-fixtures.config.ts",
+    "test:reference:run": "tsc -p tsconfig.browser.json --noEmit && playwright test --config playwright.reference.config.ts --workers=1"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "typescript": "^5.7.3",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "pdf-lib": "^1.17.1",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "pdfjs-dist": "^6.3.289"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

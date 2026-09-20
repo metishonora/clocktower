@@ -23,12 +23,12 @@ for(const mode of ['live','json','autosave'] as const)it(`T11 D01/D03 ${mode}: M
  const file=structuredClone(p.getSnapshot().file);
  if(mode==='json'){app=await resume(JSON.parse(JSON.stringify(file)));apps.push(app);}
  if(mode==='autosave'){app=new CustomGrimoireApplicationController(realWasmCore(),vi.fn());apps.push(app);await app.restore(file.game.script.definition.id);}
- renderPlay(app);const seat=screen.getByRole('button',{name:/^6번.*변종/});expect(seat.querySelector('.snvFuneralIcon')).not.toBeNull();
+ renderPlay(app);const seat=screen.getByRole('button',{name:/^6번.*변종/});expect(seat.querySelector('.snvDeathSeatIcon')).not.toBeNull();
  const detail=inspect();expect.soft(within(detail).queryByText('사망',{exact:true})).toBeNull();expect.soft(within(detail).queryByLabelText('현재 상태')).toBeNull();
  expect(app.play!.getSnapshot().file.game.events).toEqual(file.game.events);
  fireEvent.click(within(detail).getByRole('button',{name:'플레이어 상세 닫기'}));
  await act(async()=>{await app.play!.undo();});
- expect(app.play!.getSnapshot().replay.players[5].alive).toBe(true);expect(seat.querySelector('.snvFuneralIcon')).toBeNull();
+ expect(app.play!.getSnapshot().replay.players[5].alive).toBe(true);expect(seat.querySelector('.snvDeathSeatIcon')).toBeNull();
  expect(app.play!.getSnapshot().file.game.events.length).toBeGreaterThanOrEqual(before.length);
  const living=inspect();expect(within(living).queryByText('생존',{exact:true})).toBeNull();expect.soft(within(living).queryByLabelText('현재 상태')).toBeNull();
 });

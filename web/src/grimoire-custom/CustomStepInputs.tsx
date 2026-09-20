@@ -1,4 +1,5 @@
-import {numericInputDraft} from '../custom/grimoire/numericInputDraft';
+import {numericInputDraft,numericInputFeedback} from '../custom/grimoire/numericInputDraft';
+import {CustomBoffinInput} from './CustomBoffinInput';
 import {ScalarInformationEditorView,ScalarInformationConstraintView,InformationResultView} from '../shared-ui/InformationResultView';
 import {CustomRegistrationControls} from './CustomRegistrationControls';
 import {registrationPresentation} from '../custom/grimoire/registrationPresentation';
@@ -28,7 +29,6 @@ export function CustomStepInputs({ step, replay, controller, disabled }: { step:
   const r = step.requiredInput;
   const numberText=controller.getSnapshot().inputDraft.numberText ?? '';
   const constraint=step.informationPrompt?.numberConstraint;
-  const numberError=!constraint||numberText===''?undefined:!/^\d+$/.test(numberText)?'0 이상의 정수를 입력하세요.':!Number.isSafeInteger(Number(numberText))||Number(numberText)<constraint.min||Number(numberText)>constraint.max?'입력할 수 있는 정수 범위를 벗어났습니다.':constraint.excludedValues.includes(Number(numberText))?'보르톡스가 작동 중이므로 진실은 전달할 수 없습니다.':undefined;
   const scalarId=step.character&&isScalarInformationCharacterId(step.character)?step.character:undefined;
   const choices = model.choices;
   const choice = choiceIndex === '' ? (choices.length===1 || choices[0]?.result.kind==='characterPair'?choices[0]:undefined) : choices[Number(choiceIndex)];
@@ -55,16 +55,32 @@ export function CustomStepInputs({ step, replay, controller, disabled }: { step:
   const hasTargets=playerIds.length>=minPlayers;
   const targeted=['dreamer','seamstress'].includes(step.character ?? '');
   const registration=registrationPresentation(step,replay,controller.getSnapshot().inputDraft);
+  if(step.character==='boffin')return <>
+    <CustomBoffinInput step={step} replay={replay} controller={controller} disabled={disabled}/>
+    <div className="snvStepActions"><button type="button" className="prominent" disabled={disabled||!valid} onClick={()=>void submit()}>확정</button></div>
+  </>;
+  if(step.character==='balloonist'&&hasTargets)return <>
+    <InformationInputPresentation label="알려줄 플레이어">{playerIds.map(id=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;}).join(' · ')}</InformationInputPresentation>
+    {choices.length>1&&<label className="customSetupChoice">등록 유형<select value={choiceIndex} disabled={disabled} onChange={e=>controller.updateInput({choiceIndex:e.target.value,judgments:choices[Number(e.target.value)]?.registrationJudgments??[]})}><option value="">선택 필요</option>{choices.map((c,i)=><option key={i} value={String(i)}>{c.registrationJudgments.length?c.registrationJudgments.map(j=>({townsfolk:'주민',outsider:'외지인',minion:'하수인',demon:'악마',good:'선',evil:'악'})[j.registeredAs]).join(' · '):'실제 유형'}</option>)}</select></label>}
+  </>;
+  if(step.character==='pixie'&&hasTargets)return <>
+    <div className="customCarouselTarget"><span>집착 대상</span><strong>{playerIds.map(id=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;}).join(' · ')}</strong></div>
+    {choices.length>1?<label className="customCarouselSelect">알려줄 직업<select value={choiceIndex} disabled={disabled} onChange={e=>controller.updateInput({choiceIndex:e.target.value,judgments:choices[Number(e.target.value)]?.registrationJudgments??[]})}><option value="">선택 필요</option>{choices.map((o,i)=><option key={i} value={String(i)}>{informationLabel(o.result,replay)}</option>)}</select></label>:<div className="customCarouselTarget"><span>알려줄 직업</span><strong>{choice?informationLabel(choice.result,replay):'선택 필요'}</strong></div>}
+  </>;
+  if(step.character==='nightwatchman'&&hasTargets) return <>
+    <InformationInputPresentation label="통지 대상">{playerIds.map(id=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;}).join(' · ')}</InformationInputPresentation>
+    {choices.length>1&&<InformationTreatmentInput label="야경꾼으로 알려줄 사람" options={resultOptions} value={choiceIndex} disabled={disabled} onChange={setChoice}/>}
+  </>;
   // A finite numeric result is an input contract, not a character-specific button layout.
   if(scalarId&&!constraint&&!registration.kind&&step.informationPrompt?.computedResult?.kind==='number'&&choices.length>1&&choices.every(c=>c.result.kind==='number')) {
     const numbers=choices.map(c=>c.result.kind==='number'?c.result.value:0),min=Math.min(...numbers),max=Math.max(...numbers);
     const numericText=controller.getSnapshot().inputDraft.numberText ?? (choice?.result.kind==='number'?String(choice.result.value):'');
-    const numericDraft=numericInputDraft(step.informationPrompt,choices,numericText);
+    const feedback=numericInputFeedback(step.informationPrompt,choices,numericText);
     const update=(text:string)=>controller.updateInput(numericInputDraft(step.informationPrompt!,choices,text));
     const truth=scalarInformationValueLabel(scalarId,step.informationPrompt.computedResult.value),unit=scalarInformationUnit(scalarId);
     // Preserve each original script's editor presentation; selection validation is shared.
-    if(characterPresentation(scalarId)?.source==='troubleBrewing')return <ScalarInformationConstraintView truth={truth} unit={unit} input={<InformationNumberInput text={numericText} onTextChange={update} value={choice?.result.kind==='number'?choice.result.value:undefined} min={min} max={max} excludedValues={[]} disabled={disabled} onChange={()=>{}}/>}/>;
-    return <><InformationInputPresentation label="진실">{truth}</InformationInputPresentation><NumberInformationEditor id={step.id} value={numericText} unit={unit} busy={disabled} error={numericText!==''&&numericDraft.choiceIndex===''?'입력할 수 있는 정수 범위를 벗어났습니다.':undefined} onChange={update}/></>;
+    if(characterPresentation(scalarId)?.source==='troubleBrewing')return <><ScalarInformationConstraintView truth={truth} unit={unit} input={<InformationNumberInput text={numericText} onTextChange={update} value={choice?.result.kind==='number'?choice.result.value:undefined} min={min} max={max} excludedValues={[]} disabled={disabled} onChange={()=>{}}/>}/>{feedback.error&&<p role="alert" className={feedback.truthWarning?'snvInformationInputTruthWarning':'snvInformationInputError'}>{feedback.error}</p>}</>;
+    return <><InformationInputPresentation label="진실">{truth}</InformationInputPresentation><NumberInformationEditor id={step.id} value={numericText} unit={unit} busy={disabled} {...feedback} onChange={update}/></>;
   }
   if(['chef','empath'].includes(step.character??'')&&step.informationPrompt?.computedResult?.kind==='number'&&scalarId) {
     return <ScalarInformationEditorView treatments={registration.candidates.length?<CustomRegistrationControls controller={controller}/>:undefined}>{model.choice?.result.kind==='number'?scalarInformationValueLabel(scalarId,model.choice.result.value):'선택 필요'}</ScalarInformationEditorView>;
@@ -104,7 +120,7 @@ export function CustomStepInputs({ step, replay, controller, disabled }: { step:
     {pair && <InformationPairInput value={pair} options={[[...new Set(pairChoices.filter(p=>p[1]===pair[1]).map(p=>p[0]))],[...new Set(pairChoices.filter(p=>p[0]===pair[0]).map(p=>p[1]))]]} locked={[pair[0]===actual,pair[1]===actual]} disabled={disabled} labelFor={id=>characterPresentation(id)?.label ?? id} onChange={characterIds=>{const index=choices.findIndex(c=>c.result.kind==='characterPair'&&c.result.characterIds[0]===characterIds[0]&&c.result.characterIds[1]===characterIds[1]);if(index>=0){setDelivery(undefined);setChoice(String(index));}}}/>}
     {binaryChoices.length>0 && <InformationBinaryInput value={choice?.result.kind==='boolean'?choice.result.value:undefined} options={[...new Map(binaryChoices.map(c=>[c.result.kind==='boolean'&&c.result.value,{value:c.result.kind==='boolean'&&c.result.value,label:step.actionRef?.actionId==='compareAlignments'?(c.result.kind==='boolean'&&c.result.value?'같은 진영':'다른 진영'):informationLabel(c.result,replay)}])).values()]} disabled={disabled} onChange={value=>{setDelivery(undefined);const index=choices.findIndex(c=>c.result.kind==='boolean'&&c.result.value===value&&judgmentsEqual(c.registrationJudgments,judgments));const selected=index>=0?index:choices.findIndex(c=>c.result.kind==='boolean'&&c.result.value===value);setChoice(String(selected));if(selected>=0)setJudgments(choices[selected].registrationJudgments);}}/>}
     {binaryChoices.length>0 && model.treatments.map(group=><InformationTreatmentInput key={group.key} label={group.label} options={group.options} value={group.value} disabled={disabled} onChange={id=>{const next=group.change(id);setJudgments(next);const matches=choices.map((c,index)=>({c,index})).filter(({c})=>judgmentsEqual(c.registrationJudgments,next));setChoice(matches.length===1?String(matches[0].index):'');}}/>)}
-    {step.informationPrompt?.numberConstraint && <NumberInformationEditor error={numberError} truthWarning={!!constraint?.excludedValues.includes(Number(numberText)) && numberText!==''} id={step.id} value={controller.getSnapshot().inputDraft.numberText ?? ''} unit={scalarId?scalarInformationUnit(scalarId):''} busy={disabled} hint={step.character==='mathematician'?undefined:step.informationPrompt.numberConstraint.excludedValues.length?`0 이상의 정수 · 진실 ${step.informationPrompt.computedResult?.kind==='number'?step.informationPrompt.computedResult.value:'-'} 제외`:'0 이상의 정수 · 진실도 전달 가능'} onChange={text=>controller.updateInput(numericInputDraft(step.informationPrompt!,choices,text))}/>}
+    {step.informationPrompt?.numberConstraint && <NumberInformationEditor {...numericInputFeedback(step.informationPrompt,choices,numberText)} id={step.id} value={controller.getSnapshot().inputDraft.numberText ?? ''} unit={scalarId?scalarInformationUnit(scalarId):''} busy={disabled} hint={step.character==='mathematician'?undefined:step.informationPrompt.numberConstraint.excludedValues.length?`0 이상의 정수 · 진실 ${step.informationPrompt.computedResult?.kind==='number'?step.informationPrompt.computedResult.value:'-'} 제외`:'0 이상의 정수 · 진실도 전달 가능'} onChange={text=>controller.updateInput(numericInputDraft(step.informationPrompt!,choices,text))}/>}
 
 
     {step.informationPrompt?.mathematicianAudit && <InformationTaskPresentation count={new Set(step.informationPrompt.mathematicianAudit.records.map(r=>r.subjectPlayerId)).size}>{[...new Map(step.informationPrompt.mathematicianAudit.records.map(r=>[r.subjectPlayerId,r])).values()].map(record=>{const e=record.evidence.at(-1),p=replay.players.find(p=>p.id===record.subjectPlayerId);return <MathematicianAuditRowView key={record.subjectPlayerId} player={p?`${p.seat}번 ${p.name}`:record.subjectPlayerId} character={characterPresentation(e?.characterId ?? record.characterId)?.label ?? record.characterId} outcome={e?(e.outcome.kind==='incorrectInformation'||e.outcome.kind==='dayInformation')?'거짓 정보 전달':e.outcome.kind==='invalidSavantPattern'?e.outcome.truthfulCount===2?'두 문장 모두 참':e.outcome.truthfulCount===0?'두 문장 모두 거짓':`정보 패턴 오류 · ${e.outcome.truthfulCount}/2 참`:effectLabel(e.outcome.effect):'근거 없음'} causes={e?[...new Map(e.causes.map(c=>[c.type,{type:c.type,label:({drunk:'취함',poisoned:'중독',vortox:'보르톡스',abilityChoice:'능력 선택',registrationJudgment:'등록 판단'})[c.type]}])).values()]:undefined} timing={e?e.phase==='setup'?'게임 시작':e.phase==='day'?'낮':e.phase==='firstNight'?'첫날 밤':'밤':undefined}/>;})}</InformationTaskPresentation>}

@@ -22,19 +22,21 @@ export function SetupPresentation({
   controls,
   catalog,
   detail,
+  afterCatalog,
   className,
 }: {
   ariaLabel: string;
   controls: ReactNode;
   catalog: ReactNode;
   detail?: ReactNode;
+  afterCatalog?: ReactNode;
   className?: string;
 }) {
   return (
     <>
       <section className={joinClasses("setupPresentation", className)} aria-label={ariaLabel}>
         {controls}
-        {catalog}
+        {afterCatalog ? <div className="setupPresentationCatalog">{catalog}{afterCatalog}</div> : catalog}
       </section>
       {detail}
     </>
@@ -44,6 +46,7 @@ export function SetupPresentation({
 export function RoleCatalog({
   ariaLabel,
   groups,
+  header,
   onSelect,
   onInspect,
   renderRole,
@@ -53,6 +56,7 @@ export function RoleCatalog({
 }: {
   ariaLabel: string;
   groups: RoleCatalogGroup[];
+  header?: ReactNode;
   onSelect: (roleId: string) => void;
   onInspect?: (roleId: string) => void;
   renderRole?: (role: RoleCatalogItem) => ReactNode;
@@ -62,6 +66,7 @@ export function RoleCatalog({
 }) {
   return (
     <section className={joinClasses("roleCatalog", className)} aria-label={ariaLabel}>
+      {header}
       <div className={joinClasses("roleCatalogGroups", groupsClassName)}>
         {groups.map((group) => (
           <article key={group.id}>

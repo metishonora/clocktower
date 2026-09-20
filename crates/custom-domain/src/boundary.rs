@@ -94,23 +94,25 @@ fn validate_custom_action_event_json(value: &Value) -> Result<(), CoreError> {
             return Err(ErrorKind::MalformedEvent.into_error());
         }
     }
-    let _typed: CustomActionConfirmedPayload =
+    let typed: CustomActionConfirmedPayload =
         serde_json::from_value(Value::Object(payload.clone()))
             .map_err(|_| ErrorKind::MalformedEvent.into_error())?;
-    let ability_use = payload
-        .get("abilityUse")
-        .or_else(|| {
-            payload
-                .get("simulationSource")
-                .and_then(|source| source.get("sourceAbilityUse"))
-        })
-        .and_then(Value::as_object)
-        .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
-    if !has_exact_json_keys(
-        ability_use,
-        &["ownerPlayerId", "characterId", "abilityInstanceId"],
-    ) {
-        return Err(ErrorKind::MalformedEvent.into_error());
+    if typed.action_ref != crate::contracts::FirstNightActionRef::system("resolveNightDeaths") {
+        let ability_use = payload
+            .get("abilityUse")
+            .or_else(|| {
+                payload
+                    .get("simulationSource")
+                    .and_then(|source| source.get("sourceAbilityUse"))
+            })
+            .and_then(Value::as_object)
+            .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
+        if !has_exact_json_keys(
+            ability_use,
+            &["ownerPlayerId", "characterId", "abilityInstanceId"],
+        ) {
+            return Err(ErrorKind::MalformedEvent.into_error());
+        }
     }
     let input = payload
         .get("input")
@@ -138,6 +140,12 @@ fn validate_custom_action_result_json(value: &Value) -> Result<(), CoreError> {
             | "witch"
             | "cerenovus"
             | "seamstressDeferred"
+            | "nightwatchmanUsed"
+            | "pixieLearned"
+            | "balloonistLearned"
+            | "boffinGranted"
+            | "marionetteShown"
+            | "pixieJudgment"
             | "informationDelivered"
             | "simulationChoice"
             | "simulation"
@@ -145,6 +153,7 @@ fn validate_custom_action_result_json(value: &Value) -> Result<(), CoreError> {
             | "nightAttack"
             | "pitHagChange"
             | "arbitraryDeaths"
+            | "nightDeathsResolved"
             | "barberSwap"
             | "sweetheartDrunk"
             | "vigormortisPoison"

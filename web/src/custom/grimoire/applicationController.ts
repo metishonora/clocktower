@@ -1,4 +1,5 @@
 import type { CoreAdapter } from '../core/coreAdapter.js';
+import type { GameEvent } from '../core/types.js';
 import { freezeSnapshot, type ValidatedScenario } from '../core/definitionValidator.js';
 import type { ImportedGame } from '../authoring/importScenarioSource.js';
 import { CustomCanonicalSession } from '../session.js';
@@ -55,10 +56,7 @@ export class CustomGrimoireApplicationController {
     if (!current || current.busy || current.public) return;
     const setup = current.file.game.events.find(event => event.type === 'setupConfirmed');
     if (!setup || setup.type !== 'setupConfirmed') return;
-    const players = structuredClone(setup.payload.players);
-    this.startSetup({ definition: current.file.game.script.definition }, {
-      playerCount: players.length, selectedIds: players.map(player => player.actualCharacter), players,
-    });
+    this.startSetup({ definition: current.file.game.script.definition }, setupDraftFromEvent(setup));
   };
   resumeImported = async (game: ImportedGame) => {
     if (this.state.busy || this.disposed) return;
@@ -70,7 +68,7 @@ export class CustomGrimoireApplicationController {
     const writer = new CustomSessionWriter<GrimoireSetupDraft, GrimoirePresentationState>(file.game.script.definition.id, new IndexedDbCustomWebSessionStorageDriver(file.game.script.definition.id));
     try {
       const result = await CustomCanonicalSession.fromFile(file, { core: this.core, storage: writer,
-        setupDraft: { playerCount: setup.payload.players.length, selectedIds: setup.payload.players.map(player => player.actualCharacter), players: setup.payload.players },
+        setupDraft: setupDraftFromEvent(setup),
         presentation: { activeTab: 'play' } as GrimoirePresentationState });
       if (request !== this.request || this.disposed) { writer.dispose(); return; }
       if (!result.ok) { writer.dispose(); this.patch({ error: result.error.messageKo }); return; }
@@ -105,3 +103,13 @@ export class CustomGrimoireApplicationController {
   };
 }
 function errorMessage(error: unknown) { return error instanceof Error ? error.message : '게임을 열지 못했습니다. 다시 시도하세요.'; }
+
+/** Restore setup decisions from the original event, not later character/ability changes. */
+function setupDraftFromEvent(event: Extract<GameEvent, {type: 'setupConfirmed'}>): GrimoireSetupDraft {
+  const {players, setupChoiceId, boffinAbility} = structuredClone(event.payload);
+  return {
+    playerCount: players.length, selectedIds: players.map(player => player.actualCharacter), players,
+    setupChoiceId, boffinAbility,
+    marionetteCharacter: players.find(player => player.actualCharacter === 'marionette')?.shownCharacter,
+  };
+}

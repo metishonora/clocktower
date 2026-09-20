@@ -83,6 +83,7 @@ pub(crate) fn view(facts: &CustomGameFacts) -> Option<DayView> {
         })
         .collect();
     Some(DayView {
+        forced_voter_ids: crate::characters::carousel::forced_voter_ids(facts),
         vote_dependencies: crate::characters::trouble_brewing::day_vote_dependencies(facts),
         townsfolk_registration_nominator_ids:
             crate::characters::trouble_brewing::day_registration_ids(facts, "spy"),
@@ -96,7 +97,10 @@ pub(crate) fn view(facts: &CustomGameFacts) -> Option<DayView> {
             .chain(crate::characters::sects_and_violets::day_actions(facts))
             .collect(),
         ability_records: day.ability_records.clone(),
-        madness: crate::characters::sects_and_violets::day_madness(facts),
+        madness: crate::characters::sects_and_violets::day_madness(facts)
+            .into_iter()
+            .chain(crate::characters::carousel::pixie_day_madness(facts))
+            .collect(),
         pending_death: day.pending_death.clone(),
         pending_game_end: day.pending_game_end.clone(),
         consequences: day.consequences.clone(),
@@ -291,6 +295,13 @@ fn resolve(
             if day.stage != DayStage::Voting {
                 return Err(invalid());
             }
+            if current
+                .forced_voter_ids
+                .iter()
+                .any(|id| !voter_ids.contains(id))
+            {
+                return Err(invalid());
+            }
             let mut unique = std::collections::HashSet::new();
             for id in voter_ids {
                 if !unique.insert(id) || !current.eligible_voter_ids.contains(id) {
@@ -353,8 +364,11 @@ fn resolve(
                 if player_id.is_none() {
                     day.pending_game_end =
                         crate::characters::trouble_brewing::day_no_execution(facts, event_id)
-                            .filter(|_| {
-                                !crate::characters::sects_and_violets::day_good_win_blocked(facts)
+                            .filter(|end| {
+                                end.winning_alignment != crate::model::Alignment::Good
+                                    || !crate::characters::sects_and_violets::day_good_win_blocked(
+                                        facts,
+                                    )
                             })
                             .or_else(|| {
                                 crate::characters::sects_and_violets::day_no_execution(
@@ -525,7 +539,7 @@ fn resolve(
                 .iter()
                 .find(|h| h.event_id == end.source_event_id)
                 .map(|h| h.root_event_id.clone())
-                .unwrap_or_else(|| event_id.into());
+                .unwrap_or_else(|| end.source_event_id.clone());
             next.facts.game_end = Some(end);
         }
         DayInput::BeginNight => {
@@ -534,7 +548,10 @@ fn resolve(
             }
             day.stage = DayStage::Night;
             next.phase = Phase::Night;
-            crate::characters::trouble_brewing::begin_night_identity_reveals(&mut next.facts, event_id);
+            crate::characters::trouble_brewing::begin_night_identity_reveals(
+                &mut next.facts,
+                event_id,
+            );
         }
     }
     crate::characters::sects_and_violets::day_record_malfunctions(
@@ -544,7 +561,9 @@ fn resolve(
         event_id,
     )?;
     next.facts.day = Some(day.clone());
+    crate::characters::carousel::resolve_pixie_deaths(facts, &mut next.facts, event_id);
     crate::effects::resolve_effects(context, &mut next.facts)?;
+    crate::characters::carousel::notify_new_demons(context, facts, &mut next.facts, event_id);
     if matches!(
         input,
         DayInput::ConfirmDeath | DayInput::ResolveConsequence { .. }
@@ -601,9 +620,11 @@ pub(crate) fn executions(
         .chain(std::iter::once(day))
         .flat_map(|d| &d.history)
     {
+        // Night units and day history are collected separately before chronological sorting.
+        // A dawn-triggered win must join its night source even after past-day units were added.
         if let Some(last) = units
-            .last_mut()
-            .filter(|u| u.event_ids.first() == Some(&entry.root_event_id))
+            .iter_mut()
+            .find(|u| u.event_ids.contains(&entry.root_event_id))
         {
             last.event_ids.push(entry.event_id.clone());
             last.step_ids.push(entry.step_id.clone());
@@ -650,6 +671,7 @@ pub(crate) fn ability_actions(
         let source = &record.ability_use;
         if !characters.contains(&source.character_id.as_str())
             || !crate::reducer::current_ability_instance(facts, source)
+            || !crate::characters::carousel::grant_enabled(facts, source)
             || !facts
                 .player(&source.owner_player_id)
                 .is_some_and(|p| p.alive)
@@ -667,7 +689,7 @@ pub(crate) fn ability_actions(
             ability_use: Some(source.clone()),
             simulation_source: None,
             effective: crate::effects::effective(facts, source),
-            impaired: crate::effects::impaired(facts, &source.owner_player_id),
+            impaired: crate::effects::ability_impaired(facts, source),
             vortox: !facts.vortox_sources.is_empty(),
         });
     }
@@ -681,7 +703,7 @@ pub(crate) fn ability_actions(
             serde_json::to_string(&guidance.source).expect("guidance source")
         );
         let vortox = !facts.vortox_sources.is_empty()
-            && guidance.source.source_ability_use.character_id != "drunk";
+            && crate::simulation::guidance_is_townsfolk(&guidance.source);
         actions.push(DayAbilityAction {
             id,
             actor_player_id: guidance.source.source_ability_use.owner_player_id.clone(),

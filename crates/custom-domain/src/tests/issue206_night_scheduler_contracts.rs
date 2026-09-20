@@ -114,6 +114,7 @@ impl ActionHandler for FixtureHandler {
                     instance.ability_use.clone(),
                 )?;
                 Ok(PhaseStep {
+                    ability_impairments: None,
                     execution: None,
                     information_flow: None,
                     madness: None,

@@ -9,3 +9,18 @@
 .customDayTask .issue116ExecutionTarget { min-width: 0; }
 @media(max-width:540px) { .customDayTask .issue116CandidateSummary { grid-template-columns: 1fr; gap: 8px; } }
 .customDayFormLock { min-width:0; margin:0; padding:0; border:0; }
+.customDayDeathPrompt { display:grid;justify-items:center;gap:12px; }
+.customDayDeathPrompt p { margin:0;font-weight:800;font-size:clamp(1rem,2.3vw,1.25rem); }
+.customDayResolution .snvGrimoireDraft > button.customDayDeathTarget { opacity:1; }
+.customDayResolution .snvGrimoireCenter.live { width:min(220px,42%); }
+.customDayDeathPrompt p { word-break:keep-all;overflow-wrap:anywhere; }
+.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.customForcedVoteSeat {
+  border-color: #b32e43;
+  background: #ffe5e9;
+  box-shadow: 0 0 0 8px rgb(190 43 66 / 32%), 0 0 32px rgb(190 43 66 / 40%);
+  opacity: 1;
+  cursor: not-allowed;
+}
+.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.customForcedVoteSeat :is(.snvSeatNumber, .snvSeatPlayerName, small) {
+  color: #8c1930;
+}

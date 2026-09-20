@@ -21,6 +21,13 @@ Use a static iPad-first PWA with a Rust domain core compiled to WebAssembly and 
 - IndexedDB stores confirmed events as the source of truth.
 - Current game state is rebuilt by replaying confirmed events.
 
+The custom Rust runtime retains one validated replay prefix in memory per execution thread.
+It reuses that aggregate only when the schema, complete script definition, and every serialized
+event in the cached prefix match exactly; appended events still cross the normal validation and
+reducer path. Changed or truncated histories replay from setup. A cache entry is replaced only
+after replay and projection succeed, and speculative proposal results never enter it. This is
+a disposable performance optimization, not persisted state or a change to canonical validation.
+
 Build and deploy as static files over HTTPS.
 
 ```text
@@ -85,7 +92,25 @@ Custom SnV rules, information candidates, active effects and causal twin repairs
 `crates/custom-domain/src/characters/sects_and_violets.rs`. Custom TB registration semantics stay
 in that crate's `characters/trouble_brewing.rs`. `information.rs` validates common input/result
 shapes; it does not import official rule implementations. The scheduler owns progress and stable
-occurrence identity, while handlers own eligibility and typed facts. A simulation refers to a real failed Philosopher choice, initial Drunk identity, or acquired Drunk guidance; it cannot acquire a fictional ability instance.
+occurrence identity, while handlers own eligibility and typed facts. A simulation refers to a real failed Philosopher choice, Drunk or Marionette identity, or acquired guidance; it cannot acquire a fictional ability instance. Pixie-derived simulated guidance keeps the original real root and the confirmed bond/death provenance.
+
+Carousel rules live in `characters/carousel.rs`. Boffin and Pixie reuse source-bound
+ability grants without changing the recipient's identity. Ownership, temporary
+availability, and impairment are distinct: an impaired Boffin suspends a grant
+without erasing its use history; the Demon's own impairment does not poison that
+grant. Character handlers project legal choices and reminders. New private role,
+ability and Marionette notifications use the existing saved recipient-by-recipient
+continuation, not extra scheduler phases. Balloonist setup discretion and the
+initial Boffin grant are canonical setup inputs; Marionette's believed role remains
+separate from its real identity. UI does not compute eligibility or Jinx results.
+
+Night steps and overview entries expose Core-derived `abilityImpairments` for the
+acting ability, not its owner's unrelated impairments. This presentation metadata
+is rebuilt on replay; it is not saved in GameFile or inferred by character-specific
+UI exceptions. Daytime availability and death-trigger snapshots use the same grant
+availability and ability impairment boundaries. Alignment-dependent victory rules
+use the ability owner's actual team; simulated information uses its real root source
+when deciding whether Vortox applies.
 
 Custom `effects.rs` resolves character-owned effect candidates against a common fact view.
 `simulation.rs` derives guidance and its usage from real sources and confirmed choices.
@@ -96,7 +121,7 @@ Custom Mathematician audit consumes character-owned malfunction evidence and cau
 actual delivered information but never requires or emits a replacement computed answer; ordinary
 character information calculations retain their own computed values.
 
-Production registers 18 ordered TB/SnV character actions and seven additional preparation or optional actions; fixture builds separately register only system
+Production registers 21 ordered TB/SnV/Carousel character actions and ten additional preparation or optional actions; fixture builds separately register only system
 and test handlers. `scripts/check-custom-boundaries.mjs` rejects imports across the boundary,
 including indirect Cargo/TypeScript and source-include dependencies. Run its negative tests with
 `node --test scripts/check-custom-boundaries.test.mjs`.
@@ -112,7 +137,7 @@ Release validation still includes `pnpm --dir web build` and PWA verification.
 ## Custom official Jinx foundation (#213)
 
 `crates/custom-domain/resources/jinxes.json` is a checked-in TPI snapshot at
-`915347e627c3f6cd1f438f82b6001784e11b3e8b`. `jinxes.rs` pairs this metadata with typed
+`f10cd02e3401af227ce406287eaae7bb99a06a42`. `jinxes.rs` pairs this metadata with typed
 character-owned registrations. Stable pair IDs use sorted official lowercase IDs;
 resolved metadata retains the exact custom character IDs. This conversion does not
 relax command, definition or import ID validation.
@@ -124,8 +149,9 @@ official pairs remain reference data and do not enable unsupported characters.
 `ResolvedScriptContext.related_jinxes()` is a deterministic read-only script query;
 script membership is never a universal rule-effectiveness gate.
 
-Registered callbacks currently serve information registration, succession prevention and
-simulation malfunction causes. Their owning TB/SnV modules decide the conditions using
+Registered callbacks serve information registration, succession prevention,
+simulation malfunction causes, forbidden grants and shown-role setup modifiers.
+Their owning TB/SnV/Carousel modules decide the conditions using
 current ability provenance, the action occurrence, and before/after facts. New consumers
 can add typed seams without adding character branches to the scheduler or parsing natural
 language rules. Registrations link acceptance evidence; publication changes must pass
@@ -1128,3 +1154,70 @@ stream order. An immediate consequence shares its origin's contiguous Undo unit;
 entry or new night's use does not. No queue, cycle plan, reveal recomputation policy or Undo grouping
 is implemented in TypeScript. Input projections include legal Barber chooser and Imp successor IDs;
 #222 owns their eventual visible controls and the other-night editor.
+
+### Scheduled arbitrary night deaths (#232)
+
+Newly authored custom definitions opt into `nightOrderVersion: 2`. The optional marker is part
+of script identity and survives every definition/session/file boundary. Definitions without it
+retain the original immediate `pitHag.chooseDeaths` execution and replay unchanged. Missing orders
+are still invalid; replay never inserts or relocates an action. Portable scenarios with this marker
+use version 3; legacy version 2 remains readable. Explicitly restoring the other-night order of an
+old Pit-Hag scenario opts that authoring draft into version 2 and makes its changed definition
+ineligible to resume the old game. Importing or continuing a stored game never upgrades it.
+
+In version 2, a pool containing Pit-Hag requires exactly one `system.resolveNightDeaths` entry in
+its other-night plan, after `pitHag.changeCharacter`. Authoring proposes it immediately after the
+last Pit-Hag transformation or Demon attack in the default plan. Its position is editable; it does
+not depend on Barber or an information character being present. Removing the last supported
+source from the authoring pool removes the entry through the existing reconciliation mechanism.
+
+The system action has an independent execution/Undo root. Registered character rules own its
+same-night activation and sources; the shared death resolution validates living targets and
+constructs the canonical death changes. A successful Demon creation activates
+arbitrary deaths; attacks after activation keep their targets but do not immediately kill. The
+scheduled confirmation records `nightDeathsResolved`, the selected players (including an explicit
+empty list), and all creation event IDs. Validated fact changes retain the original character
+occurrence as the death source, while each death's event ID is the new confirmation. Thus death
+follow-ups belong to the scheduled confirmation, not to the earlier transformation or attacks.
+Future source characters can share this execution/UI boundary while keeping their rules in their
+own character module; no unimplemented character is enabled by this change.
+
+Only actual confirmed deaths affect life state, effects, information, succession, or death-triggered
+actions. Deaths and information confirmed before activation are never rewritten. An author who
+places information before the resolution intentionally gets information about that earlier state;
+its historical reveal stays immutable. The one scheduled resolution per night is an application
+limit on the Storyteller's broader ability to adjust deaths throughout the night.
+
+
+### Registered night-death sources and UI projections (#232 review)
+
+`night_deaths.rs` dispatches character-owned `SourceRule` registrations from
+`characters/mod.rs`. Each source declares its triggering action, preferred default
+predecessors, and a pure query returning the actual confirmed source events. The
+common plan builder derives required placement from those registrations; it does
+not identify Pit-Hag or Demon attacks by name. Character rules own activation;
+the shared resolution validates distinct living selections (including explicit
+none), records all source IDs in canonical order, and preserves the earliest
+source attribution and independent Undo boundary of the existing contract.
+No speculative future character or generic rules language is introduced.
+
+The authoring plan response can recommend a contract upgrade. Only an explicit
+other-night reset accepts that recommendation and requests the upgraded plan;
+ordinary edits, import and replay preserve the original definition. The authoring
+UI does not inspect character IDs to decide upgrades.
+
+Replay provides a read-only `nightDeaths` view with pending/resolved status,
+confirmed source owners, and the exact attack event IDs awaiting resolution.
+The browser formats that view; it no longer reconstructs activation from events
+or edits result rows by comparing translated labels. This view is not persisted
+and does not alter canonical game or scenario formats.
+
+Action adapters declare an optional explicit-empty button and confirmation label.
+The controller uses one empty-selection confirmation path, gated by the Core's
+selection-count contract. Ordinary confirmation rejects empty input when a separate
+empty button is configured; no character-name branch is needed. The task and board
+consume the same adapter policy for skip/decline presentation.
+
+Product UI tests that import `grimoire-custom` belong to the integration suite,
+not the standalone `web/test/custom` suite. CI runs the affected UI tests and source
+boundary check explicitly; isolation does not copy official UI to satisfy a test.

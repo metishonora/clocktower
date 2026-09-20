@@ -42,6 +42,7 @@ pub(crate) enum ErrorKind {
     InvalidSetupDistribution,
     DuplicateActualCharacter,
     InvalidSeating,
+    InvalidMarionetteSeating,
     ReplayFailed,
     InvalidStepInput,
     InvalidEvilTeamState,
@@ -117,7 +118,10 @@ impl ErrorKind {
                 "INVALID_FIRST_NIGHT_ORDER_PLAN",
                 "첫날 밤 행동 순서가 올바르지 않습니다.",
             ),
-            Self::JinxRegistrationInvalid => ("JINX_REGISTRATION_INVALID", "징크스 규칙 연결을 확인할 수 없습니다."),
+            Self::JinxRegistrationInvalid => (
+                "JINX_REGISTRATION_INVALID",
+                "징크스 규칙 연결을 확인할 수 없습니다.",
+            ),
             Self::FirstNightActionRegistrationInvalid => (
                 "FIRST_NIGHT_ACTION_REGISTRATION_INVALID",
                 "첫날 밤 행동 등록이 올바르지 않습니다.",
@@ -192,6 +196,10 @@ impl ErrorKind {
             Self::InvalidSeating => (
                 "INVALID_SEATING",
                 "좌석 번호는 1번부터 순서대로 배정해야 합니다.",
+            ),
+            Self::InvalidMarionetteSeating => (
+                "INVALID_MARIONETTE_SEATING",
+                "꼭두각시는 악마의 양옆 중 한 자리에 배치해야 합니다.",
             ),
             Self::ReplayFailed => ("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."),
             Self::InvalidStepInput => ("INVALID_STEP_INPUT", "현재 단계 입력이 올바르지 않습니다."),

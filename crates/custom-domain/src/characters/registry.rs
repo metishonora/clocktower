@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use serde::Serialize;
 
-use super::{sects_and_violets, trouble_brewing};
+use super::{carousel, sects_and_violets, trouble_brewing};
 use crate::{
     contracts::{CustomScriptDefinition, CustomScriptDefinitionDraft},
     error::{CoreError, ErrorKind},
@@ -19,6 +19,7 @@ pub(crate) struct CharacterRegistryEntry {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ResolvedScriptContext {
     entries: Vec<CharacterRegistryEntry>,
+    pub(crate) scheduled_night_deaths: bool,
     related_jinxes: Vec<crate::jinxes::JinxMetadata>,
     kinds_by_id: HashMap<&'static str, CharacterKind>,
 }
@@ -26,7 +27,9 @@ pub(crate) struct ResolvedScriptContext {
 // Issue #193 establishes this query seam before Epic 1 dispatch consumes it.
 #[allow(dead_code)]
 impl ResolvedScriptContext {
-    pub(crate) fn related_jinxes(&self) -> &[crate::jinxes::JinxMetadata] { &self.related_jinxes }
+    pub(crate) fn related_jinxes(&self) -> &[crate::jinxes::JinxMetadata] {
+        &self.related_jinxes
+    }
 
     pub(crate) fn character_ids(&self) -> Vec<&'static str> {
         self.entries.iter().map(|entry| entry.id).collect()
@@ -47,17 +50,27 @@ impl ResolvedScriptContext {
             .collect()
     }
 
-    pub(crate) fn setup_modifiers(&self, actual_characters: &[String]) -> Vec<crate::contracts::SetupModifier> {
-        let active = actual_characters.iter().map(String::as_str).collect::<HashSet<_>>();
-        self.entries.iter().filter(|entry| active.contains(entry.id)).filter_map(|entry| {
-            let amount = i32::from(trouble_brewing::custom_setup_outsider_delta(entry.id))
-                + i32::from(sects_and_violets::custom_setup_outsider_delta(entry.id));
-            (amount != 0).then(|| crate::contracts::SetupModifier {
-                character_id: entry.id.to_owned(), delta: crate::contracts::SetupCountDelta::outsider(amount)
+    pub(crate) fn setup_modifiers(
+        &self,
+        actual_characters: &[String],
+    ) -> Vec<crate::contracts::SetupModifier> {
+        let active = actual_characters
+            .iter()
+            .map(String::as_str)
+            .collect::<HashSet<_>>();
+        self.entries
+            .iter()
+            .filter(|entry| active.contains(entry.id))
+            .filter_map(|entry| {
+                let amount = i32::from(trouble_brewing::custom_setup_outsider_delta(entry.id))
+                    + i32::from(sects_and_violets::custom_setup_outsider_delta(entry.id));
+                (amount != 0).then(|| crate::contracts::SetupModifier {
+                    character_id: entry.id.to_owned(),
+                    delta: crate::contracts::SetupCountDelta::outsider(amount),
+                })
             })
-        }).collect()
+            .collect()
     }
-
 }
 
 #[allow(dead_code)]
@@ -112,6 +125,7 @@ pub(crate) fn custom_script_catalog() -> Vec<CharacterRegistryEntry> {
     trouble_brewing::custom_registry_entries()
         .into_iter()
         .chain(sects_and_violets::custom_registry_entries())
+        .chain(carousel::custom_registry_entries())
         .map(|(id, kind)| CharacterRegistryEntry { id, kind })
         .collect()
 }
@@ -123,6 +137,7 @@ pub(crate) fn validate_custom_script_definition(
         &definition.id,
         &definition.name,
         &definition.character_ids,
+        definition.night_order_version,
     )
 }
 
@@ -133,6 +148,7 @@ pub(crate) fn validate_custom_script_definition_draft(
         &definition.id,
         &definition.name,
         &definition.character_ids,
+        definition.night_order_version,
     )
 }
 
@@ -140,8 +156,10 @@ fn validate_custom_script_definition_fields(
     id: &str,
     name: &str,
     character_ids: &[String],
+    night_order_version: Option<u32>,
 ) -> Result<(), CoreError> {
-    if id.trim().is_empty()
+    if night_order_version.is_some_and(|v| v != 2)
+        || id.trim().is_empty()
         || name.trim().is_empty()
         || character_ids
             .iter()
@@ -164,7 +182,9 @@ fn validate_custom_script_definition_fields(
 pub(crate) fn resolve_custom_script(
     definition: &CustomScriptDefinition,
 ) -> Result<ResolvedScriptContext, CoreError> {
-    resolve_custom_script_ids(&definition.character_ids)
+    let mut context = resolve_custom_script_ids(&definition.character_ids)?;
+    context.scheduled_night_deaths = definition.night_order_version == Some(2);
+    Ok(context)
 }
 
 pub(crate) fn resolve_custom_script_ids(
@@ -190,6 +210,7 @@ pub(crate) fn resolve_custom_script_ids(
 
     let kinds_by_id = entries.iter().map(|entry| (entry.id, entry.kind)).collect();
     Ok(ResolvedScriptContext {
+        scheduled_night_deaths: false,
         entries,
         kinds_by_id,
         related_jinxes: crate::jinxes::production()?.related(character_ids),

@@ -64,7 +64,7 @@ it('T13 P2: session rejects an Undo using a replay from another prefix',async()=
 });
 it('T13 P2 A05: intervening free action separates preparation from later information Undo',async()=>{
  const {newScenario}=await import('./issue220ScenarioOrderSupport');const {t11Definition}=await import('./issue220T11Support');
- const d=structuredClone((await t11Definition()).definition);const ww=d.firstNightOrder.find(x=>x.actionId==='learnTownsfolk')!;
+ const d=structuredClone((await t11Definition()).definition);const ww=d.firstNightOrder.find(x=>x.kind==='character'&&x.characterId==='washerwoman'&&x.actionId==='learnTownsfolk')!;
  d.firstNightOrder=[{kind:'system',actionId:'dusk'},{kind:'system',actionId:'minionInfo'},{kind:'system',actionId:'demonInfo'},ww,...d.firstNightOrder.filter(x=>x.kind==='character'&&x!==ww),{kind:'system',actionId:'dawn'}];
  const {session}=await newScenario(d,['washerwoman','mayor','monk','virgin','slayer','mutant','poisoner','imp']);
  await confirm(session,'minionInfo',null);await confirm(session,'demonInfo',{characterIds:['librarian','chef','empath']});

@@ -9,10 +9,10 @@ afterEach(cleanup);
 it('Drunk keeps the shown Townsfolk token in night and day boards, while death and restored identity use the real role',async()=>{
  const {controller:c}=await nightFixture(['drunk','monk','ravenkeeper','virgin','slayer','undertaker','scarletWoman','imp'],{},['soldier'],undefined,{drunk:'soldier'});
  const show=(controller:typeof c)=>render(<CustomGrimoirePlay controller={controller} onNewGame={()=>{}} onImport={()=>{}}/>);
- const check=()=>{const seat=screen.getByRole('button',{name:/^1번.*P1, 군인/});expect(seat.querySelector('.tbRevealTokenList')).toBeNull();expect(seat.querySelector('img')!.getAttribute('src')).toContain('soldier');};
+ const check=()=>{const seat=screen.getByRole('button',{name:/^1번.*P1, 군인/});expect(seat.querySelector('.tbRevealTokenList')).toBeNull();if(c.getSnapshot().replay.players[0].alive)expect(seat.querySelector('img')!.getAttribute('src')).toContain('soldier');else expect(seat.querySelector('.snvDeathSeatIcon')).not.toBeNull();};
  try{
  show(c);fireEvent.click(screen.getByRole('button',{name:'마도서'}));check();
- fireEvent.click(screen.getByRole('button',{name:'1번 P1, 군인'}));expect(screen.getByLabelText('실제 직업과 보여준 직업').textContent).toContain('주정뱅이');
+ fireEvent.click(screen.getByRole('button',{name:'1번 P1, 군인, 생존'}));expect(screen.getByLabelText('실제 직업과 보여준 직업').textContent).toContain('주정뱅이');
  cleanup();
  for(const id of ['p3','p1'])await act(async()=>{c.beginSelection();c.togglePlayer(id);await c.acceptSelection();});
  expect(c.getSnapshot().replay.players[0]).toMatchObject({actualCharacter:'drunk',shownCharacter:'soldier',alive:false});

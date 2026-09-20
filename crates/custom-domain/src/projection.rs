@@ -60,8 +60,25 @@ pub(crate) fn rule_state(facts: &CustomGameFacts) -> RuleState {
     if !facts.active_impairments.is_empty() {
         state.active_impairments = Some(facts.active_impairments.clone());
     }
-    if !facts.ability_grants.is_empty() {
-        state.ability_grants = Some(facts.ability_grants.clone());
+    // The ledger retains old grants for replay/provenance, but the live view
+    // exposes ownership only. Temporary impairment does not remove ownership.
+    let current_grants: Vec<_> = facts
+        .ability_grants
+        .iter()
+        .filter(|grant| {
+            crate::reducer::current_ability_instance(
+                facts,
+                &crate::model::AbilityUseRef {
+                    owner_player_id: grant.owner_player_id.clone(),
+                    character_id: grant.character_id.clone(),
+                    ability_instance_id: grant.ability_instance_id.clone(),
+                },
+            )
+        })
+        .cloned()
+        .collect();
+    if !current_grants.is_empty() {
+        state.ability_grants = Some(current_grants);
     }
     state.ability_uses = facts.ability_uses.clone();
     state.philosopher_choices = facts.philosopher_choices.clone();
@@ -129,6 +146,15 @@ pub(crate) fn first_night(
         registry.enrich_input(context, occurrence, step)?;
     }
 
+    // Use the active night's plan, including actions that never run on the first night.
+    // Preparations absent from the plan retain their consumer's placement.
+    let plan_index = |action: &FirstNightActionRef| {
+        plan.0.iter().position(|entry| entry == action).or_else(|| {
+            registry
+                .linked_action(action)
+                .and_then(|linked| plan.0.iter().position(|entry| *entry == linked))
+        })
+    };
     let mut rows = Vec::new();
     let mut last_linked_entry = 0;
     for (sequence, completion) in progress
@@ -145,8 +171,7 @@ pub(crate) fn first_night(
             .step
             .action_ref
             .as_ref()
-            .and_then(|a| registry.linked_action(a))
-            .and_then(|a| plan.0.iter().position(|p| *p == a))
+            .and_then(plan_index)
             .unwrap_or(last_linked_entry);
         last_linked_entry = entry_index;
         rows.push(OverviewRow {
@@ -159,10 +184,7 @@ pub(crate) fn first_night(
     }
 
     for (sequence, projected) in pending.into_iter().enumerate() {
-        let entry_index = registry
-            .linked_action(&projected.occurrence.action_ref)
-            .and_then(|a| plan.0.iter().position(|p| *p == a))
-            .unwrap_or(sequence);
+        let entry_index = plan_index(&projected.occurrence.action_ref).unwrap_or(sequence);
         let status = if next_identity
             .as_ref()
             .is_some_and(|identity| *identity == projected.occurrence.identity())
@@ -211,6 +233,12 @@ pub(crate) fn system_reveal(
             .players
             .iter()
             .filter(|player| context.character_kind(&player.actual_character) == Some(kind))
+            .filter(|player| {
+                kind != CharacterKind::Minion
+                    || crate::characters::carousel::receives_minion_information(
+                        &player.actual_character,
+                    )
+            })
             .map(|player| RevealIdentity {
                 seat: player.seat,
                 name: player.name.clone(),
@@ -232,6 +260,7 @@ pub(crate) fn system_reveal(
         } => Some(RevealPayload::DemonInformation {
             kind: "demonInformation",
             minion_players: identities(CharacterKind::Minion),
+            marionette_players: crate::characters::carousel::marionette_identities(facts),
             bluff_character_ids: input
                 .as_ref()
                 .and_then(|value| value.character_ids.clone())
@@ -299,6 +328,26 @@ pub(crate) fn event_reveal(
     actor_player_id: Option<&str>,
 ) -> Option<RevealPayload> {
     match custom_result {
+        Some(crate::contracts::CustomActionResult::BalloonistLearned {
+            target_player_id, ..
+        }) => facts
+            .player(target_player_id)
+            .map(|p| RevealPayload::LearnedPlayer {
+                kind: "learnedPlayer",
+                source_character_id: "balloonist".into(),
+                player: crate::contracts::RevealPlayer {
+                    player_id: p.id.clone(),
+                    seat: p.seat,
+                    name: p.name.clone(),
+                },
+            }),
+        Some(crate::contracts::CustomActionResult::PixieLearned { character_id, .. }) => {
+            Some(RevealPayload::LearnedCharacter {
+                kind: "learnedCharacter",
+                source_character_id: "pixie".into(),
+                character_id: character_id.clone(),
+            })
+        }
         Some(crate::contracts::CustomActionResult::Information { value }) => {
             custom_information_reveal(action_ref, value)
         }
@@ -477,6 +526,7 @@ pub(crate) fn event_reveal(
 
 fn overview(step: PhaseStep, status: PhaseStepStatus) -> PhaseOverviewItem {
     PhaseOverviewItem {
+        ability_impairments: step.ability_impairments,
         execution: step.execution,
         information_flow: step.information_flow.clone(),
         simulation_source: step.simulation_source.clone(),

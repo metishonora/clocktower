@@ -27,6 +27,7 @@ pub(crate) struct CustomFactChanges {
     ability_grants: Vec<AbilityGrantChange>,
     ability_removals: Vec<AbilityUseRef>,
     life_changes: Vec<PlayerLifeChange>,
+    death_source: Option<crate::state::ActionOccurrence>,
     impairment_additions: Vec<ActiveImpairment>,
     impairment_removals: Vec<ActiveImpairment>,
     snv: SnvFactChanges,
@@ -36,6 +37,30 @@ pub(crate) struct CustomFactChanges {
     master_choice: Option<crate::contracts::TargetAssignment>,
     monk_protection: Option<crate::contracts::TargetAssignment>,
     game_end: Option<crate::contracts::CustomGameEnd>,
+    player_notifications: Vec<PlayerNotification>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum PlayerNotification {
+    Marionette {
+        recipient_id: String,
+        marionette_id: String,
+    },
+    ApparentIdentity {
+        recipient_id: String,
+        character_id: String,
+        alignment: crate::model::Alignment,
+    },
+    GrantedAbility {
+        recipient_id: String,
+        recipient_is_source: bool,
+        character_id: String,
+        source_character_id: String,
+    },
+    Nightwatchman {
+        recipient_id: String,
+        revealed_player_id: String,
+    },
 }
 
 /// Finite facts calculated by an SnV resolver. These become trusted only after registry validation.
@@ -63,6 +88,16 @@ pub(crate) struct PlayerLifeChange {
 }
 
 impl CustomFactChanges {
+    pub(crate) fn with_player_notifications(
+        mut self,
+        notifications: Vec<PlayerNotification>,
+    ) -> Self {
+        self.player_notifications = notifications;
+        self
+    }
+    pub(crate) fn player_notifications(&self) -> &[PlayerNotification] {
+        &self.player_notifications
+    }
     pub(crate) fn with_monk(mut self, choice: crate::contracts::TargetAssignment) -> Self {
         self.monk_protection = Some(choice);
         self
@@ -71,6 +106,13 @@ impl CustomFactChanges {
         self.monk_protection.as_ref()
     }
 
+    pub(crate) fn with_death_source(mut self, source: crate::state::ActionOccurrence) -> Self {
+        self.death_source = Some(source);
+        self
+    }
+    pub(crate) fn death_source(&self) -> Option<&crate::state::ActionOccurrence> {
+        self.death_source.as_ref()
+    }
     pub(crate) fn with_life_changes(mut self, changes: Vec<PlayerLifeChange>) -> Self {
         self.life_changes = changes;
         self
@@ -133,7 +175,8 @@ impl CustomFactChanges {
     }
 
     pub(crate) fn is_empty(&self) -> bool {
-        self.audit.is_empty()
+        self.player_notifications.is_empty()
+            && self.audit.is_empty()
             && !self.preparation
             && self.poisoner_choice.is_none()
             && self.master_choice.is_none()
@@ -347,7 +390,8 @@ fn validate_envelope_fields(
     payload: &CustomActionConfirmedPayload,
 ) -> Result<(), CoreError> {
     if !matches!(phase, Phase::FirstNight | Phase::Night)
-        || !matches!(payload.action_ref, FirstNightActionRef::Character { .. })
+        || !(matches!(payload.action_ref, FirstNightActionRef::Character { .. })
+            || payload.action_ref == FirstNightActionRef::system("resolveNightDeaths"))
     {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
@@ -356,7 +400,7 @@ fn validate_envelope_fields(
         .as_ref()
         .is_some_and(|input| input.madness_check.is_some())
         && !matches!(&payload.action_ref, FirstNightActionRef::Character { character_id, action_id }
-            if character_id == "mutant" && action_id == "resolveMadnessExecution")
+            if (character_id == "mutant" && action_id == "resolveMadnessExecution") || (character_id == "pixie" && action_id == "assessMadness"))
     {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
@@ -370,6 +414,9 @@ fn validate_envelope_fields(
             && !matches!(
                 payload.result,
                 CustomActionResult::InformationPrepared { .. }
+                    | CustomActionResult::PixieLearned { .. }
+                    | CustomActionResult::BalloonistLearned { .. }
+                    | CustomActionResult::PixieJudgment { .. }
                     | CustomActionResult::PreparedInformationDelivered { .. }
             ))
     {
