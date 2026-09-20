@@ -3,11 +3,11 @@ pub(crate) mod catalog;
 pub(crate) mod execution;
 #[cfg(any(test, feature = "custom-runtime-fixtures"))]
 mod fixtures;
+pub(crate) mod night_deaths;
 mod plan;
 mod registry;
 mod runtime;
 mod system;
-pub(crate) mod night_deaths;
 
 pub(crate) use activation::{
     ActivationContext, ActivationDecision, ActivationRule, FirstNightActivationRule,
@@ -48,6 +48,9 @@ impl ActivationRule for CharacterActivation {
         context: &ActivationContext<'_>,
     ) -> Result<ActivationDecision, crate::error::CoreError> {
         if let Some(decision) = crate::characters::trouble_brewing::activation(context) {
+            return Ok(decision);
+        }
+        if let Some(decision) = crate::characters::carousel::activation(context) {
             return Ok(decision);
         }
         crate::characters::sects_and_violets::SnvActivation.decide(context)

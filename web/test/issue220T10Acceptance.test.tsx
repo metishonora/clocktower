@@ -49,13 +49,13 @@ it('T10-10: Spy is a read-only payload view and hides the Storyteller until clos
   expect(within(board).getAllByRole('button').filter(b=>!(b as HTMLButtonElement).disabled)).toHaveLength(8);
  expect(screen.getByRole('button',{name:'저장 / 불러오기'})).toHaveProperty('disabled',true);
  expect(screen.queryByText('SPY · ACTUAL GRIMOIRE')).toBeNull();
-  expect(within(board).getByRole('button',{name:'2번 P2, 사서'})).toBeTruthy();
+  expect(within(board).getByRole('button',{name:'2번 P2, 사서, 사망 · 유령표 사용 가능'})).toBeTruthy();
   const close=screen.getByRole('button',{name:'확인 완료'});
   expect(root.inert).toBe(true);expect(root.style.visibility).toBe('hidden');expect(document.activeElement).toBe(close);
-  fireEvent.click(within(board).getByRole('button',{name:'2번 P2, 사서'}));
+  fireEvent.click(within(board).getByRole('button',{name:'2번 P2, 사서, 사망 · 유령표 사용 가능'}));
   const detail=screen.getByRole('dialog',{name:'2번 P2 플레이어 상세'});expect(within(detail).getByRole('list',{name:'부착된 토큰 2개'})).toBeTruthy();
   expect(within(detail).queryByRole('textbox')).toBeNull();fireEvent.click(within(detail).getByRole('button',{name:'플레이어 상세 닫기'}));
-  expect(document.activeElement).toBe(within(board).getByRole('button',{name:'2번 P2, 사서'}));
+  expect(document.activeElement).toBe(within(board).getByRole('button',{name:'2번 P2, 사서, 사망 · 유령표 사용 가능'}));
   fireEvent.click(close);expect(onClose).toHaveBeenCalledOnce();expect(payload).toEqual(before);
   view.unmount();expect(root.inert).toBe(false);expect(root.style.visibility).toBe('');
  }finally{root.remove();}

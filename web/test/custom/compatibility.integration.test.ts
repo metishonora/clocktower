@@ -19,7 +19,8 @@ test("independent Production WASM and IndexedDB restore the frozen pre-separatio
     const game = parseGameFileJson(JSON.stringify(prefix.game));
     const result=await core.replay(game);expect(result.ok).toBe(true);
     if(!result.ok)throw Error(result.error.messageKo);
-    const legacy=JSON.parse(JSON.stringify(result.value,(key,value)=>['execution','actionExecutions','latestUndoUnit'].includes(key)?undefined:value));
+    // New projection-only metadata has separate coverage; legacy state/events stay frozen.
+    const legacy=JSON.parse(JSON.stringify(result.value,(key,value)=>['execution','actionExecutions','latestUndoUnit','abilityImpairments'].includes(key)?undefined:value));
     delete legacy.day;
     delete legacy.nightNumber;
     expect(legacy).toEqual(prefix.replay);

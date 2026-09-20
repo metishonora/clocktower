@@ -24,7 +24,7 @@ function interruptedDayVoteHandoff(replay:ReplayState):DayHandoff|undefined {
   if(replay.phase!=='day'||replay.gameEnd||!day||day.stage!=='voting'||day.pendingGameEnd||day.pendingDeath||!nomination||nomination.countedVoterIds!==null)return;
   if(day.consequences.some(c=>!c.resolved&&c.source.characterId!=='barber'))return;
   if(!day.deaths.some(d=>d.cause.rootEventId===nomination.eventId&&d.cause.resumeStage==='voting'))return;
-  return {kind:'vote',stepId:day.stepId,nominatorId:nomination.nominatorId,nomineeId:nomination.nomineeId,voterIds:[],spyAsTownsfolk:false,complete:false};
+  return {kind:'vote',stepId:day.stepId,nominatorId:nomination.nominatorId,nomineeId:nomination.nomineeId,voterIds:[...day.forcedVoterIds],spyAsTownsfolk:false,complete:false};
 }
 export type FirstNightState = {
   dayHandoff?: DayHandoff;
@@ -73,7 +73,7 @@ export class FirstNightController {
     if(!setup||setup.type!=='setupConfirmed')return;
     this.patch({setupDistribution:undefined,setupDistributionPending:true,setupDistributionError:undefined});
     try {
-      const result=await this.core.setupDistribution({customDefinition:this.state.file.game.script.definition,playerCount:setup.payload.players.length,actualCharacters:setup.payload.players.map(p=>p.actualCharacter)});
+      const result=await this.core.setupDistribution({customDefinition:this.state.file.game.script.definition,playerCount:setup.payload.players.length,actualCharacters:setup.payload.players.map(p=>p.actualCharacter),setupChoiceId:setup.payload.setupChoiceId,boffinAbility:setup.payload.boffinAbility,marionetteCharacter:setup.payload.players.find(p=>p.actualCharacter==='marionette')?.shownCharacter});
       if(this.disposed||request!==this.setupRequest)return;
       this.patch({setupDistributionPending:false,...(result.ok?{setupDistribution:result.value}:{setupDistributionError:result.error.messageKo})});
     }catch {if(!this.disposed&&request===this.setupRequest)this.patch({setupDistributionPending:false,setupDistributionError:'구성을 확인하지 못했습니다. 다시 시도해 주세요.'});}
@@ -257,7 +257,7 @@ export class FirstNightController {
       if(!result.ok){this.patch({error:result.error.messageKo});return;}
       this.adopt();
       const currentDay=this.state.replay.day!;
-      if(handoff&&input.kind==='nominate'&&currentDay.stage==='voting') this.patch({dayHandoff:{...handoff,kind:'vote',stepId:currentDay.stepId,voterIds:[],complete:false}});
+      if(handoff&&input.kind==='nominate'&&currentDay.stage==='voting') this.patch({dayHandoff:{...handoff,kind:'vote',stepId:currentDay.stepId,voterIds:[...currentDay.forcedVoterIds],complete:false}});
       if(handoff&&input.kind==='vote') this.patch({dayHandoff:{...handoff,stepId:currentDay.stepId,complete:true,countedVotes:currentDay.nominations.at(-1)?.countedVoterIds?.length??0}});
       const newIds=new Set(this.state.file.game.events.slice(beforeCount).map(e=>e.id));
       const notifications=this.state.replay.pendingIdentityReveals?.filter(r=>newIds.has(r.deliveryEventId??r.sourceEventId)).map(r=>r.payload)??[];
@@ -281,10 +281,11 @@ export class FirstNightController {
     const day=this.state.replay.day;
     if(!day||!this.dayInteractionReady||!['nomination','voting'].includes(day.stage)||day.pendingGameEnd||this.state.replay.gameEnd)return;
     const last=day.nominations.at(-1);
-    this.patch({dayHandoff:{kind:day.stage==='voting'?'vote':'nomination',stepId:day.stepId,nominatorId:day.stage==='voting'?last?.nominatorId:undefined,nomineeId:day.stage==='voting'?last?.nomineeId:undefined,voterIds:[],spyAsTownsfolk:false,complete:false}});
+    this.patch({dayHandoff:{kind:day.stage==='voting'?'vote':'nomination',stepId:day.stepId,nominatorId:day.stage==='voting'?last?.nominatorId:undefined,nomineeId:day.stage==='voting'?last?.nomineeId:undefined,voterIds:day.stage==='voting'?[...day.forcedVoterIds]:[],spyAsTownsfolk:false,complete:false}});
   };
   canSelectDayPlayer = (id:string) => {
     const h=this.state.dayHandoff,day=this.state.replay.day;
+    if(h?.kind==='vote'&&day?.forcedVoterIds.includes(id))return false;
     return !!(h&&day&&h.stepId===day.stepId&&!h.complete&&this.dayInteractionReady&&(h.kind==='vote'?day.eligibleVoterIds:h.nominatorId?day.eligibleNomineeIds:day.eligibleNominatorIds).includes(id));
   };
   selectDayPlayer = (id:string) => {
@@ -294,7 +295,7 @@ export class FirstNightController {
   };
   resetDayHandoff = () => {
     const h=this.state.dayHandoff;if(!h||h.complete||!this.dayInteractionReady)return;
-    this.patch({dayHandoff:h.kind==='vote'?{...h,voterIds:[]}:{...h,nominatorId:undefined,nomineeId:undefined,spyAsTownsfolk:false}});
+    this.patch({dayHandoff:h.kind==='vote'?{...h,voterIds:[...this.state.replay.day!.forcedVoterIds]}:{...h,nominatorId:undefined,nomineeId:undefined,spyAsTownsfolk:false}});
   };
   setDaySpyRegistration = (value:boolean) => {
     const h=this.state.dayHandoff;if(h&&!h.complete&&this.dayInteractionReady)this.patch({dayHandoff:{...h,spyAsTownsfolk:value}});
@@ -342,7 +343,7 @@ export class FirstNightController {
   showNotification = () => {const h=this.state.handoff;if(h?.stage==='notification')this.showPayload(h.notifications[h.notificationIndex]);};
   freeAction = async (id:string,input:PhaseStepConfirmation['input']) => {
     if(this.state.busy||this.state.public||this.state.handoff)return;
-    const candidate=this.steps.find(s=>JSON.stringify(s.abilityUse)===id && s.actionCause?.kind==='optional');
+    const candidate=this.steps.find(s=>(s.id===id||JSON.stringify(s.abilityUse)===id) && s.actionCause?.kind==='optional');
     if(!candidate)return;
     const regular=this.state.inputDraft;
     const regularStep=this.step?.id;

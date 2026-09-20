@@ -1,4 +1,5 @@
 import {numericInputDraft,numericInputFeedback} from '../custom/grimoire/numericInputDraft';
+import {CustomBoffinInput} from './CustomBoffinInput';
 import {ScalarInformationEditorView,ScalarInformationConstraintView,InformationResultView} from '../shared-ui/InformationResultView';
 import {CustomRegistrationControls} from './CustomRegistrationControls';
 import {registrationPresentation} from '../custom/grimoire/registrationPresentation';
@@ -54,6 +55,22 @@ export function CustomStepInputs({ step, replay, controller, disabled }: { step:
   const hasTargets=playerIds.length>=minPlayers;
   const targeted=['dreamer','seamstress'].includes(step.character ?? '');
   const registration=registrationPresentation(step,replay,controller.getSnapshot().inputDraft);
+  if(step.character==='boffin')return <>
+    <CustomBoffinInput step={step} replay={replay} controller={controller} disabled={disabled}/>
+    <div className="snvStepActions"><button type="button" className="prominent" disabled={disabled||!valid} onClick={()=>void submit()}>확정</button></div>
+  </>;
+  if(step.character==='balloonist'&&hasTargets)return <>
+    <InformationInputPresentation label="알려줄 플레이어">{playerIds.map(id=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;}).join(' · ')}</InformationInputPresentation>
+    {choices.length>1&&<label className="customSetupChoice">등록 유형<select value={choiceIndex} disabled={disabled} onChange={e=>controller.updateInput({choiceIndex:e.target.value,judgments:choices[Number(e.target.value)]?.registrationJudgments??[]})}><option value="">선택 필요</option>{choices.map((c,i)=><option key={i} value={String(i)}>{c.registrationJudgments.length?c.registrationJudgments.map(j=>({townsfolk:'주민',outsider:'외지인',minion:'하수인',demon:'악마',good:'선',evil:'악'})[j.registeredAs]).join(' · '):'실제 유형'}</option>)}</select></label>}
+  </>;
+  if(step.character==='pixie'&&hasTargets)return <>
+    <div className="customCarouselTarget"><span>집착 대상</span><strong>{playerIds.map(id=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;}).join(' · ')}</strong></div>
+    {choices.length>1?<label className="customCarouselSelect">알려줄 직업<select value={choiceIndex} disabled={disabled} onChange={e=>controller.updateInput({choiceIndex:e.target.value,judgments:choices[Number(e.target.value)]?.registrationJudgments??[]})}><option value="">선택 필요</option>{choices.map((o,i)=><option key={i} value={String(i)}>{informationLabel(o.result,replay)}</option>)}</select></label>:<div className="customCarouselTarget"><span>알려줄 직업</span><strong>{choice?informationLabel(choice.result,replay):'선택 필요'}</strong></div>}
+  </>;
+  if(step.character==='nightwatchman'&&hasTargets) return <>
+    <InformationInputPresentation label="통지 대상">{playerIds.map(id=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;}).join(' · ')}</InformationInputPresentation>
+    {choices.length>1&&<InformationTreatmentInput label="야경꾼으로 알려줄 사람" options={resultOptions} value={choiceIndex} disabled={disabled} onChange={setChoice}/>}
+  </>;
   // A finite numeric result is an input contract, not a character-specific button layout.
   if(scalarId&&!constraint&&!registration.kind&&step.informationPrompt?.computedResult?.kind==='number'&&choices.length>1&&choices.every(c=>c.result.kind==='number')) {
     const numbers=choices.map(c=>c.result.kind==='number'?c.result.value:0),min=Math.min(...numbers),max=Math.max(...numbers);

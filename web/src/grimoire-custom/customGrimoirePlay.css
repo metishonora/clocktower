@@ -73,3 +73,11 @@
 }
 
 .customGrimoirePlay .snvInformationInputTruthWarning { color: #ff4668; font-weight: 800; }
+.playerPinnedTokenArea li[aria-label*="과학자가 부여함"] .playerPinnedToken { grid-template-rows: 18px 1fr 26px; }
+.playerPinnedTokenArea li[aria-label*="과학자가 부여함"] .playerPinnedToken > strong { max-width: 100px; font-size: .65rem; line-height: 1.2; white-space: normal; word-break: keep-all; overflow: visible; text-overflow: clip; }
+.customCarouselTarget { display:flex; margin:14px 0; padding:12px 14px; align-items:center; justify-content:space-between; gap:10px; border:1px solid var(--bmr-line); border-radius:12px; color:var(--bmr-ink); background:var(--bmr-card); }
+.customCarouselTarget span { color:var(--bmr-muted); font-size:.75rem; font-weight:800; }
+.customCarouselTarget strong { min-width:0; overflow-wrap:anywhere; }
+.customCarouselSelect { display:grid; gap:8px; color:var(--bmr-muted); font-size:.8rem; font-weight:800; }
+.customCarouselSelect select { width:100%; min-width:0; min-height:44px; padding:10px 12px; border:1px solid var(--bmr-line); border-radius:12px; color:var(--bmr-ink); background:var(--bmr-card); font:inherit; cursor:pointer; }
+.customCarouselSelect + .snvStepActions { margin-top:14px; }

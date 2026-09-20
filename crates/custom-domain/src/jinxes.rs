@@ -11,8 +11,8 @@ use std::{
     sync::OnceLock,
 };
 
-pub(crate) const SOURCE_REVISION: &str = "915347e627c3f6cd1f438f82b6001784e11b3e8b";
-pub(crate) const SOURCE_URL: &str = "https://github.com/ThePandemoniumInstitute/botc-release/blob/915347e627c3f6cd1f438f82b6001784e11b3e8b/resources/data/jinxes.json";
+pub(crate) const SOURCE_REVISION: &str = "f10cd02e3401af227ce406287eaae7bb99a06a42";
+pub(crate) const SOURCE_URL: &str = "https://github.com/ThePandemoniumInstitute/botc-release/blob/f10cd02e3401af227ce406287eaae7bb99a06a42/resources/data/jinxes.json";
 #[derive(Deserialize)]
 pub(crate) struct OfficialGroup {
     pub id: String,
@@ -48,6 +48,8 @@ pub(crate) struct SuccessionContext<'a> {
 /// A future consumer adds a typed seam here and owns when it calls that seam.
 #[derive(Clone, Copy)]
 pub(crate) enum Rule {
+    ShownSetupAbility(fn(&str, &str) -> Option<&'static str>),
+    ForbidGrantedAbility(fn(&str, &str) -> bool),
     Registration(fn(&RegistrationContext<'_>) -> Option<RegistrationJudgment>),
     PreventSuccession(fn(&SuccessionContext<'_>) -> bool),
     SimulationCause(fn(&ActionOccurrence) -> Option<AbilityUseRef>),
@@ -68,6 +70,25 @@ fn pair_key(a: &str, b: &str) -> String {
     ids.join("--")
 }
 impl JinxRegistry {
+    pub(crate) fn shown_setup_abilities(&self, actual: &str, shown: &str) -> Vec<&'static str> {
+        self.entries
+            .values()
+            .flat_map(|(_, r)| &r.rules)
+            .filter_map(|r| match r {
+                Rule::ShownSetupAbility(run) => run(actual, shown),
+                _ => None,
+            })
+            .collect()
+    }
+    pub(crate) fn forbids_granted_ability(&self, source: &str, ability: &str) -> bool {
+        self.entries
+            .values()
+            .flat_map(|(_, r)| &r.rules)
+            .any(|r| match r {
+                Rule::ForbidGrantedAbility(run) => run(source, ability),
+                _ => false,
+            })
+    }
     /// Check the whole published character catalog, not just one game's selected pair.
     /// Missing metadata, an empty implementation, unknown or duplicate bindings fail closed.
     pub(crate) fn new(
@@ -129,6 +150,8 @@ impl JinxRegistry {
             let mut kinds = BTreeSet::new();
             for rule in &registration.rules {
                 let kind = match rule {
+                    Rule::ShownSetupAbility(_) => 4,
+                    Rule::ForbidGrantedAbility(_) => 3,
                     Rule::Registration(_) => 0,
                     Rule::PreventSuccession(_) => 1,
                     Rule::SimulationCause(_) => 2,
@@ -188,6 +211,7 @@ pub(crate) fn character_registrations() -> Vec<RegisteredJinx> {
     crate::characters::trouble_brewing::jinx_registrations()
         .into_iter()
         .chain(crate::characters::sects_and_violets::jinx_registrations())
+        .chain(crate::characters::carousel::jinx_registrations())
         .collect()
 }
 pub(crate) fn production() -> Result<&'static JinxRegistry, CoreError> {

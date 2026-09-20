@@ -56,7 +56,7 @@ fn custom_registry_exhaustively_projects_each_tb_and_snv_id_to_one_canonical_kin
     let catalog = custom_script_catalog();
     let ids = catalog.iter().map(|entry| entry.id).collect::<HashSet<_>>();
 
-    assert_eq!(catalog.len(), 47);
+    assert_eq!(catalog.len(), 53);
     assert_eq!(ids.len(), catalog.len());
 
     let mut kind_counts = [0; 4];
@@ -69,14 +69,25 @@ fn custom_registry_exhaustively_projects_each_tb_and_snv_id_to_one_canonical_kin
             .as_array()
             .unwrap()
             .iter()
-            .find(|row| row["id"] == entry.id)
-            .unwrap();
-        assert_eq!(
-            serde_json::to_value(entry.kind).unwrap(),
-            expected["kind"],
-            "{}",
-            entry.id
-        );
+            .find(|row| row["id"] == entry.id);
+        if let Some(expected) = expected {
+            assert_eq!(
+                serde_json::to_value(entry.kind).unwrap(),
+                expected["kind"],
+                "{}",
+                entry.id
+            );
+        } else {
+            assert!([
+                ("zealot", CharacterKind::Outsider),
+                ("nightwatchman", CharacterKind::Townsfolk),
+                ("pixie", CharacterKind::Townsfolk),
+                ("balloonist", CharacterKind::Townsfolk),
+                ("boffin", CharacterKind::Minion),
+                ("marionette", CharacterKind::Minion)
+            ]
+            .contains(&(entry.id, entry.kind)));
+        }
         kind_counts[match entry.kind {
             CharacterKind::Townsfolk => 0,
             CharacterKind::Outsider => 1,
@@ -85,7 +96,7 @@ fn custom_registry_exhaustively_projects_each_tb_and_snv_id_to_one_canonical_kin
         }] += 1;
     }
 
-    assert_eq!(kind_counts, [26, 8, 8, 5]);
+    assert_eq!(kind_counts, [29, 9, 10, 5]);
 
     let all_character_ids = catalog.iter().map(|entry| entry.id).collect::<Vec<_>>();
     let context = resolve_custom_script(&definition(&all_character_ids)).unwrap();

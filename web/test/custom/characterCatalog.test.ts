@@ -17,14 +17,15 @@ const SYSTEM_ONLY_FIRST_NIGHT_ORDER = [
 ];
 
 test("builds the exact unique TB and S&V custom allowlist with canonical kinds", () => {
-  equal(customScriptCharacters.length, 47);
-  equal(new Set(customScriptCharacters.map(({ id }) => id)).size, 47);
+  equal(customScriptCharacters.length, 53);
+  equal(new Set(customScriptCharacters.map(({ id }) => id)).size, 53);
   deepEqual(
     customScriptCharacters.map(({ id }) => id),
-    baseline.map(({ id }) => id),
+    [...baseline.map(({ id }) => id), 'zealot', 'nightwatchman', 'pixie', 'balloonist', 'boffin', 'marionette'],
   );
   equal(customScriptCharacterKind("imp"), "Demon");
   equal(customScriptCharacterKind("clockmaker"), "Townsfolk");
+  equal(customScriptCharacterKind("zealot"), "Outsider");
 });
 
 test("keeps non-canonical and BMR IDs outside the custom allowlist", () => {

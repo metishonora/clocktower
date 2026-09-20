@@ -115,9 +115,6 @@ fn reference(character: &str, id: &str) -> FirstNightActionRef {
     }
 }
 pub(crate) fn registration_source(facts: &CustomGameFacts, id: &str) -> Option<AbilityUseRef> {
-    if impaired(facts, id) {
-        return None;
-    }
     facts
         .ability_provenance
         .iter()
@@ -126,6 +123,8 @@ pub(crate) fn registration_source(facts: &CustomGameFacts, id: &str) -> Option<A
             s.owner_player_id == id
                 && matches!(s.character_id.as_str(), "spy" | "recluse")
                 && crate::reducer::current_ability_instance(facts, s)
+                && crate::characters::carousel::grant_enabled(facts, s)
+                && !crate::effects::ability_impaired(facts, s)
         })
 }
 fn same_source(a: &ActionOccurrence, b: &ActionOccurrence) -> bool {
@@ -266,13 +265,10 @@ fn vortox_applies(facts: &CustomGameFacts, o: &ActionOccurrence, c: &str) -> boo
         && custom_registry_entries()
             .iter()
             .any(|(id, kind)| *id == c && *kind == CharacterKind::Townsfolk)
-        && !o
-            .simulation_source
-            .as_ref()
-            .is_some_and(|s| s.source_ability_use.character_id == "drunk")
+        && crate::simulation::townsfolk_observer(o)
 }
 fn has_discretion(facts: &CustomGameFacts, o: &ActionOccurrence) -> bool {
-    o.simulation_source.is_some() || o.actor_player_id().is_some_and(|id| impaired(facts, id))
+    crate::effects::occurrence_impaired(facts, o)
 }
 fn information_true(
     definition: &ResolvedScriptContext,
@@ -822,8 +818,17 @@ impl TbHandler {
             });
         }
         if self.character() == "imp" {
-            let successors = step.required_input.allowed_successor_player_ids.clone().unwrap_or_default();
-            enrich_attack_input(facts, o.ability_use.as_ref(), &mut step.required_input, &successors);
+            let successors = step
+                .required_input
+                .allowed_successor_player_ids
+                .clone()
+                .unwrap_or_default();
+            enrich_attack_input(
+                facts,
+                o.ability_use.as_ref(),
+                &mut step.required_input,
+                &successors,
+            );
         }
         step.ability_origin = o
             .ability_use
@@ -1931,6 +1936,16 @@ impl ActionHandler for TbHandler {
         c: &ActionContext<'_>,
         _: &FirstNightProgress,
     ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        if c.night_number() > 1
+            && self.character() == "chef"
+            && self.id() == regular_id(self.character())
+        {
+            return Ok(self
+                .bases(c)?
+                .into_iter()
+                .filter(|o| !info_done(c.rule_service.facts().unwrap(), o, self.character()))
+                .collect());
+        }
         self.preparation_candidates(c, false)
     }
     fn optional_occurrences(
@@ -2068,11 +2083,15 @@ fn information_causes(
 ) -> Result<(Vec<DeliveryReason>, Vec<AbilityUseRef>), CoreError> {
     let actor = o.actor_player_id().ok_or_else(invalid)?;
     let mut reasons = vec![];
-    let mut causes = crate::effects::impairment_causes(facts, actor);
+    let mut causes = if crate::effects::occurrence_impaired(facts, o) {
+        crate::effects::impairment_causes(facts, actor)
+    } else {
+        vec![]
+    };
     for impairment in facts
         .active_impairments
         .iter()
-        .filter(|i| i.player_id == actor)
+        .filter(|i| i.player_id == actor && crate::effects::occurrence_impaired(facts, o))
     {
         let reason = match impairment.kind {
             ImpairmentKind::Drunk => DeliveryReason::Drunk,
@@ -2097,7 +2116,9 @@ fn information_causes(
             reasons.push(DeliveryReason::Drunk);
         }
         for source in crate::jinxes::production()?.simulation_causes(o) {
-            if !causes.contains(&source) { causes.push(source); }
+            if !causes.contains(&source) {
+                causes.push(source);
+            }
         }
     }
     if vortox_applies(facts, o, character) {
@@ -2348,20 +2369,29 @@ pub(crate) fn day_use_ability(
     Ok(())
 }
 pub(crate) fn day_no_execution(prior: &CustomGameFacts, event_id: &str) -> Option<CustomGameEnd> {
-    if prior.players.iter().filter(|p| p.alive).count() == 3
-        && prior
-            .ability_provenance
-            .iter()
-            .any(|r| r.ability_use.character_id == "mayor" && effective(prior, &r.ability_use))
-    {
-        Some(CustomGameEnd {
-            winning_alignment: Alignment::Good,
-            reason: CustomGameEndReason::MayorNoExecution,
-            source_event_id: event_id.into(),
-        })
-    } else {
-        None
+    if prior.players.iter().filter(|p| p.alive).count() != 3 {
+        return None;
     }
+    let winners = prior
+        .ability_provenance
+        .iter()
+        .filter(|r| r.ability_use.character_id == "mayor" && effective(prior, &r.ability_use))
+        .filter_map(|r| {
+            prior
+                .player(&r.ability_use.owner_player_id)
+                .map(|p| p.alignment)
+        })
+        .collect::<Vec<_>>();
+    // Good wins simultaneous opposing victories.
+    winners.first().map(|first| CustomGameEnd {
+        winning_alignment: if winners.contains(&Alignment::Good) {
+            Alignment::Good
+        } else {
+            *first
+        },
+        reason: CustomGameEndReason::MayorNoExecution,
+        source_event_id: event_id.into(),
+    })
 }
 pub(crate) fn day_execution_end(
     prior: &CustomGameFacts,
@@ -2377,7 +2407,10 @@ pub(crate) fn day_execution_end(
                 && effective(prior, &r.ability_use)
         })
         .then(|| CustomGameEnd {
-            winning_alignment: Alignment::Evil,
+            winning_alignment: match prior.player(player_id).expect("ability owner").alignment {
+                Alignment::Good => Alignment::Evil,
+                Alignment::Evil => Alignment::Good,
+            },
             reason: CustomGameEndReason::SaintExecuted,
             source_event_id: event_id.into(),
         })
@@ -2411,8 +2444,13 @@ pub(crate) fn death_succession(
     // Every owned Scarlet Woman instance receives its own identity transition.
     for successor in successors {
         if crate::jinxes::production()?.prevents_succession(&crate::jinxes::SuccessionContext {
-            before: prior, after: next, dead_id, successor: &successor.ability_use,
-        }) { continue; }
+            before: prior,
+            after: next,
+            dead_id,
+            successor: &successor.ability_use,
+        }) {
+            continue;
+        }
         let player = next
             .players
             .iter_mut()
@@ -2444,8 +2482,15 @@ pub(crate) fn death_succession(
                 event_id: event_id.into(),
             });
         // Identity changes immediately; a daytime successor learns this at night.
-        let daytime = prior.day.as_ref().is_none_or(|d| d.stage != crate::day::contracts::DayStage::Night);
-        let reveals = if daytime { &mut next.scarlet_day_reveals } else { &mut next.pending_identity_reveals };
+        let daytime = prior
+            .day
+            .as_ref()
+            .is_none_or(|d| d.stage != crate::day::contracts::DayStage::Night);
+        let reveals = if daytime {
+            &mut next.scarlet_day_reveals
+        } else {
+            &mut next.pending_identity_reveals
+        };
         reveals.push(PendingIdentityReveal {
             delivery_event_id: None,
             source_event_id: event_id.into(),
@@ -2889,38 +2934,84 @@ pub(crate) fn enrich_attack_input(
     input: &mut crate::model::RequiredInput,
     successors: &[String],
 ) {
-    input.attack_options = Some(facts.players.iter().map(|target| {
-        let mut mayor_decision = None;
-        let mut successor_player_ids = vec![];
-        if let Some(source) = source {
-            let killed = demon_attack_target(facts, source, target, &None);
-            if killed.is_err() && demon_attack_target(facts, source, target, &Some(MayorDecisionInput::MayorDies)).is_ok() {
-                mayor_decision = Some(crate::model::MayorDecisionPrompt {
-                    mayor_player_id: target.id.clone(),
-                    bounce_target_player_ids: facts.players.iter().filter(|p| p.id != target.id).map(|p| p.id.clone()).collect(),
-                });
-            }
-            if killed.ok().flatten().as_deref() == Some(source.owner_player_id.as_str()) && target.id == source.owner_player_id {
-                successor_player_ids = successors.iter().filter(|id| **id != source.owner_player_id).cloned().collect();
-            }
-        }
-        crate::model::AttackTargetOption { target_player_id: target.id.clone(), mayor_decision, successor_player_ids }
-    }).collect());
+    input.attack_options = Some(
+        facts
+            .players
+            .iter()
+            .map(|target| {
+                let mut mayor_decision = None;
+                let mut successor_player_ids = vec![];
+                if let Some(source) = source {
+                    let killed = demon_attack_target(facts, source, target, &None);
+                    if killed.is_err()
+                        && demon_attack_target(
+                            facts,
+                            source,
+                            target,
+                            &Some(MayorDecisionInput::MayorDies),
+                        )
+                        .is_ok()
+                    {
+                        mayor_decision = Some(crate::model::MayorDecisionPrompt {
+                            mayor_player_id: target.id.clone(),
+                            bounce_target_player_ids: facts
+                                .players
+                                .iter()
+                                .filter(|p| p.id != target.id)
+                                .map(|p| p.id.clone())
+                                .collect(),
+                        });
+                    }
+                    if killed.ok().flatten().as_deref() == Some(source.owner_player_id.as_str())
+                        && target.id == source.owner_player_id
+                    {
+                        successor_player_ids = successors
+                            .iter()
+                            .filter(|id| **id != source.owner_player_id)
+                            .cloned()
+                            .collect();
+                    }
+                }
+                crate::model::AttackTargetOption {
+                    target_player_id: target.id.clone(),
+                    mayor_decision,
+                    successor_player_ids,
+                }
+            })
+            .collect(),
+    );
 }
 
 pub(crate) fn notifies_identity_change(result: &crate::contracts::CustomActionResult) -> bool {
-    matches!(result, crate::contracts::CustomActionResult::NightAttack { .. })
+    matches!(
+        result,
+        crate::contracts::CustomActionResult::NightAttack { .. }
+    )
 }
 
 /// Release daytime succession notices only once the next night has begun.
 pub(crate) fn begin_night_identity_reveals(facts: &mut CustomGameFacts, event_id: &str) {
     for mut reveal in std::mem::take(&mut facts.scarlet_day_reveals) {
-        let RevealPayload::CharacterChange { ref player_id, ref character_id, .. } = reveal.payload else { continue; };
-        if !facts.player(player_id).is_some_and(|p| p.alive && p.actual_character == *character_id) {
+        let RevealPayload::CharacterChange {
+            ref player_id,
+            ref character_id,
+            ..
+        } = reveal.payload
+        else {
+            continue;
+        };
+        if !facts
+            .player(player_id)
+            .is_some_and(|p| p.alive && p.actual_character == *character_id)
+        {
             continue;
         }
         reveal.delivery_event_id = Some(event_id.into());
-        reveal.sequence = facts.pending_identity_reveals.iter().filter(|r| r.source_event_id == reveal.source_event_id).count() as u8;
+        reveal.sequence = facts
+            .pending_identity_reveals
+            .iter()
+            .filter(|r| r.source_event_id == reveal.source_event_id)
+            .count() as u8;
         facts.pending_identity_reveals.push(reveal);
     }
 }

@@ -136,9 +136,13 @@ pub(crate) fn default_other_plan(
     );
     let rules = crate::night_deaths::rules_for(context);
     if context.scheduled_night_deaths && !rules.is_empty() {
-        let index = plan.0.iter().rposition(|action| rules.iter().any(|r| r.default_after.contains(action)))
+        let index = plan
+            .0
+            .iter()
+            .rposition(|action| rules.iter().any(|r| r.default_after.contains(action)))
             .expect("registered death source has an ordered trigger");
-        plan.0.insert(index + 1, FirstNightActionRef::system("resolveNightDeaths"));
+        plan.0
+            .insert(index + 1, FirstNightActionRef::system("resolveNightDeaths"));
     }
     plan
 }
@@ -156,9 +160,13 @@ pub(crate) fn validate_other_plan(
         || entries.last() != Some(&FirstNightActionRef::system("dawn"))
         || actual.len() != entries.len()
         || actual != expected
-        || (context.scheduled_night_deaths && crate::night_deaths::rules_for(context).iter().any(|rule|
-            entries.iter().position(|a| *a == FirstNightActionRef::system("resolveNightDeaths"))
-                <= entries.iter().position(|a| a == &rule.trigger)))
+        || (context.scheduled_night_deaths
+            && crate::night_deaths::rules_for(context).iter().any(|rule| {
+                entries
+                    .iter()
+                    .position(|a| *a == FirstNightActionRef::system("resolveNightDeaths"))
+                    <= entries.iter().position(|a| a == &rule.trigger)
+            }))
     {
         return Err(ErrorKind::InvalidOtherNightOrderPlan.into_error());
     }
@@ -177,7 +185,9 @@ pub(crate) fn other_plan_for_draft(
         (FirstNightPlanSource::Default, default_other_plan(&context))
     };
     Ok(CustomFirstNightPlanResult {
-        upgrade_night_order_version: (definition.night_order_version.is_none() && !crate::night_deaths::rules_for(&context).is_empty()).then_some(2),
+        upgrade_night_order_version: (definition.night_order_version.is_none()
+            && !crate::night_deaths::rules_for(&context).is_empty())
+        .then_some(2),
         source,
         plan: FirstNightOrderPlan(plan.0),
     })

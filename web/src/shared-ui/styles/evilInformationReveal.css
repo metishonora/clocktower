@@ -1,0 +1,16 @@
+.bmrRevealTeamGroups {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px clamp(24px, 5vw, 48px);
+  min-width: 0;
+}
+.bmrRevealTeamGroups > section { min-width: 0; max-width: 100%; }
+.bmrRevealTeamGroups .bmrRevealPlayers article { max-width: 100%; overflow-wrap: anywhere; }
+.bmrReveal .bmrRevealMarionettes h2 { color: #ffd38a; }
+.bmrRevealMarionettes .bmrRevealPlayers article {
+  color: #fff1d6;
+  border: 2px solid #e8ad55;
+  background: #62391d;
+}

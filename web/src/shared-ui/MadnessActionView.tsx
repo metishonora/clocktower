@@ -3,7 +3,7 @@ import '../features/madness/madnessActionDock.css';
 type Player={id:string;seat:number;name:string};
 type MadnessCheckResult='clear'|'violation';
 type IdentityRenderer=(characterId:string,theme:'day'|'night',children:ReactNode)=>ReactNode;
-export type MadnessAssignmentView={assignmentId:string;sourcePlayerId:string;sourceCharacterId:'mutant'|'cerenovus';targetPlayerId:string;requiredCharacterId?:string;status:'unchecked'|'clear'|'violated';sourceEffective:boolean;canCheck:boolean;canExecute:boolean;sourceLabel:string;iconSrc?:string;ability?:string;requiredCharacterLabel?:string};
+export type MadnessAssignmentView={assignmentId:string;sourcePlayerId:string;sourceCharacterId:'mutant'|'cerenovus'|'pixie';targetPlayerId:string;requiredCharacterId?:string;status:'unchecked'|'clear'|'violated';sourceEffective:boolean;canCheck:boolean;canExecute:boolean;sourceLabel:string;iconSrc?:string;ability?:string;requiredCharacterLabel?:string};
 type MadnessAssignmentState=MadnessAssignmentView;
 export function MadnessActionView({
   players,
@@ -81,7 +81,7 @@ export function MadnessActionView({
       <div className={`snvMadnessDock ${theme}`} style={dockStyle} aria-label="집착 확인 자유 행동">
         {assignments.map((assignment) => {
           const target = playerById(players, assignment.targetPlayerId);
-          const sourceLabel = assignment.sourceCharacterId === "mutant" ? "변종" : "세레노버스";
+          const sourceLabel = assignment.sourceLabel;
           const asset = assignment.iconSrc ? {src:assignment.iconSrc} : undefined;
           const selected = groupActive && assignment.assignmentId === activeId;
           return (
@@ -149,12 +149,13 @@ function MadnessPanel({
   const source = playerById(players, assignment.sourcePlayerId);
   const targetLabel = playerLabel(target);
   const mutant = assignment.sourceCharacterId === "mutant";
+  const pixie = assignment.sourceCharacterId === 'pixie';
   const sourceCharacter = {name:assignment.sourceLabel,ability:assignment.ability};
   const sourceLabel = sourceCharacter?.name ?? (mutant ? "변종" : "세레노버스");
   const sourcePlayerLabel = source ? `${source.seat}번 ${source.name}` : "원인 플레이어 없음";
   const sourceAsset = assignment.iconSrc ? {src:assignment.iconSrc} : undefined;
   const requiredCharacter = assignment.requiredCharacterLabel ?? "선택한 캐릭터";
-  const statusLabel = assignment.status === "violated" ? "위반 발견"
+  const statusLabel = pixie ? (assignment.status==='clear'?'충분히 집착함':assignment.status==='violated'?'집착하지 않음':'확인 전') : assignment.status === "violated" ? "위반 발견"
     : assignment.status === "clear" ? "위반 없음"
       : "확인 전";
   const recordedResult: MadnessCheckResult | undefined = assignment.status === "violated"
@@ -197,12 +198,12 @@ function MadnessPanel({
         ) : (
           <>
             <button type="button" disabled={checkDisabled || recordedResult === "clear"} onClick={() => judge("clear")}>충분히 집착함</button>
-            <button type="button" className="violation" disabled={checkDisabled || recordedResult === "violation"} onClick={() => judge("violation")}>충분히 집착하지 않음</button>
+            <button type="button" className="violation" disabled={checkDisabled || recordedResult === "violation"} onClick={() => judge("violation")}>{pixie?'집착하지 않음':'충분히 집착하지 않음'}</button>
           </>
         )}
       </div>
-      {!assignment.sourceEffective ? <p className="snvMadnessUnavailable">능력 효력이 없어 처형할 수 없습니다.</p> : null}
-      {assignment.status === "violated" ? (
+      {!pixie&&!assignment.sourceEffective ? <p className="snvMadnessUnavailable">능력 효력이 없어 처형할 수 없습니다.</p> : null}
+      {!pixie&&assignment.status === "violated" ? (
         <button type="button" className="snvMadnessExecute" disabled={busy || !assignment.canExecute} onClick={onExecute}>{targetLabel} 처형</button>
       ) : null}
     </section>

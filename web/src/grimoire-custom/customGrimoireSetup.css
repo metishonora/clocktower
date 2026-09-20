@@ -6,6 +6,27 @@
 .customGrimoireSetup .snvPhaseMark { flex-shrink: 0; }
 .customSetupError { max-width: 1180px; margin: 16px auto; color: #ffc3c8; }
 .customShownCharacter { display: grid; gap: 8px; margin-bottom: 12px; }
+.customSetupChoices { display: grid; gap: 12px; }
+.customSetupChoice, .customSetupChoices label { display: grid; gap: 8px; margin-bottom: 12px; min-width: 0; }
+.customSetupChoice select, .customSetupChoices select { width: 100%; min-width: 0; min-height: 44px; padding: 10px; color: inherit; background: var(--bmr-input, #300b15); border: 1px solid var(--bmr-line, rgba(224,156,164,.3)); border-radius: 8px; font: inherit; }
+.bmrRoleDetail:has(.customRoleSetupAdjustment) { height: auto; min-height: 180px; }
+.customRoleSetupAdjustment { grid-column: 1 / -1; min-width: 0; }
+.customRoleSetupAdjustment .bmrMobileGodfatherAdjustment {
+  display: flex; min-width: 0; min-height: 38px; padding: 5px 7px 5px 10px;
+  align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  border: 1px solid rgba(217,180,108,.24); border-radius: 12px;
+  color: #e9c9ca; background: rgba(117,27,43,.28);
+}
+.customRoleSetupAdjustment .bmrSetupChoiceTitle { flex: 0 0 auto; font-size: .68rem; }
+.customRoleSetupAdjustment .bmrSetupChoiceOptions { display: flex; min-width: 0; justify-content: flex-end; gap: 5px; }
+.customRoleSetupAdjustment .bmrSetupChoiceOptions button { min-width: 58px; min-height: 30px; padding: 5px 9px; border-radius: 999px; font-size: .69rem; font-weight: 900; }
+.customRoleSetupAdjustment select {
+  min-width: 0; max-width: 170px; min-height: 32px; padding: 5px 9px;
+  border: 1px solid rgba(226,163,171,.35); border-radius: 999px;
+  color: #fff8e8; background: #582431; font: inherit; font-size: .72rem; font-weight: 800; cursor: pointer;
+}
+.snvInformationInfluenceBadge.marionette { background: #904116; border-color: #ed9a50; color: #ffdab1; }
+.customGrimoirePlay .issue107ActorIdentity .snvCurrentStepRoleName { font-size: clamp(26px, 7vw, 42px); word-break: keep-all; overflow-wrap: normal; }
 .customShownCharacter select { min-height: 44px; padding: 8px; color: inherit; background: var(--bmr-input, #300b15); border: 1px solid var(--bmr-line, rgba(224,156,164,.22)); border-radius: 8px; font: inherit; }
 @media (max-width: 600px) {
   .customGrimoireSetup .snvSurfaceTabs { gap: 8px; }

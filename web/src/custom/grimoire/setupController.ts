@@ -5,7 +5,7 @@ import { customScriptCharacters, customScriptCharacterKind } from '../characterC
 import { CustomCanonicalSession } from '../session.js';
 import type { CustomWebSessionStorageDriver } from '../storage/sessionStorage.js';
 
-export type GrimoireSetupDraft = { playerCount: number; selectedIds: string[]; players: SetupPlayerInput[] };
+export type GrimoireSetupDraft = { playerCount: number; selectedIds: string[]; players: SetupPlayerInput[]; setupChoiceId?:string;boffinAbility?:string;marionetteCharacter?:string };
 export type GrimoirePresentationState = { activeTab: 'roles' | 'seating' | 'play' };
 export type GrimoireSetupState = {
   definition: CustomScriptDefinition;
@@ -14,6 +14,8 @@ export type GrimoireSetupState = {
   rosterConfirmed: boolean;
   distribution?: SetupDistribution;
   adjustment?: SetupAdjustment;
+  boffinAbilityChoices?:string[];
+  setupAdjacencies?:[string,string][];
   distributionPending: boolean;
   busy: boolean;
   error?: string;
@@ -78,7 +80,7 @@ export class GrimoireSetupController {
     const selectedIds = removing ? old.selectedIds.filter(value => value !== id) : [...old.selectedIds, id];
     const players = old.players.map(player => removing && player.actualCharacter === id
       ? { ...player, actualCharacter: '', shownCharacter: undefined } : { ...player });
-    this.patch({ draft: { ...old, selectedIds, players }, error: undefined });
+    this.patch({ draft: { ...old, selectedIds, players,boffinAbility:old.boffinAbility&&selectedIds.includes(old.boffinAbility)?undefined:old.boffinAbility }, error: undefined });
     void this.updateDistribution();
   };
   selectDemon = (id: string) => {
@@ -92,6 +94,20 @@ export class GrimoireSetupController {
     void this.updateDistribution();
   };
   setPlayerName = (seat: number, name: string) => this.updatePlayer(seat, player => ({ ...player, name }));
+  setSetupChoice = (setupChoiceId:string) => {
+    if(!this.editable||this.state.rosterConfirmed)return;
+    this.patch({draft:{...this.state.draft,setupChoiceId},error:undefined});
+    void this.updateDistribution();
+  };
+  setBoffinAbility = (boffinAbility:string) => {
+    if(!this.editable||this.state.rosterConfirmed)return;
+    this.patch({draft:{...this.state.draft,boffinAbility:boffinAbility||undefined},error:undefined});void this.updateDistribution();
+  };
+  setMarionetteCharacter = (marionetteCharacter:string) => {
+    if(!this.editable||this.state.rosterConfirmed)return;
+    if(marionetteCharacter&&(!this.state.definition.characterIds.includes(marionetteCharacter)||!['Townsfolk','Outsider'].includes(customScriptCharacterKind(marionetteCharacter)??'')))return;
+    this.patch({draft:{...this.state.draft,marionetteCharacter:marionetteCharacter||undefined},error:undefined});void this.updateDistribution();
+  };
   assignCharacter = (seat: number, id: string) => {
     if (id && !this.state.draft.selectedIds.includes(id)) return;
     if (!this.editable) return;
@@ -121,6 +137,15 @@ export class GrimoireSetupController {
       const j = Math.floor(Math.random() * (i + 1));
       [ids[i], ids[j]] = [ids[j], ids[i]];
     }
+    // Core supplies the relationships; the UI only arranges the randomized draft.
+    for (const [character, neighbor] of this.state.setupAdjacencies ?? []) {
+      const source = ids.indexOf(character), target = ids.indexOf(neighbor);
+      if (source < 0 || target < 0) continue;
+      const neighbors = [(target + ids.length - 1) % ids.length, (target + 1) % ids.length];
+      if (neighbors.includes(source)) continue;
+      const destination = neighbors[Math.floor(Math.random() * neighbors.length)];
+      [ids[source], ids[destination]] = [ids[destination], ids[source]];
+    }
     this.patch({ draft: { ...this.state.draft, players: this.state.draft.players.map((player, i) => ({
       ...player, actualCharacter: ids[i], shownCharacter: undefined,
     })) }, error: undefined });
@@ -145,10 +170,16 @@ export class GrimoireSetupController {
     this.patch({ distributionPending: true, distribution: undefined, adjustment: undefined });
     try {
       const result = await this.dependencies.core.setupDistribution({ customDefinition: definition,
-        playerCount: draft.playerCount, actualCharacters: [...draft.selectedIds] });
+        playerCount: draft.playerCount, actualCharacters: [...draft.selectedIds],setupChoiceId:hasBalloonistSetup(draft)?draft.setupChoiceId:undefined,boffinAbility:draft.selectedIds.includes('boffin')?draft.boffinAbility:undefined,marionetteCharacter:draft.selectedIds.includes('marionette')?draft.marionetteCharacter:undefined });
       if (request !== this.distributionRequest || this.disposed) return;
       if (!result.ok) { this.patch({ distributionPending: false, error: result.error.messageKo }); return; }
-      // Keep the earliest choices that still fit when player count or a setup modifier changes.
+      this.patch({boffinAbilityChoices:result.value.boffinAbilityChoices,setupAdjacencies:result.value.setupAdjacencies});
+      // Preserve the roster for the reviewed discretionary adjustment; the ST corrects counts.
+      if(hasBalloonistSetup(this.state.draft)) {
+        const {adjustment,...distribution}=result.value;
+        this.patch({distribution,adjustment,distributionPending:false,error:undefined});return;
+      }
+      // Existing fixed setup modifiers retain their established normalization.
       const {adjustment,...distribution}=result.value;
       const remaining = { ...distribution };
       const selectedIds = this.state.draft.selectedIds.filter(id => {
@@ -177,7 +208,7 @@ export class GrimoireSetupController {
     try {
       const session = this.dependencies.createSession?.(definition, structuredClone(draft)) ?? CustomCanonicalSession.create<GrimoireSetupDraft, GrimoirePresentationState>({ definition, core: this.dependencies.core,
         storage: this.dependencies.storage, setupDraft: structuredClone(draft), presentation: { activeTab: 'play' }, gameId: this.dependencies.gameId });
-      const executed = await session.execute({ type: 'createGame', payload: { players: structuredClone(draft.players) } });
+      const executed = await session.execute({ type: 'createGame', payload: { players: draft.players.map(p=>p.actualCharacter==='marionette'?{...p,shownCharacter:draft.marionetteCharacter}:{...p}),setupChoiceId:hasBalloonistSetup(draft)?draft.setupChoiceId:undefined,boffinAbility:draft.selectedIds.includes('boffin')?draft.boffinAbility:undefined } });
       if (!executed.ok) { this.patch({ error: executed.error.messageKo }); return; }
       // A failed durable write retains the accepted event; retry must save it, never create it twice.
       this.session = session;
@@ -206,7 +237,10 @@ function emptyDraft(playerCount: number): GrimoireSetupDraft {
   })) };
 }
 export function rosterComplete(state: GrimoireSetupState): boolean {
+  if(state.draft.selectedIds.includes('marionette')&&(!state.draft.marionetteCharacter||!state.definition.characterIds.includes(state.draft.marionetteCharacter)||!['Townsfolk','Outsider'].includes(customScriptCharacterKind(state.draft.marionetteCharacter)??'')))return false;
+  if(state.draft.selectedIds.includes('boffin')&&(!state.draft.boffinAbility||!state.boffinAbilityChoices?.includes(state.draft.boffinAbility)))return false;
   if (!state.distribution || state.distributionPending || state.draft.selectedIds.length !== state.draft.playerCount) return false;
   return (['Townsfolk', 'Outsider', 'Minion', 'Demon'] as const).every(kind =>
     state.draft.selectedIds.filter(id => customScriptCharacters.find(character => character.id === id)?.kind === kind).length === state.distribution![kind]);
 }
+export function hasBalloonistSetup(draft:GrimoireSetupDraft):boolean {return draft.selectedIds.includes('balloonist')||(draft.selectedIds.includes('boffin')&&draft.boffinAbility==='balloonist')||(draft.selectedIds.includes('marionette')&&draft.marionetteCharacter==='balloonist');}

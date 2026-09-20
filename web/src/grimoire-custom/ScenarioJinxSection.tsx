@@ -1,10 +1,10 @@
 import { Fragment, useId, useState } from 'react';
 import { CharacterDetailButton } from '../components/CharacterRulesCard';
-import { troubleBrewingCharacterDetail, sectsAndVioletsCharacterDetail } from '../characterDetails';
+import {customCharacterDetail} from './customCharacterDetails';
 import { characterPresentation } from '../custom/authoring/characterPresentation';
 import type { ScenarioJinx } from '../custom/core/scenarioJinxes';
 function details(id: string) {
-  return characterPresentation(id)?.source === 'troubleBrewing' ? troubleBrewingCharacterDetail(id) : sectsAndVioletsCharacterDetail(id);
+  return customCharacterDetail(id);
 }
 export function ScenarioJinxSection({ jinxes, theme }: { jinxes?: ScenarioJinx[]; theme: 'day' | 'night' }) {
   const [expanded, setExpanded] = useState(false);

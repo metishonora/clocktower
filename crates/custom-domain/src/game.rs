@@ -95,8 +95,13 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     Ok(ReplayState {
         night_deaths: if components.phase == Phase::Night {
             let ScriptReference::Custom { definition } = &game_file.script;
-            crate::night_deaths::view(&components.state.facts, definition.night_order_version == Some(2))
-        } else { None },
+            crate::night_deaths::view(
+                &components.state.facts,
+                definition.night_order_version == Some(2),
+            )
+        } else {
+            None
+        },
         night_number: components.state.facts.night_number(),
         day: crate::day::view(&components.state.facts),
         action_executions: components.action_executions,
@@ -298,7 +303,6 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         return Err(ErrorKind::ReplayFailed.into_error());
     };
     if first.phase != Phase::Setup
-        || payload.setup_choice_id.is_some()
         || game_file
             .game
             .events
@@ -309,28 +313,93 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         return Err(ErrorKind::ReplayFailed.into_error());
     }
     validate_setup_inputs_for_custom(&context, &payload.players)?;
+    crate::characters::carousel::validate_boffin_setup(
+        &context,
+        &payload.players,
+        payload.boffin_ability.as_deref(),
+    )?;
+    let mut effective_characters = payload
+        .players
+        .iter()
+        .map(|p| p.actual_character.clone())
+        .collect::<Vec<_>>();
+    if let Some(ability) = &payload.boffin_ability {
+        effective_characters.push(ability.clone());
+    }
+    for player in &payload.players {
+        if let Some(shown) = &player.shown_character {
+            effective_characters.extend(
+                crate::jinxes::production()?
+                    .shown_setup_abilities(&player.actual_character, shown)
+                    .into_iter()
+                    .map(str::to_owned),
+            );
+        }
+    }
+    crate::characters::carousel::setup_modifiers(
+        &effective_characters,
+        payload.setup_choice_id.as_deref(),
+    )?;
     let players = payload
         .players
         .iter()
         .map(|player| player_from_setup_input_for_custom(&context, player))
         .collect::<Result<Vec<_>, _>>()?;
+    // New discretionary setup inputs are canonical, not presentation-only hints.
+    // Keep legacy imports unchanged when they do not carry this choice.
+    if payload.setup_choice_id.is_some() {
+        let actual = players
+            .iter()
+            .map(|p| p.actual_character.clone())
+            .collect::<Vec<_>>();
+        let expected = crate::setup::custom_setup_projection(
+            &context,
+            players.len(),
+            &actual,
+            payload.setup_choice_id.as_deref(),
+            payload.boffin_ability.as_deref(),
+            payload
+                .players
+                .iter()
+                .find(|p| p.actual_character == "marionette")
+                .and_then(|p| p.shown_character.as_deref()),
+        )?
+        .distribution;
+        crate::setup::validate_new_setup_distribution(
+            &players,
+            |id| context.character_kind(id),
+            expected,
+        )?;
+    }
     let plan = plan_for_definition(definition)?;
     let other_plan = crate::contracts::FirstNightOrderPlan(definition.other_night_order.0.clone());
-    let event_keys = game_file.game.events.iter()
+    let event_keys = game_file
+        .game
+        .events
+        .iter()
         .map(|event| serde_json::to_string(event).expect("validated event serialization"))
         .collect::<Vec<_>>();
     let cached = REPLAY_PREFIX.with(|cached| {
-        cached.borrow().as_ref().filter(|prefix| {
-            prefix.schema_version == game_file.schema_version
-                && prefix.script == game_file.script
-                && event_keys.starts_with(&prefix.events)
-        }).map(|prefix| (prefix.events.len(), prefix.state.clone()))
+        cached
+            .borrow()
+            .as_ref()
+            .filter(|prefix| {
+                prefix.schema_version == game_file.schema_version
+                    && prefix.script == game_file.script
+                    && event_keys.starts_with(&prefix.events)
+            })
+            .map(|prefix| (prefix.events.len(), prefix.state.clone()))
     });
     let (replayed_count, mut state) = if let Some(cached) = cached {
         cached
     } else {
         let mut facts = CustomGameFacts::from_players(players);
         facts.prefix_event_id = first.id.clone();
+        crate::characters::carousel::initial_boffin(
+            &mut facts,
+            payload.boffin_ability.as_deref(),
+            &first.id,
+        )?;
         crate::effects::resolve_effects(&context, &mut facts)?;
         let initial_rules = CustomRuleService::new(&context, &facts);
         let initial_context = ActionContext {
@@ -346,7 +415,13 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
     let registry = action_registry()?;
     let activation = activation_rule();
 
-    for (event_index, event) in game_file.game.events.iter().enumerate().skip(replayed_count) {
+    for (event_index, event) in game_file
+        .game
+        .events
+        .iter()
+        .enumerate()
+        .skip(replayed_count)
+    {
         // apply_event returns an entirely new pair. The previous state remains untouched if
         // validation, reduction, projection, or scheduling rejects this event.
         let event_plan = if matches!(state.phase, Phase::FirstNight | Phase::Setup) {
@@ -438,12 +513,14 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         })
         .collect::<Result<Vec<_>, _>>()?;
     state.phase = phase;
-    REPLAY_PREFIX.with(|cached| *cached.borrow_mut() = Some(ValidatedReplayPrefix {
-        schema_version: game_file.schema_version,
-        script: game_file.script.clone(),
-        events: event_keys,
-        state: state.clone(),
-    }));
+    REPLAY_PREFIX.with(|cached| {
+        *cached.borrow_mut() = Some(ValidatedReplayPrefix {
+            schema_version: game_file.schema_version,
+            script: game_file.script.clone(),
+            events: event_keys,
+            state: state.clone(),
+        })
+    });
     Ok(ReplayComponents {
         action_executions,
         latest_undo_unit,

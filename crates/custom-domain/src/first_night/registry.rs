@@ -97,6 +97,10 @@ impl ActionContext<'_> {
     }
     fn stamp(&self, mut step: PhaseStep) -> Result<PhaseStep, CoreError> {
         let occurrence = ActionOccurrence::from_step(&step)?.in_night(self.night_number());
+        step.ability_impairments = self
+            .rule_service
+            .facts()
+            .map(|facts| crate::effects::occurrence_impairment_kinds(facts, &occurrence));
         step.id = occurrence.step_id()?;
         step.phase = if occurrence.night == 1 {
             crate::model::Phase::FirstNight
@@ -743,7 +747,7 @@ impl ActionRegistry {
             .as_ref()
             .is_some_and(|fields| fields.madness_check.is_some())
             && !matches!(&occurrence.action_ref, FirstNightActionRef::Character { character_id, action_id }
-                if character_id == "mutant" && action_id == "resolveMadnessExecution")
+                if (character_id == "mutant" && action_id == "resolveMadnessExecution") || (character_id == "pixie" && action_id == "assessMadness"))
         {
             return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
         }
@@ -897,7 +901,13 @@ impl ActionRegistry {
             occurrence.ability_use.as_ref(),
             draft,
         ) {
-            (FirstNightActionRef::System { action_id: crate::contracts::SystemFirstNightActionId::ResolveNightDeaths }, None, ActionEventDraft::Custom(_)) => {}
+            (
+                FirstNightActionRef::System {
+                    action_id: crate::contracts::SystemFirstNightActionId::ResolveNightDeaths,
+                },
+                None,
+                ActionEventDraft::Custom(_),
+            ) => {}
             (FirstNightActionRef::System { .. }, None, ActionEventDraft::System(_)) => {}
             (
                 FirstNightActionRef::Character { character_id, .. },
@@ -1053,6 +1063,7 @@ pub(crate) fn action_registry() -> Result<ActionRegistry, CoreError> {
     {
         entries.extend(crate::characters::sects_and_violets::registrations());
         entries.extend(crate::characters::trouble_brewing::registrations());
+        entries.extend(crate::characters::carousel::registrations());
     }
     #[cfg(feature = "custom-runtime-fixtures")]
     entries.extend(super::fixtures::registrations());

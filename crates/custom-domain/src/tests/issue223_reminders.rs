@@ -171,6 +171,7 @@ fn registered_handlers_have_unique_supported_character_ids() {
     for h in crate::characters::trouble_brewing::reminder_handlers()
         .into_iter()
         .chain(crate::characters::sects_and_violets::reminder_handlers())
+        .chain(crate::characters::carousel::reminder_handlers())
     {
         assert!(seen.insert(h.character_id));
         assert!(crate::characters::character_kind(h.character_id).is_some());
@@ -202,6 +203,7 @@ fn philosopher_identity_marker_requires_a_live_grant_without_an_original_charact
 fn every_supported_character_has_an_audited_reminder_policy() {
     // Explicit exclusions: a catalog addition must be reviewed instead of silently lacking tokens.
     let no_automatic_token = [
+        "zealot",
         "chef",
         "empath",
         "ravenkeeper",
@@ -225,6 +227,7 @@ fn every_supported_character_has_an_audited_reminder_policy() {
     let handlers = crate::characters::trouble_brewing::reminder_handlers()
         .into_iter()
         .chain(crate::characters::sects_and_violets::reminder_handlers())
+        .chain(crate::characters::carousel::reminder_handlers())
         .map(|h| h.character_id)
         .collect::<Vec<_>>();
     for entry in crate::characters::custom_script_catalog() {
@@ -242,7 +245,7 @@ fn every_supported_character_has_an_audited_reminder_policy() {
     }
     assert_eq!(
         handlers.len() + no_automatic_token.len() + subsequent_night_only.len(),
-        47
+        53
     );
 }
 

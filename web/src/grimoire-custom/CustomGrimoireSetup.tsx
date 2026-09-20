@@ -51,11 +51,11 @@ export function CustomGrimoireSetup({ controller, onNewGame, onNewScenario, onIm
       {state.saveFailed ? <button type="button" disabled={state.busy} onClick={() => void controller.retrySave()}>저장 다시 시도</button>
         : !state.distribution && !state.distributionPending ? <button type="button" disabled={locked} onClick={() => void controller.retryDistribution()}>구성 다시 확인</button> : null}
     </div>}
-    {utilities.storageOpen ? null : tab === 'roles' ? <CustomRoleSetup definition={definition} draft={draft} rosterConfirmed={state.rosterConfirmed} distribution={state.distribution} adjustment={state.adjustment} distributionPending={state.distributionPending} locked={locked} complete={complete} onPlayerCount={controller.setPlayerCount} onDemon={controller.selectDemon} canSelect={controller.canSelectCharacter} onToggle={controller.toggleCharacter} onConfirm={controller.confirmRoster}/> : <AssignmentSurface
+    {utilities.storageOpen ? null : tab === 'roles' ? <CustomRoleSetup definition={definition} draft={draft} rosterConfirmed={state.rosterConfirmed} distribution={state.distribution} adjustment={state.adjustment} distributionPending={state.distributionPending} locked={locked} complete={complete} onPlayerCount={controller.setPlayerCount} onDemon={controller.selectDemon} canSelect={controller.canSelectCharacter} onToggle={controller.toggleCharacter} onConfirm={controller.confirmRoster} onSetupChoice={controller.setSetupChoice} onBoffinAbility={controller.setBoffinAbility} boffinAbilityChoices={state.boffinAbilityChoices} onMarionetteCharacter={controller.setMarionetteCharacter}/> : <AssignmentSurface
       draft={{ playerCount:draft.playerCount, selectedIds:draft.selectedIds, seatingConfirmed:!!replay,
         seatAssignments:Object.fromEntries(draft.players.filter(p => p.actualCharacter).map(p => [p.seat,p.actualCharacter])),
         seatNames:Object.fromEntries(draft.players.map(p => [p.seat,p.name])),
-        shownCharacters:Object.fromEntries(draft.players.filter(p => p.shownCharacter).map(p => [p.seat,p.shownCharacter!])) }}
+        shownCharacters:Object.fromEntries(draft.players.map(p=>({...p,shownCharacter:p.actualCharacter==='marionette'?draft.marionetteCharacter:p.shownCharacter})).filter(p => p.shownCharacter).map(p => [p.seat,p.shownCharacter!])) }}
       characters={characters} ariaLabel="마도서 배치"
       alignmentForId={id => ['minion','demon'].includes(characters.find(c => c.id === id)?.kind ?? '') ? 'evil' : 'good'}
       renderCharacter={(id,size) => <img className={size === 'compact' ? 'compactIcon' : undefined} src={characterPresentation(id)?.image} alt="" />}

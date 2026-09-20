@@ -171,6 +171,8 @@ pub(crate) struct CreateGamePayload {
     pub(crate) players: Vec<SetupPlayerInput>,
     #[serde(default)]
     pub(crate) setup_choice_id: Option<String>,
+    #[serde(default)]
+    pub(crate) boffin_ability: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -194,6 +196,12 @@ pub(crate) struct SetupDistributionRequest {
     pub(crate) player_count: usize,
     #[serde(default)]
     pub(crate) actual_characters: Vec<String>,
+    #[serde(default)]
+    pub(crate) setup_choice_id: Option<String>,
+    #[serde(default)]
+    pub(crate) boffin_ability: Option<String>,
+    #[serde(default)]
+    pub(crate) marionette_character: Option<String>,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq, Copy, Clone)]
@@ -239,7 +247,12 @@ pub(crate) struct SetupAdjustment {
     pub(crate) limited: bool,
 }
 #[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct SetupDistributionResult {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) setup_adjacencies: Vec<[String; 2]>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) boffin_ability_choices: Option<Vec<String>>,
     #[serde(flatten)]
     pub(crate) distribution: SetupDistribution,
     pub(crate) adjustment: SetupAdjustment,
@@ -346,6 +359,44 @@ pub(crate) struct Proposal {
 #[derive(Debug, Serialize, Clone)]
 #[serde(untagged)]
 pub(crate) enum RevealPayload {
+    MarionetteInformation {
+        kind: &'static str,
+        #[serde(rename = "recipientPlayer")]
+        recipient_player: RevealPlayer,
+        #[serde(rename = "marionettePlayer")]
+        marionette_player: RevealPlayer,
+    },
+    GrantedAbilityInformation {
+        kind: &'static str,
+        #[serde(rename = "recipientIsSource")]
+        recipient_is_source: bool,
+        #[serde(rename = "recipientPlayer")]
+        recipient_player: RevealPlayer,
+        #[serde(rename = "characterId")]
+        character_id: String,
+        #[serde(rename = "sourceCharacterId")]
+        source_character_id: String,
+    },
+    LearnedPlayer {
+        kind: &'static str,
+        #[serde(rename = "sourceCharacterId")]
+        source_character_id: String,
+        player: RevealPlayer,
+    },
+    LearnedCharacter {
+        kind: &'static str,
+        #[serde(rename = "sourceCharacterId")]
+        source_character_id: String,
+        #[serde(rename = "characterId")]
+        character_id: String,
+    },
+    NightwatchmanInformation {
+        kind: &'static str,
+        #[serde(rename = "recipientPlayer")]
+        recipient_player: RevealPlayer,
+        #[serde(rename = "nightwatchmanPlayer")]
+        nightwatchman_player: RevealPlayer,
+    },
     MutantExecution {
         kind: &'static str,
         player: RevealPlayer,
@@ -369,6 +420,8 @@ pub(crate) enum RevealPayload {
         minion_players: Vec<RevealIdentity>,
         #[serde(rename = "bluffCharacterIds")]
         bluff_character_ids: Vec<String>,
+        #[serde(rename = "marionettePlayers", skip_serializing_if = "Vec::is_empty")]
+        marionette_players: Vec<RevealIdentity>,
     },
     SetupInformation {
         kind: &'static str,
@@ -506,6 +559,28 @@ pub(crate) struct GameEvent {
     deny_unknown_fields
 )]
 pub(crate) enum CustomActionResult {
+    MarionetteShown {
+        character_id: String,
+    },
+    BoffinGranted {
+        target_player_id: String,
+        character_id: String,
+    },
+    BalloonistLearned {
+        target_player_id: String,
+        registered_kind: CharacterKind,
+    },
+    PixieLearned {
+        target_player_id: String,
+        character_id: String,
+    },
+    PixieJudgment {
+        result: crate::model::MadnessCheckResult,
+    },
+    NightwatchmanUsed {
+        target_player_id: String,
+        revealed_player_id: Option<String>,
+    },
     MonkProtection {
         target_player_id: String,
         effective: bool,
@@ -766,6 +841,8 @@ pub(crate) enum ActionCause {
     deny_unknown_fields
 )]
 pub(crate) enum GuidanceCause {
+    Marionette,
+    PixieAcquisition { bond_event_id: String },
     InitialDrunk,
     AcquiredDrunk,
     Choice { parent_event_id: String },
@@ -867,6 +944,8 @@ pub(crate) struct SetupEventPayload {
     pub(crate) players: Vec<SetupPlayerInput>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) setup_choice_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) boffin_ability: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -92,7 +92,25 @@ Custom SnV rules, information candidates, active effects and causal twin repairs
 `crates/custom-domain/src/characters/sects_and_violets.rs`. Custom TB registration semantics stay
 in that crate's `characters/trouble_brewing.rs`. `information.rs` validates common input/result
 shapes; it does not import official rule implementations. The scheduler owns progress and stable
-occurrence identity, while handlers own eligibility and typed facts. A simulation refers to a real failed Philosopher choice, initial Drunk identity, or acquired Drunk guidance; it cannot acquire a fictional ability instance.
+occurrence identity, while handlers own eligibility and typed facts. A simulation refers to a real failed Philosopher choice, Drunk or Marionette identity, or acquired guidance; it cannot acquire a fictional ability instance. Pixie-derived simulated guidance keeps the original real root and the confirmed bond/death provenance.
+
+Carousel rules live in `characters/carousel.rs`. Boffin and Pixie reuse source-bound
+ability grants without changing the recipient's identity. Ownership, temporary
+availability, and impairment are distinct: an impaired Boffin suspends a grant
+without erasing its use history; the Demon's own impairment does not poison that
+grant. Character handlers project legal choices and reminders. New private role,
+ability and Marionette notifications use the existing saved recipient-by-recipient
+continuation, not extra scheduler phases. Balloonist setup discretion and the
+initial Boffin grant are canonical setup inputs; Marionette's believed role remains
+separate from its real identity. UI does not compute eligibility or Jinx results.
+
+Night steps and overview entries expose Core-derived `abilityImpairments` for the
+acting ability, not its owner's unrelated impairments. This presentation metadata
+is rebuilt on replay; it is not saved in GameFile or inferred by character-specific
+UI exceptions. Daytime availability and death-trigger snapshots use the same grant
+availability and ability impairment boundaries. Alignment-dependent victory rules
+use the ability owner's actual team; simulated information uses its real root source
+when deciding whether Vortox applies.
 
 Custom `effects.rs` resolves character-owned effect candidates against a common fact view.
 `simulation.rs` derives guidance and its usage from real sources and confirmed choices.
@@ -103,7 +121,7 @@ Custom Mathematician audit consumes character-owned malfunction evidence and cau
 actual delivered information but never requires or emits a replacement computed answer; ordinary
 character information calculations retain their own computed values.
 
-Production registers 18 ordered TB/SnV character actions and seven additional preparation or optional actions; fixture builds separately register only system
+Production registers 21 ordered TB/SnV/Carousel character actions and ten additional preparation or optional actions; fixture builds separately register only system
 and test handlers. `scripts/check-custom-boundaries.mjs` rejects imports across the boundary,
 including indirect Cargo/TypeScript and source-include dependencies. Run its negative tests with
 `node --test scripts/check-custom-boundaries.test.mjs`.
@@ -119,7 +137,7 @@ Release validation still includes `pnpm --dir web build` and PWA verification.
 ## Custom official Jinx foundation (#213)
 
 `crates/custom-domain/resources/jinxes.json` is a checked-in TPI snapshot at
-`915347e627c3f6cd1f438f82b6001784e11b3e8b`. `jinxes.rs` pairs this metadata with typed
+`f10cd02e3401af227ce406287eaae7bb99a06a42`. `jinxes.rs` pairs this metadata with typed
 character-owned registrations. Stable pair IDs use sorted official lowercase IDs;
 resolved metadata retains the exact custom character IDs. This conversion does not
 relax command, definition or import ID validation.
@@ -131,8 +149,9 @@ official pairs remain reference data and do not enable unsupported characters.
 `ResolvedScriptContext.related_jinxes()` is a deterministic read-only script query;
 script membership is never a universal rule-effectiveness gate.
 
-Registered callbacks currently serve information registration, succession prevention and
-simulation malfunction causes. Their owning TB/SnV modules decide the conditions using
+Registered callbacks serve information registration, succession prevention,
+simulation malfunction causes, forbidden grants and shown-role setup modifiers.
+Their owning TB/SnV/Carousel modules decide the conditions using
 current ability provenance, the action occurrence, and before/after facts. New consumers
 can add typed seams without adding character branches to the scheduler or parsing natural
 language rules. Registrations link acceptance evidence; publication changes must pass

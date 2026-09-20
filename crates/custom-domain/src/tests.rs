@@ -110,3 +110,6 @@ mod issue213_jinxes;
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue232_regressions;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue237_carousel;

@@ -35,7 +35,7 @@ export function taskPresentationModel(controller:FirstNightController) {
    zeroAllowed:!!step.requiredInput.zeroAllowed,ready:!!selectedSetupChoice(step,draft),
   }:{kind:'unavailable',message:'정보 준비 후보가 없습니다. Core 연결을 확인해 주세요.'};
  }
- if(action?.editor==='information'&&!step?.informationPrompt&&!result)editor={kind:'unavailable',message:'전달 정보가 연결되지 않았습니다.'};
+ if(action?.editor==='information'&&adapter?.revealView!=='none'&&!step?.informationPrompt&&!result)editor={kind:'unavailable',message:'전달 정보가 연결되지 않았습니다.'};
  if(step&&action) {
   const kind=step.requiredInput.kind;
   const expected=adapter?.acceptedInputs??[];
