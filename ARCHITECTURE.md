@@ -902,10 +902,19 @@ resume its successor. Listing and restoration do not save or change `savedAt`.
 Root-page legacy history markers can resolve a slot into its new exact-game URL.
 
 The application controller owns transition readiness and retires old request, setup,
-play and writer ownership. Browser back/forward waits for accepted saves; failed saves
-keep the current route and in-memory state for retry. Durable activation does not cancel
+play and writer ownership. Same-document browser back/forward waits for accepted saves;
+failed saves keep the current route and in-memory state for retry. Cross-document Back,
+reload and tab close request the browser's exit confirmation while a save or accepted
+operation is pending or failed. Canceling preserves the current screen and retry path;
+explicitly leaving or forced termination still restores only the last durable record.
+Read-only restoration and a saved public reveal do not trigger this exit warning.
+Durable activation does not cancel
 a navigation waiting for that save. Public reveals stay closed on restore. Editor drafts,
 pre-game setup and unconfirmed live inputs are not made durable by these routes.
+
+The editor invalidates pending requests when hidden, and resumes interrupted order
+calculation or validation on return using the same draft and requested reset mode.
+Canceled file reads return to idle and cannot replace the draft with a late response.
 
 The two custom HTML entries share a dedicated NetworkFirst cache key, independent of
 game queries. A fetch after Service Worker activation warms that shell so soft navigation

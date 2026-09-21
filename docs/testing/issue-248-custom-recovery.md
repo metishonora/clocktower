@@ -55,6 +55,16 @@ The source screen now presents `새 시나리오를 쓴다`, `파일에서 불�
 - Browser checks covered the four production startup cases, legacy recovery through the new menu, authoring/file round-trip, and responsive authoring at 1366, 1180, 820 and 390px (10 cases). The round-trip test still expected the old version-2 export; its assertion was updated to the existing version-3 export with `nightOrderVersion: 2`, then passed on rerun. Product serialization was unchanged.
 - The selected recovery menu was visually checked at desktop, 700px and 390px widths without horizontal overflow.
 
+## Review fixes: document exit and interrupted authoring
+
+- `beforeunload` now requests native exit confirmation during pending/failed saves, covering cross-document Back, reload and tab close. It reuses the controller's save readiness; read-only restoration, unconfirmed setup and a durably saved public reveal do not prompt. Same-document navigation retains its existing wait/block behavior.
+- Hiding the editor invalidates old requests. Returning resumes pending night-order calculation with its original reset/reconciliation intent, or pending validation. Canceled file reads return to idle, preserve the draft and reject late results.
+- Production build, PWA verification, browser/integration TypeScript checks and custom/official boundaries passed. The complete custom suite passed 362 tests; route/New Scenario integration passed 15.
+- Browser verification covered 12 cases: all existing recovery/offline cases, four production startup checks, plus the two review regressions. A failed gameplay save prompted on cross-document Back and reload; cancel preserved the URL, retry UI and original durable record. Retry saved exactly one additional event, allowed exit without a prompt, and cold restoration retained the new progress. Delayed WASM loading across Back/Forward resumed authoring, preserved the name and pool, and exported the expected night order.
+- The initial exit test incorrectly waited for a document load after canceling navigation. It was corrected to await the native dialog and preserved page instead, and the focused rerun passed. The order-reset unit expectation was also corrected to query the pool default rather than passing the file's explicit order; the complete suite then passed.
+
+Native exit confirmation was verified in Chromium. Browsers control whether they display this prompt; explicit departure or forced browser/OS termination can only restore the last durable save. Safari on a physical device was not tested.
+
 ## Scope
 
 No domain rules, canonical file schema, existing session keys or CI workflow scope changed. Editor drafts, pre-game setup and unconfirmed action input remain transient. The preview origin uses its own browser storage; production games can be reviewed by importing their game JSON there.

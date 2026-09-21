@@ -69,7 +69,7 @@ it('waits for a save before browser back, restores the URL while waiting, and re
   let finish!: (value: boolean) => void;
   const wait = () => status === 'waiting' ? new Promise<boolean>(resolve => {finish=resolve;}) : Promise.resolve(status === 'ready');
   const apply = vi.fn();
-  const nav = new CustomBrowserNavigation({navigationStatus:()=>status, waitForNavigation:wait}, apply);
+  const nav = new CustomBrowserNavigation({navigationStatus:()=>status, waitForNavigation:wait, needsUnloadConfirmation:()=>status!=='ready'}, apply);
   const disconnect = nav.connect();
   await nav.navigate({kind:'library'}); await nav.navigate({kind:'game',gameId:'pending'});
   status = 'waiting';
@@ -87,7 +87,7 @@ it('waits for a save before browser back, restores the URL while waiting, and re
 it('keeps the current game and history position when a save fails during browser back', async () => {
   let blocked = false;
   const apply = vi.fn();
-  const nav = new CustomBrowserNavigation({navigationStatus:()=>blocked?'blocked':'ready',waitForNavigation:async()=>!blocked}, apply);
+  const nav = new CustomBrowserNavigation({navigationStatus:()=>blocked?'blocked':'ready',waitForNavigation:async()=>!blocked,needsUnloadConfirmation:()=>blocked}, apply);
   const disconnect = nav.connect();
   await nav.navigate({kind:'library'}); await nav.navigate({kind:'game',gameId:'failed'});
   blocked = true; act(() => history.back());
@@ -95,4 +95,19 @@ it('keeps the current game and history position when a save fails during browser
   expect(location.search).toBe('?game=failed'); expect(apply).toHaveBeenLastCalledWith({kind:'game',gameId:'failed'});
   blocked = false; act(() => history.back());
   await waitFor(() => expect(apply).toHaveBeenLastCalledWith({kind:'library'})); disconnect();
+});
+
+it('protects document exits only while persistence needs attention and removes the listener on disconnect', () => {
+  let unsaved = false;
+  const nav = new CustomBrowserNavigation({navigationStatus:()=> 'ready', waitForNavigation:async()=>true,
+    needsUnloadConfirmation:()=>unsaved}, vi.fn());
+  const disconnect = nav.connect();
+  const exiting = () => {
+    const event = new Event('beforeunload', {cancelable:true});
+    window.dispatchEvent(event); return event.defaultPrevented;
+  };
+  expect(exiting()).toBe(false);
+  unsaved = true; expect(exiting()).toBe(true);
+  unsaved = false; expect(exiting()).toBe(false);
+  disconnect(); unsaved = true; expect(exiting()).toBe(false);
 });

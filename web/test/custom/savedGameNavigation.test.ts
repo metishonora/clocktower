@@ -66,6 +66,7 @@ it('ignores a restore that completes after leaving its route and reports storage
   vi.spyOn(Driver, 'listSessions').mockReturnValueOnce(new Promise(done => { resolve = done; }));
   const app = new CustomGrimoireApplicationController(realWasmCore(), vi.fn());
   const restore = app.restoreGame(before.canonical.game.id);
+  expect(app.needsUnloadConfirmation()).toBe(false);
   app.openLibrary(); resolve({ records: [{ customScriptId: definition.id, gameId: before.canonical.game.id,
     name: definition.name, savedAt: before.savedAt }], unreadableIds: [] }); await restore;
   expect(app.getSnapshot().screen).toBe('library'); expect(app.play).toBeUndefined();

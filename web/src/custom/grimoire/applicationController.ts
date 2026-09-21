@@ -31,11 +31,15 @@ export class CustomGrimoireApplicationController {
     this.onActivated(session.snapshot.customScriptId, session.snapshot.canonical.game.id);
     this.patch({ screen: 'play', busy: false, saveFailed: false, error: undefined });
   };
-  navigationStatus = (): 'ready' | 'waiting' | 'blocked' => {
+  private saveStatus = (): 'ready' | 'waiting' | 'blocked' => {
     const play = this.play?.getSnapshot(), setup = this.setup?.getSnapshot();
-    if (this.disposed || this.state.saveFailed || setup?.saveFailed || play?.saveStatus === 'failed' || play?.public) return 'blocked';
+    if (this.state.saveFailed || setup?.saveFailed || play?.saveStatus === 'failed') return 'blocked';
     return (this.state.busy && this.state.screen !== 'restore') || setup?.busy || play?.busy || play?.saveStatus === 'saving' ? 'waiting' : 'ready';
   };
+  navigationStatus = (): 'ready' | 'waiting' | 'blocked' =>
+    this.disposed || this.play?.getSnapshot().public ? 'blocked' : this.saveStatus();
+  // A saved public reveal blocks in-app navigation, but is not unsaved work.
+  needsUnloadConfirmation = () => !this.disposed && this.saveStatus() !== 'ready';
   waitForNavigation = (): Promise<boolean> => {
     if (this.navigationStatus() !== 'waiting') return Promise.resolve(this.navigationStatus() === 'ready');
     return new Promise(resolve => {

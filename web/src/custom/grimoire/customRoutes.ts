@@ -17,9 +17,13 @@ export function readCustomRoute(url = new URL(window.location.href)): CustomRout
 }
 
 const positionKey = 'customRoutePosition';
-type NavigationGuard = { navigationStatus: () => 'ready' | 'waiting' | 'blocked'; waitForNavigation: () => Promise<boolean> };
+type NavigationGuard = {
+  navigationStatus: () => 'ready' | 'waiting' | 'blocked';
+  waitForNavigation: () => Promise<boolean>;
+  needsUnloadConfirmation: () => boolean;
+};
 
-/** A route change never leaves an accepted but unsaved event behind. */
+/** In-app routes wait for accepted saves; document exits warn while work is unsaved. */
 export class CustomBrowserNavigation {
   private current = {url: window.location.href, state: window.history.state};
   private request = 0;
@@ -32,8 +36,20 @@ export class CustomBrowserNavigation {
     if (!Number.isInteger(history.state?.[positionKey])) history.replaceState({...history.state, [positionKey]: 0}, '');
     this.current = {url: location.href, state: history.state};
     window.addEventListener('popstate', this.pop);
-    return () => { this.connected = false; this.request++; this.returned?.(); this.returned = undefined; this.pendingActivation = undefined; window.removeEventListener('popstate', this.pop); };
+    window.addEventListener('beforeunload', this.beforeUnload);
+    return () => {
+      this.connected = false; this.request++; this.returned?.(); this.returned = undefined; this.pendingActivation = undefined;
+      window.removeEventListener('popstate', this.pop);
+      window.removeEventListener('beforeunload', this.beforeUnload);
+    };
   }
+  // Cross-document Back, reload and tab close do not pass through popstate.
+  // Browsers can only offer an exit confirmation here, not await an async save.
+  private beforeUnload = (event: BeforeUnloadEvent) => {
+    if (!this.guard.needsUnloadConfirmation()) return;
+    event.preventDefault();
+    event.returnValue = '';
+  };
   private pop = async () => {
     if (this.returned && location.href === this.current.url && history.state?.[positionKey] === this.current.state?.[positionKey]) {
       const returned = this.returned; this.returned = undefined;

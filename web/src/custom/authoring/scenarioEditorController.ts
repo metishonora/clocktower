@@ -51,6 +51,16 @@ export class ScenarioEditorController {
     this.listeners.forEach((listener) => listener());
   }
   cancelPending = () => { this.validationRequest++; this.orderRequest++; this.importRequest++; };
+  suspend = () => {
+    this.cancelPending();
+    // The picker can be reopened; a canceled read must not leave a permanent spinner.
+    if (this.state.importStatus === 'reading') this.patch({ importStatus: 'idle' });
+  };
+  resumePending = () => {
+    // Keep the requested reset/reconciliation and draft, rejecting old responses as usual.
+    if (this.state.orderPending) void this.updateOrder(this.pendingOrderReset ?? false);
+    else if (this.state.validation === 'pending') void this.validate();
+  };
   setStep = (step: EditorStep) => { this.importRequest++; this.patch({ step, importStatus: 'idle' }); };
   selectSource = (source: ScenarioEditorState['source']) => {
     this.importRequest++;

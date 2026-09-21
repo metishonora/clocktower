@@ -25,9 +25,28 @@ it('C25/S1-c: first-write failure retains prior slot and retries the accepted Se
   const original=IndexedDbCustomWebSessionStorageDriver.prototype.writeOwnedSession;
   const failure=vi.spyOn(IndexedDbCustomWebSessionStorageDriver.prototype,'writeOwnedSession').mockRejectedValueOnce(Error('quota'));
   const {app,setup,activated}=await arranged('replacement'); await setup.confirm();
+  expect(app.needsUnloadConfirmation()).toBe(true);
   expect(setup.getSnapshot().saveFailed).toBe(true);expect(app.getSnapshot().screen).toBe('setup');expect(activated).not.toHaveBeenCalled();expect(await stored()).toEqual(before);
   failure.mockImplementation(original); await setup.retrySave();
+  expect(app.needsUnloadConfirmation()).toBe(false);
   const saved=await stored();expect(saved.canonical.game.events).toHaveLength(1);expect(app.getSnapshot().screen).toBe('play');expect(activated).toHaveBeenCalledTimes(1);app.dispose();
+});
+it('requires exit confirmation during the first durable save, but not before confirmation or after it completes', async () => {
+  const {app,setup}=await arranged();
+  expect(app.needsUnloadConfirmation()).toBe(false);
+  const pending=deferred<void>();
+  const original=IndexedDbCustomWebSessionStorageDriver.prototype.writeOwnedSession;
+  const write=vi.spyOn(IndexedDbCustomWebSessionStorageDriver.prototype,'writeOwnedSession')
+    .mockImplementationOnce(async function(this:IndexedDbCustomWebSessionStorageDriver,snapshot,expected){
+      await pending.promise; await original.call(this,snapshot,expected);
+    });
+  const confirming=setup.confirm();
+  await vi.waitFor(()=>expect(write).toHaveBeenCalledTimes(1));
+  expect(app.needsUnloadConfirmation()).toBe(true);
+  pending.resolve(); await confirming;
+  expect((await stored()).canonical.game.events).toHaveLength(1);
+  expect(app.needsUnloadConfirmation()).toBe(false);
+  app.dispose();
 });
 it('C18/S1-e: corrupt slot is replaced only after valid confirmation; IO failure is not treated as corruption',async()=>{
   const first=await started();first.app.dispose();

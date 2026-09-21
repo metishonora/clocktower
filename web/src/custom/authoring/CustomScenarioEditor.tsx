@@ -12,7 +12,7 @@ import './scenarioEditor.css';
 import './nightOrders.css';
 export function CustomScenarioEditor({ onExit, onNewGrimoire, onResume, sourceFile, onSavedGames, active = true }: { onSavedGames?: () => void; active?: boolean; onExit: () => void; sourceFile?: File; onNewGrimoire?: (scenario: ValidatedScenario) => void; onResume?: (game: ImportedGame) => void }) {
   const { state, controller } = useScenarioEditor();
-  useEffect(() => { if (!active) controller.cancelPending(); }, [active, controller]);
+  useEffect(() => { if (active) controller.resumePending(); else controller.suspend(); }, [active, controller]);
   useEffect(() => { if (sourceFile) void controller.importFile(sourceFile); }, [controller, sourceFile]);
   const [kind, setKind] = useState<KindFilter>('Townsfolk');
   const [source, setSource] = useState<SourceFilter>('all');

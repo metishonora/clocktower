@@ -6,8 +6,8 @@ const editor = 'custom/scenario/', library = 'custom/grimoire/';
 async function fixture(name: 'day' | 'first-night' = 'day'): Promise<GameFileV5> {
   return JSON.parse(await readFile(new URL(`../../../fixtures/acceptance/custom-first-night/compatibility/${name}.game.json`, import.meta.url), 'utf8'));
 }
-async function importGame(page: Page, file: GameFileV5) {
-  await page.goto(editor);
+async function importGame(page: Page, file: GameFileV5, navigate = true) {
+  if (navigate) await page.goto(editor);
   await page.getByRole('button', {name:'파일에서 불러온다'}).click();
   await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'game.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(file))});
   await page.getByRole('button', {name:'마도서 이어 쓰기'}).click();
@@ -143,4 +143,78 @@ test('custom HTML shares a cache key and game/list addresses reload offline', as
   await page.goto(`${url}&from=bookmark`); await expect(page.getByRole('heading', {name:'사망 발표',exact:true})).toBeVisible();
   await page.goto(editor); await expect(page.getByRole('heading', {name:'Ⅰ. 시나리오 선택'})).toBeVisible();
   await context.setOffline(false);
+});
+
+test('a failed save protects cross-document Back and reload, then successful retry permits exit', async ({page}) => {
+  await page.goto('./');
+  await page.getByRole('button', {name:'Custom Scenario 선택',exact:true}).click();
+  await importGame(page, await fixture(), false);
+  const url = page.url(), before = await saved(page) as Array<{canonical:GameFileV5}>;
+  await page.evaluate(() => {
+    const original = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function(value: unknown, key?: IDBValidKey) {
+      if (String(key).startsWith('session:custom:')) {
+        IDBObjectStore.prototype.put = original;
+        throw new DOMException('Injected storage failure', 'QuotaExceededError');
+      }
+      return original.call(this, value, key);
+    };
+  });
+  await page.getByRole('button', {name:'발표 완료',exact:true}).click();
+  await expect(page.getByRole('button', {name:'저장 다시 시도',exact:true})).toBeVisible();
+  for (const action of ['back', 'reload']) {
+    const dialogShown = page.waitForEvent('dialog');
+    // Do not wait for a document load: the user is about to cancel that navigation.
+    await page.evaluate(action => { setTimeout(() => {
+      if (action === 'back') history.back(); else location.reload();
+    }, 0); }, action);
+    const dialog = await dialogShown;
+    expect(dialog.type()).toBe('beforeunload'); await dialog.dismiss();
+    await expect(page).toHaveURL(url);
+    await expect(page.getByRole('button', {name:'저장 다시 시도',exact:true})).toBeVisible();
+    expect(await saved(page)).toEqual(before);
+  }
+  await page.getByRole('button', {name:'저장 다시 시도',exact:true}).click();
+  await expect(page.getByRole('button', {name:'저장 다시 시도',exact:true})).toHaveCount(0);
+  const after = await saved(page) as Array<{canonical:GameFileV5}>;
+  expect(after[0].canonical.game.events).toHaveLength(before[0].canonical.game.events.length + 1);
+  let unexpectedDialog = false;
+  page.on('dialog', async dialog => { unexpectedDialog = true; await dialog.dismiss(); });
+  await page.goBack(); await expect(page.getByRole('button', {name:'Custom Scenario 선택',exact:true})).toBeVisible();
+  expect(unexpectedDialog).toBe(false);
+  await page.goto(url); await expect(page.getByRole('heading', {name:'밀담',exact:true})).toBeVisible();
+  expect(await saved(page)).toEqual(after);
+});
+
+test.describe('interrupted authoring', () => {
+  test.use({serviceWorkers:'block'});
+  test('Back and Forward resume pending night-order calculation with the same draft', async ({page}) => {
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    await page.route('**/clocktower_custom_wasm_bg*.wasm', async route => { await gate; await route.continue(); });
+    try {
+      await page.goto(library);
+      await page.getByRole('button', {name:'시나리오 작성',exact:true}).click();
+      await page.getByRole('button', {name:'다음으로',exact:true}).click();
+      await page.getByLabel('시나리오 이름').fill('돌아온 시나리오');
+      await page.getByRole('tab', {name:/악마/}).click();
+      await page.getByRole('button', {name:/임프/}).click();
+      await page.getByRole('button', {name:'선택 완료',exact:true}).click();
+      await expect(page.getByText('순서를 확인하고 있습니다.', {exact:true})).toBeVisible();
+      await page.goBack(); await expect(page.getByRole('main', {name:'커스텀 자동 저장 목록',exact:true})).toBeVisible();
+      await page.goForward(); await expect(page.getByRole('heading', {name:'밤 행동 순서',exact:true})).toBeVisible();
+      release();
+      await expect(page.getByRole('button', {name:'최종 검토로',exact:true})).toBeEnabled();
+      await expect(page.getByText('순서를 확인하고 있습니다.', {exact:true})).toHaveCount(0);
+      await page.getByRole('button', {name:'최종 검토로',exact:true}).click();
+      await expect(page.getByLabel('시나리오 이름')).toHaveValue('돌아온 시나리오');
+      await expect(page.getByRole('button', {name:'시나리오 저장',exact:true})).toBeEnabled();
+      const download = page.waitForEvent('download');
+      await page.getByRole('button', {name:'시나리오 저장',exact:true}).click();
+      const downloaded = await download;
+      const exported = JSON.parse(await readFile((await downloaded.path())!, 'utf8'));
+      expect(exported.scenario.characterIds).toEqual(['imp']);
+      expect(exported.scenario.firstNightOrder.map((entry:{actionId:string})=>entry.actionId)).toEqual(['dusk','minionInfo','demonInfo','dawn']);
+    } finally { release(); }
+  });
 });
