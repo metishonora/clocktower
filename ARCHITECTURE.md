@@ -885,6 +885,33 @@ Correction commands should be limited to explicit game-state edits such as chara
 
 Do not let TypeScript patch derived rules state directly.
 
+## Custom recovery routes (#248)
+
+`/clocktower/custom/scenario/` opens authoring; `/clocktower/custom/grimoire/`
+lists the existing autosaved sessions. `?mode=setup` denotes in-memory setup and
+`?game=<game-id>` restores one exact saved game. Both HTML entries boot the same
+custom application. In-app History API transitions carry validated authoring input
+in memory; a cold setup route explains that setup was not saved and opens the list.
+Only a successful first durable save replaces the setup URL with a game URL.
+
+The existing `session:custom:<script-id>` records remain the persistence boundary.
+Listing reads their names, actual game IDs and durable save times, isolating malformed
+records. Exact-game restoration locates the slot, rereads it, replays the complete
+stored snapshot, and checks it again before activation. A replaced game URL cannot
+resume its successor. Listing and restoration do not save or change `savedAt`.
+Root-page legacy history markers can resolve a slot into its new exact-game URL.
+
+The application controller owns transition readiness and retires old request, setup,
+play and writer ownership. Browser back/forward waits for accepted saves; failed saves
+keep the current route and in-memory state for retry. Durable activation does not cancel
+a navigation waiting for that save. Public reveals stay closed on restore. Editor drafts,
+pre-game setup and unconfirmed live inputs are not made durable by these routes.
+
+The two custom HTML entries share a dedicated NetworkFirst cache key, independent of
+game queries. A fetch after Service Worker activation warms that shell so soft navigation
+can be reloaded offline. The URL still chooses the screen and local game at boot.
+Official navigation caches and the no-global-navigation-fallback policy remain separate.
+
 ## Persistence
 
 Autosave stores the confirmed event log in IndexedDB.

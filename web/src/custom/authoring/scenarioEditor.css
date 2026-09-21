@@ -1882,3 +1882,6 @@
   .customScenarioSurface .issue200CharacterGrid button img { width: 52px; height: 52px; }
   .customScenarioSurface .issue200CharacterGrid button > strong { overflow: visible; white-space: normal; text-overflow: clip; word-break: keep-all; overflow-wrap: anywhere; font-size: .8rem; line-height: 1.4; text-align: center; }
 }
+
+.customSavedGamesLink { justify-self: center; min-height: 44px; padding: 10px 24px; border: 1px solid #9a7b5066; color: #f5e4c7; background: #221d19cf; font: inherit; }
+.customSavedGamesLink:focus-visible { outline: 2px solid #caa675; outline-offset: 3px; }

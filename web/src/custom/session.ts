@@ -114,6 +114,13 @@ export class CustomCanonicalSession<SetupDraft, Presentation> {
     return { ok: true, value: new CustomCanonicalSession(createCustomWebSessionSnapshot(file, options.setupDraft, options.presentation), replay.value, controller, options.storage) };
   }
 
+  static async fromSnapshot<S, P>(snapshot: CustomWebSessionSnapshot<S, P>, options: CustomCanonicalSessionLoadOptions<S, P>): Promise<CoreResult<CustomCanonicalSession<S, P>>> {
+    const controller = new CanonicalSessionController(snapshot.canonical.game.script, options.core);
+    const replay = await controller.replay(snapshot.canonical);
+    if (!replay.ok) return replay;
+    return { ok: true, value: new CustomCanonicalSession(structuredClone(snapshot), replay.value, controller, options.storage) };
+  }
+
   get replay(): CanonicalReplaySnapshot | undefined { return this.replayState ? structuredClone(this.replayState) : undefined; }
   retrySave = () => this.autosave.enqueue(this.currentSnapshot);
   propose(command: Command) { return this.controller.propose(this.currentSnapshot.canonical, this.replayState, command); }

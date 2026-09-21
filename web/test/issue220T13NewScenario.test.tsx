@@ -1,18 +1,19 @@
-import {afterEach,expect,it,vi} from 'vitest';
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
 import {cleanup,fireEvent,render,screen,waitFor,within} from '@testing-library/react';
 import {CustomGrimoireApplication} from '../src/grimoire-custom/CustomGrimoireApplication';
 import {rememberCustomSession,activeCustomSessionId,forgetCustomSessionNavigation} from '../src/custom/grimoire/browserSessionNavigation';
 import {started,stored,definition} from './custom/issue220Support';
 import {IndexedDbCustomWebSessionStorageDriver} from '../src/custom/storage/sessionStorage';
-afterEach(()=>{cleanup();forgetCustomSessionNavigation();});
-async function open(){const {app}=await started();app.dispose();rememberCustomSession(definition.id);const before=await stored();const view=render(<CustomGrimoireApplication onExit={()=>{}}/>);await screen.findByRole('main',{name:'커스텀 마도서'});return {view,before};}
+beforeEach(()=>{window.scrollTo=vi.fn();Object.defineProperty(window,'matchMedia',{configurable:true,value:vi.fn(()=>({matches:true}))});});
+afterEach(()=>{cleanup();history.replaceState({}, '', '/clocktower/');});
+async function open(){const {app}=await started();app.dispose();history.replaceState({}, '', '/clocktower/');rememberCustomSession(definition.id);const before=await stored();const view=render(<CustomGrimoireApplication onExit={()=>{}}/>);await screen.findByRole('main',{name:'커스텀 마도서'});return {view,before};}
 for(const tab of ['직업','마도서','진행','저장 / 불러오기'])it(`T13 P4 N01/N02: New Scenario next to New Game on ${tab}, cancel preserves saved state`,async()=>{
  const {before}=await open();fireEvent.click(screen.getByRole('button',{name:tab}));
  const button=screen.getByRole('button',{name:'새 시나리오'});
  const buttons=within(button.parentElement!).getAllByRole('button');expect(buttons.indexOf(button)).toBe(buttons.findIndex(b=>b.textContent==='새 게임')+1);
  fireEvent.click(button);const dialog=screen.getByRole('dialog');expect(dialog.textContent).toContain('기존 자동 저장은 유지됩니다.');
  fireEvent.click(within(dialog).getByRole('button',{name:'취소'}));expect(screen.getByRole('main',{name:'커스텀 마도서'})).toBeTruthy();
- expect(await stored()).toEqual(before);expect(activeCustomSessionId()).toBe(definition.id);
+ expect(await stored()).toEqual(before);expect(new URL(location.href).searchParams.get('game')).toBe(before.canonical.game.id);
 });
 it('T13 P4 N03/N04/N05: confirm creates blank authoring and remount cannot resurrect the old navigation',async()=>{
  const {view,before}=await open();fireEvent.click(screen.getByRole('button',{name:'새 시나리오'}));

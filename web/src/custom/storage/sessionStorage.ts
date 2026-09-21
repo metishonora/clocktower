@@ -7,6 +7,9 @@ const DB_VERSION = 1;
 const STORE_NAME = "game";
 const CUSTOM_SESSION_KEY_PREFIX = "session:custom:";
 
+export type SavedCustomGame = { customScriptId: string; gameId: string; name: string; savedAt: string };
+export type SavedCustomGameList = { records: SavedCustomGame[]; unreadableIds: string[] };
+
 export type CustomWebSessionSnapshot<SetupDraft = unknown, Presentation = unknown> = {
   version: 1;
   customScriptId: string;
@@ -49,6 +52,40 @@ export class CustomWebSessionError extends Error {
 
 export class IndexedDbCustomWebSessionStorageDriver<SetupDraft = unknown, Presentation = unknown>
   implements CustomWebSessionStorageDriver<SetupDraft, Presentation> {
+  /** Read existing slots; one malformed record must not hide the remaining games. */
+  static async listSessions(idb: IDBFactory = globalThis.indexedDB): Promise<SavedCustomGameList> {
+    const driver = new IndexedDbCustomWebSessionStorageDriver('listing', idb);
+    const db = await driver.openDb();
+    try {
+      const result = await new Promise<SavedCustomGameList>((resolve, reject) => {
+        const records: SavedCustomGame[] = [], unreadableIds: string[] = [];
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const request = tx.objectStore(STORE_NAME).openCursor();
+        tx.onabort = tx.onerror = () => reject(tx.error ?? new Error('저장 목록을 읽지 못했습니다.'));
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const cursor = request.result;
+          if (!cursor) return;
+          const key = cursor.key;
+          if (typeof key === 'string' && key.startsWith(CUSTOM_SESSION_KEY_PREFIX)) {
+            let id = key.slice(CUSTOM_SESSION_KEY_PREFIX.length);
+            try {
+              id = decodeURIComponent(id);
+              const snapshot = parseCustomWebSession(cursor.value, id);
+              if (!snapshot.canonical.game.events.some(event => event.type === 'setupConfirmed')) throw invalidSession();
+              records.push({ customScriptId: id, gameId: snapshot.canonical.game.id,
+                name: snapshot.canonical.game.script.definition.name, savedAt: snapshot.savedAt });
+            } catch { unreadableIds.push(id); }
+          }
+          cursor.continue();
+        };
+        tx.oncomplete = () => resolve({ records, unreadableIds });
+      });
+      result.records.sort((a, b) => Date.parse(b.savedAt) - Date.parse(a.savedAt) || a.customScriptId.localeCompare(b.customScriptId));
+      result.unreadableIds.sort();
+      return result;
+    } finally { db.close(); }
+  }
   constructor(
     private readonly customScriptId: string,
     private readonly idb: IDBFactory = globalThis.indexedDB,

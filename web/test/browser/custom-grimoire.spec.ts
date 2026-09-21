@@ -199,7 +199,9 @@ for(const width of [320,390,820,1366])test(`U01/U03/U04/U09/U10/U12: role inspec
  await page.getByRole('button',{name:'마도서',exact:true}).click();await page.locator('.bmrGrimoireBoard').getByRole('button',{name:/^1번 /}).click();await expect(page.getByRole('dialog',{name:/플레이어 상세/})).not.toContainText('생존');await page.getByRole('button',{name:'플레이어 상세 닫기'}).click();
  await page.getByRole('button',{name:'배치로 돌아가기',exact:true}).click();await page.getByRole('dialog',{name:'진행 상태 초기화 확인'}).getByRole('button',{name:'취소'}).click();expect(await slots(page)).toEqual(before);
  await page.getByRole('button',{name:'배치로 돌아가기',exact:true}).click();await page.getByRole('dialog',{name:'진행 상태 초기화 확인'}).getByRole('button',{name:'초기화하고 돌아가기',exact:true}).click();await expect(page.getByRole('button',{name:'좌석 확정',exact:true})).toBeEnabled();expect(await slots(page)).toEqual(before);
- await page.reload();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();expect(await slots(page)).toEqual(before);
+ await page.reload();await expect(page.getByText('게임 설정이 저장되지 않았습니다.')).toBeVisible();
+ await expect(page.getByRole('main',{name:'커스텀 자동 저장 목록'})).toBeVisible();expect(await slots(page)).toEqual(before);
+ await page.getByRole('button',{name:/이어하기/}).click();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();expect(await slots(page)).toEqual(before);
 });
 
 test('U11: 320px progress navigation, phase label and timer never overlap',async({page})=>{

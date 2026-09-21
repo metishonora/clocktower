@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import type { ScenarioEditorController } from './scenarioEditorController.js';
 import type { ScenarioEditorState } from './scenarioEditorState.js';
-export function ScenarioSourceSheet({ state, controller }: { state: ScenarioEditorState; controller: ScenarioEditorController; onExit: () => void }) {
+export function ScenarioSourceSheet({ state, controller, onSavedGames }: { onSavedGames?: () => void; state: ScenarioEditorState; controller: ScenarioEditorController; onExit: () => void }) {
   const input = useRef<HTMLInputElement>(null);
   return <section className="issue202AltScenarioSheet customScenarioSource" aria-labelledby="scenario-title">
     <header><h1 id="scenario-title">Ⅰ. 시나리오 선택</h1></header>
@@ -9,6 +9,7 @@ export function ScenarioSourceSheet({ state, controller }: { state: ScenarioEdit
       <button type="button" aria-pressed={state.source === 'new'} onClick={() => controller.selectSource('new')}><strong>새롭게 작성한다</strong></button>
       <button type="button" aria-pressed={state.source === 'json'} onClick={() => controller.selectSource('json')}><strong>JSON에서 불러온다</strong></button>
     </div>
+    {onSavedGames && <button type="button" className="customSavedGamesLink" onClick={onSavedGames}>자동 저장에서 이어하기</button>}
     <input hidden ref={input} type="file" accept=".json,application/json" aria-label="시나리오 JSON 파일"
       onChange={event => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ''; if (file) void controller.importFile(file); }} />
     {state.source === 'json' && <div className="customScenarioImport" aria-live="polite">

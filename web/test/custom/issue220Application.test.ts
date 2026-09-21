@@ -16,7 +16,7 @@ it('C05/C06/C23/S1-a,b,d: production application only replaces at valid Setup, p
   await second.setup.confirm();
   expect(second.app.getSnapshot().screen).toBe('play');
   const next=await stored(); expect(next.canonical.game.id).not.toBe(old.canonical.game.id);expect(next.canonical.game.events).toHaveLength(1);
-  expect(second.activated).toHaveBeenCalledExactlyOnceWith(definition.id);
+  expect(second.activated).toHaveBeenCalledExactlyOnceWith(definition.id, next.canonical.game.id);
   expect(next.canonical.game.events[0].payload).toMatchObject({players:expect.arrayContaining([expect.objectContaining({name:'새 플레이어'})])});
   const sentinel=await new Promise<unknown>(resolve=>{const r=indexedDB.open('clocktower');r.onsuccess=()=>{const db=r.result;const get=db.transaction('game').objectStore('game').get('official-sentinel');get.onsuccess=()=>{resolve(get.result);db.close();};};});expect(sentinel).toEqual({sentinel:true});second.app.dispose();
 });

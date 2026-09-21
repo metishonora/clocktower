@@ -1,3 +1,4 @@
+import { scenarioUrl } from './custom/grimoire/customRoutes.js';
 import { activeCustomSessionId, forgetCustomSessionNavigation } from './custom/grimoire/browserSessionNavigation.js';
 import { Component, Suspense, lazy, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { ScriptLanding } from './features/script-selection/ScriptLanding';
@@ -20,7 +21,7 @@ export function CustomScenarioLanding() {
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   useEffect(() => {
     if (phase !== 'transition') return;
-    const timer = window.setTimeout(() => setPhase('editor'), window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 820);
+    const timer = window.setTimeout(() => window.location.assign(scenarioUrl), window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 820);
     return () => window.clearTimeout(timer);
   }, [phase]);
   if (phase === 'editor') return <EditorBoundary onExit={() => { forgetCustomSessionNavigation(); setPhase('landing'); }}><Suspense fallback={<div className="scenarioLoadStatus" role="status">시나리오를 열고 있습니다.</div>}>
