@@ -1862,12 +1862,13 @@
 /* Final approved #205 source panel; no repository or intermediate import step. */
 .customScenarioSurface .customScenarioSource { top:auto;bottom:28px;height:auto;min-height:0;max-height:calc(100% - 56px);gap:16px;padding-block:24px; }
 .customScenarioSurface .customScenarioSource::before,.customScenarioSurface .customScenarioSource::after { display:none; }
-.customScenarioSurface .issue202AltFlatChoices { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.customScenarioSurface .issue202AltFlatChoices { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.customScenarioSurface .issue202AltFlatChoices:not(:has(> button:nth-child(3))) { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .customScenarioSource footer { justify-content:flex-end; }
 .customScenarioImport { display:grid;justify-items:center;gap:10px; }
 .customScenarioImport button { min-height:44px;padding:10px 24px;border:1px solid #9a7b5066;color:#f5e4c7;background:#221d19cf;font:inherit; }
 .customScenarioImport p { margin:0;font-size:13px; }
-@media(max-width:680px){.customScenarioSurface .customScenarioSource{bottom:14px;left:10px;right:10px;width:auto;transform:none;padding:20px 16px 14px;max-height:calc(100% - 28px)}.customScenarioSurface .issue202AltFlatChoices{grid-template-columns:1fr}.customScenarioSource button{min-height:44px}}
+@media(max-width:720px){.customScenarioSurface .customScenarioSource{bottom:14px;left:10px;right:10px;width:auto;transform:none;padding:20px 16px 14px;max-height:calc(100% - 28px)}.customScenarioSurface .customScenarioSource .issue202AltFlatChoices{grid-template-columns:1fr}.customScenarioSource button{min-height:44px}}
 
 .customScenarioSurface .customScenarioSource { grid-template-rows:auto;overflow-y:auto; }
 .customScenarioSurface .customScenarioSource h1 { font-size:clamp(20px,2vw,28px); }
@@ -1882,6 +1883,3 @@
   .customScenarioSurface .issue200CharacterGrid button img { width: 52px; height: 52px; }
   .customScenarioSurface .issue200CharacterGrid button > strong { overflow: visible; white-space: normal; text-overflow: clip; word-break: keep-all; overflow-wrap: anywhere; font-size: .8rem; line-height: 1.4; text-align: center; }
 }
-
-.customSavedGamesLink { justify-self: center; min-height: 44px; padding: 10px 24px; border: 1px solid #9a7b5066; color: #f5e4c7; background: #221d19cf; font: inherit; }
-.customSavedGamesLink:focus-visible { outline: 2px solid #caa675; outline-offset: 3px; }

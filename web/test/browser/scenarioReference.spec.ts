@@ -15,7 +15,7 @@ function scenario(ids: string[], name = '붉은 달의 실마리') {
 async function upload(page: Page, input: unknown) {
   await page.goto('./');
   await page.getByRole('button',{name:'Custom Scenario 선택',exact:true}).click();
-  await page.getByRole('button',{name:'JSON에서 불러온다'}).click();
+  await page.getByRole('button',{name:'파일에서 불러온다'}).click();
   await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'reference.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(input))});
   await expect(page.getByRole('heading',{name:'최종 검토',exact:true})).toBeVisible();
 }

@@ -52,7 +52,7 @@ export class ScenarioEditorController {
   }
   cancelPending = () => { this.validationRequest++; this.orderRequest++; this.importRequest++; };
   setStep = (step: EditorStep) => { this.importRequest++; this.patch({ step, importStatus: 'idle' }); };
-  selectSource = (source: 'new' | 'json') => {
+  selectSource = (source: ScenarioEditorState['source']) => {
     this.importRequest++;
     this.patch({ source, importStatus: 'idle', importName: undefined, importError: undefined });
   };

@@ -8,7 +8,7 @@ async function fixture(name: 'day' | 'first-night' = 'day'): Promise<GameFileV5>
 }
 async function importGame(page: Page, file: GameFileV5) {
   await page.goto(editor);
-  await page.getByRole('button', {name:'JSON에서 불러온다'}).click();
+  await page.getByRole('button', {name:'파일에서 불러온다'}).click();
   await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'game.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(file))});
   await page.getByRole('button', {name:'마도서 이어 쓰기'}).click();
   await expect(page.getByRole('main', {name:'커스텀 마도서',exact:true})).toBeVisible();
@@ -122,7 +122,9 @@ test('legacy root history points to the saved game and editor links to the manua
   await page.reload(); await expect(page).toHaveURL(new RegExp(`\\?game=${encodeURIComponent(file.game.id)}$`));
   await expect(page.getByRole('heading', {name:'사망 발표',exact:true})).toBeVisible(); expect(await saved(page)).toEqual(before);
   await page.goto(editor); await page.screenshot({path:test.info().outputPath('scenario-desktop.png'),fullPage:true});
-  await page.getByRole('button', {name:'자동 저장에서 이어하기'}).click();
+  await page.getByRole('button', {name:'저장된 게임을 이어간다'}).click();
+  await expect(page).toHaveURL(/\/custom\/scenario\/$/);
+  await page.getByRole('button', {name:'저장된 게임 보기'}).click();
   await expect(page.getByRole('list', {name:'저장된 게임'})).toBeVisible();
 });
 

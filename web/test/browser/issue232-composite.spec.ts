@@ -4,7 +4,7 @@ import {PDFDocument} from 'pdf-lib';
 const root=new URL('../../../fixtures/acceptance/custom-composite/',import.meta.url);
 async function enter(page:Page,name:string) {
  await page.goto('./?fresh=1');await page.getByRole('button',{name:'Custom Scenario 선택',exact:true}).click();
- await page.getByRole('button',{name:'JSON에서 불러온다'}).click();
+ await page.getByRole('button',{name:'파일에서 불러온다'}).click();
  await page.getByLabel('시나리오 JSON 파일').setInputFiles({name,mimeType:'application/json',buffer:await readFile(new URL(name,root))});
  await expect(page.getByRole('heading',{name:'최종 검토',exact:true})).toBeVisible();
 }

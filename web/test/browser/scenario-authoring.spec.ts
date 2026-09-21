@@ -16,7 +16,7 @@ async function save(page: Page) {
   return { bytes, json: JSON.parse(bytes.toString()), filename: download.suggestedFilename() };
 }
 async function upload(page: Page, bytes: Buffer) {
-  await page.getByRole('button', { name: 'JSON에서 불러온다' }).click();
+  await page.getByRole('button', { name: '파일에서 불러온다' }).click();
   await page.getByLabel('시나리오 JSON 파일').setInputFiles({ name: 'reusable.json', mimeType: 'application/json', buffer: bytes });
   await expect(page.getByRole('heading', { name: '최종 검토', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '검토로', exact: true })).toHaveCount(0);
@@ -53,7 +53,8 @@ test('creates, reorders and downloads a scenario; a fresh app imports and edits 
   await expect(page.getByRole('region', { name: '권장 구성 경고' })).toBeVisible();
   const original = await save(page);
   expect(original.filename).toBe('clocktower-scenario-밤의 _ 기록.json');
-  expect(original.json).toEqual({ type: 'clocktower-custom-scenario', version: 2, scenario: {
+  expect(original.json).toEqual({ type: 'clocktower-custom-scenario', version: 3, scenario: {
+    nightOrderVersion: 2,
     otherNightOrder: [{kind:'system',actionId:'dusk'},{kind:'character',characterId:'philosopher',actionId:'chooseAbility'},{kind:'character',characterId:'poisoner',actionId:'choosePoisonTarget'},{kind:'character',characterId:'imp',actionId:'attackPlayer'},{kind:'system',actionId:'dawn'}],
     name: '밤의 / 기록', characterIds: ['philosopher', 'poisoner', 'imp'], firstNightOrder: [
       { kind: 'system', actionId: 'dusk' },
@@ -88,7 +89,7 @@ test('wrong file kinds and unsupported fields leave an existing production game 
   const before = await databaseSnapshot(page);
   expect(before.length).toBeGreaterThan(0);
   await enter(page);
-  await page.getByRole('button', { name: 'JSON에서 불러온다' }).click();
+  await page.getByRole('button', { name: '파일에서 불러온다' }).click();
   for (const buffer of [await readFile(fixture), Buffer.from('["imp"]'), Buffer.from(JSON.stringify({
     type: 'clocktower-custom-scenario', version: 2,
     scenario: { name: 'bad', characterIds: ['imp'], firstNightOrder: [], otherNightOrder: [] },

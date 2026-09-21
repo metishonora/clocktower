@@ -6,10 +6,10 @@ export function ScenarioSourceSheet({ state, controller, onSavedGames }: { onSav
   return <section className="issue202AltScenarioSheet customScenarioSource" aria-labelledby="scenario-title">
     <header><h1 id="scenario-title">Ⅰ. 시나리오 선택</h1></header>
     <div className="issue202AltFlatChoices" role="group" aria-label="시나리오 작업 선택">
-      <button type="button" aria-pressed={state.source === 'new'} onClick={() => controller.selectSource('new')}><strong>새롭게 작성한다</strong></button>
-      <button type="button" aria-pressed={state.source === 'json'} onClick={() => controller.selectSource('json')}><strong>JSON에서 불러온다</strong></button>
+      <button type="button" aria-pressed={state.source === 'new'} onClick={() => controller.selectSource('new')}><strong>새 시나리오를 쓴다</strong></button>
+      <button type="button" aria-pressed={state.source === 'json'} onClick={() => controller.selectSource('json')}><strong>파일에서 불러온다</strong></button>
+      {onSavedGames && <button type="button" aria-pressed={state.source === 'saved'} onClick={() => controller.selectSource('saved')}><strong>저장된 게임을 이어간다</strong></button>}
     </div>
-    {onSavedGames && <button type="button" className="customSavedGamesLink" onClick={onSavedGames}>자동 저장에서 이어하기</button>}
     <input hidden ref={input} type="file" accept=".json,application/json" aria-label="시나리오 JSON 파일"
       onChange={event => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ''; if (file) void controller.importFile(file); }} />
     {state.source === 'json' && <div className="customScenarioImport" aria-live="polite">
@@ -18,5 +18,6 @@ export function ScenarioSourceSheet({ state, controller, onSavedGames }: { onSav
       {state.importError && <p role="alert">{state.importError}</p>}
     </div>}
     {state.source === 'new' && <footer><button type="button" className="issue202AltPrimaryAction" onClick={controller.startNew}>다음으로</button></footer>}
+    {state.source === 'saved' && onSavedGames && <footer><button type="button" className="issue202AltPrimaryAction" onClick={onSavedGames}>저장된 게임 보기</button></footer>}
   </section>;
 }

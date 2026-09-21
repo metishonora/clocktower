@@ -46,6 +46,15 @@ The old return-to-setup browser assertion expected refresh to resume the old gam
 
 Application composition tests live in `web/test/`, alongside the existing grimoire application tests. Storage/replay tests stay in `web/test/custom/` so the isolated custom-runtime suite does not pull in the shared production UI tree.
 
+## Source-menu review follow-up
+
+The source screen now presents `새 시나리오를 쓴다`, `파일에서 불러온다`, and `저장된 게임을 이어간다` as peer choices with the existing typography, separators, and selected underline. The saved-game choice opens the list through `저장된 게임 보기`. Wide screens use three columns; screens up to 720px stack the choices.
+
+- Production build, PWA verification and browser TypeScript checks passed.
+- Existing source/review component tests (4) and New Scenario integration tests (7) passed.
+- Browser checks covered the four production startup cases, legacy recovery through the new menu, authoring/file round-trip, and responsive authoring at 1366, 1180, 820 and 390px (10 cases). The round-trip test still expected the old version-2 export; its assertion was updated to the existing version-3 export with `nightOrderVersion: 2`, then passed on rerun. Product serialization was unchanged.
+- The selected recovery menu was visually checked at desktop, 700px and 390px widths without horizontal overflow.
+
 ## Scope
 
 No domain rules, canonical file schema, existing session keys or CI workflow scope changed. Editor drafts, pre-game setup and unconfirmed action input remain transient. The preview origin uses its own browser storage; production games can be reviewed by importing their game JSON there.

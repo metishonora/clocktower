@@ -22,7 +22,7 @@ it('T13 P4 N03/N04/N05: confirm creates blank authoring and remount cannot resur
  expect(screen.getByRole('heading',{name:'Ⅰ. 시나리오 선택'})).toBeTruthy();expect(activeCustomSessionId()).toBeUndefined();expect(await stored()).toEqual(before);
  view.unmount();render(<CustomGrimoireApplication onExit={()=>{}}/>);
  expect(screen.getByRole('heading',{name:'Ⅰ. 시나리오 선택'})).toBeTruthy();expect(screen.queryByRole('main',{name:'커스텀 마도서'})).toBeNull();
- fireEvent.click(screen.getByRole('button',{name:'새롭게 작성한다'}));fireEvent.click(screen.getByRole('button',{name:'다음으로'}));
+ fireEvent.click(screen.getByRole('button',{name:'새 시나리오를 쓴다'}));fireEvent.click(screen.getByRole('button',{name:'다음으로'}));
  expect(screen.getByRole('textbox',{name:'시나리오 이름'})).toHaveProperty('value','');expect(await stored()).toEqual(before);
 });
 it('T13 P4 N06: failed current save cannot be discarded through New Scenario',async()=>{

@@ -11,7 +11,7 @@ test.beforeAll(()=>{
 for(const width of [320,390,820,1366])test(`T9-6: readable role disclosures and original comparison evidence at ${width}px`,async({page,context})=>{
  test.setTimeout(120000);await page.setViewportSize({width,height:1000});await page.emulateMedia({reducedMotion:'reduce'});
  await page.goto('./');await page.getByRole('button',{name:'Custom Scenario 선택'}).click();
- await page.getByRole('button',{name:'JSON에서 불러온다'}).click();await page.getByLabel('시나리오 JSON 파일').setInputFiles(resolve('../fixtures/acceptance/custom-first-night/issue220/user-scenario.json'));
+ await page.getByRole('button',{name:'파일에서 불러온다'}).click();await page.getByLabel('시나리오 JSON 파일').setInputFiles(resolve('../fixtures/acceptance/custom-first-night/issue220/user-scenario.json'));
  await page.getByRole('button',{name:'새 마도서 쓰기'}).click();await expect(page.getByRole('button',{name:'15명',exact:true})).toBeVisible();
  const tb=await context.newPage(),snv=await context.newPage();
  for(const [p,route,label] of [[tb,'trouble-brewing/','Trouble Brewing 게임 설정'],[snv,'sects-and-violets/','Sects & Violets 게임']] as const){await p.setViewportSize({width,height:1000});await p.emulateMedia({reducedMotion:'reduce'});await p.goto(route);await expect(p.getByRole('main',{name:label})).toBeVisible();}

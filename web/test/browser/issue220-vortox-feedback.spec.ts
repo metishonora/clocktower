@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 import {resolve} from 'node:path';
 for(const width of [320,390,820,1366])test(`reported saved Librarian: Vortox badge disclosure style and plain history at ${width}`,async({page})=>{
  await page.setViewportSize({width,height:1000});await page.emulateMedia({reducedMotion:'reduce'});
- await page.goto('./');await page.getByRole('button',{name:'Custom Scenario 선택'}).click();await page.getByRole('button',{name:'JSON에서 불러온다'}).click();
+ await page.goto('./');await page.getByRole('button',{name:'Custom Scenario 선택'}).click();await page.getByRole('button',{name:'파일에서 불러온다'}).click();
  await page.getByLabel('시나리오 JSON 파일').setInputFiles(resolve('../fixtures/acceptance/custom-first-night/issue220/test0912-game.json'));
  await page.getByRole('button',{name:'마도서 이어 쓰기'}).click();
  await expect(page.locator('.snvInformationInfluenceBadge.vortox')).toHaveText('보르톡스');
