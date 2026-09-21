@@ -29,7 +29,7 @@ import type { FirstNightController } from '../custom/grimoire/firstNightControll
 import { CustomReveal } from './CustomReveal';
 import { CustomEventLog } from './CustomEventLog';
 import './customGrimoirePlay.css';
-export function CustomGrimoirePlay({ controller, onNewGame, onNewScenario, onImport, onRestart }: { controller: FirstNightController; onRestart?: () => void } & CustomUtilityActions) {
+export function CustomGrimoirePlay({ controller, onNewGame, onNewScenario, onSavedGames, onImport, onRestart }: { controller: FirstNightController; onRestart?: () => void } & CustomUtilityActions) {
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const { replay, file } = state;
   const runtime=usePhaseRuntime({activePhase:replay.gameEnd?undefined:{key:replay.phase,label:phaseLabel(replay)},gameSessionRevision:0,clock:browserRuntimeClock});
@@ -66,7 +66,7 @@ export function CustomGrimoirePlay({ controller, onNewGame, onNewScenario, onImp
     else if(wasSelecting.current){setTab(handoffDestination.current==='board'?'seating':'play');}
     wasSelecting.current=active;
   },[state.selecting,state.selectionRevision,state.handoff?.stage,state.dayHandoff,dayResolution?.id,progressNotification]);
-  const utilities = useCustomUtilities({definition:file.game.script.definition,file,busy:state.busy || state.public || state.saveStatus!=='saved',onNewGame,onNewScenario,onImport,history:<CustomEventLog file={file}/>});
+  const utilities = useCustomUtilities({definition:file.game.script.definition,file,busy:state.busy || state.public || state.saveStatus!=='saved',onNewGame,onNewScenario,onSavedGames,onImport,history:<CustomEventLog file={file}/>});
   useEffect(()=>{
     setDayConsequenceSelection(undefined);
     if(pendingDayResolution?.kind==='consequence'){utilities.close();setTab('play');}

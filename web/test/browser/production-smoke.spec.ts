@@ -48,7 +48,8 @@ for (const [script, route, main] of [
 test("custom scenario initializes the production runtime and opens setup", async ({ page }) => {
   await page.goto("./");
   await page.getByRole("button", { name: "Custom Scenario 선택", exact: true }).click();
-  await page.getByRole("button", { name: "JSON에서 불러온다", exact: true }).click();
+  await expect(page).toHaveURL(/\/clocktower\/custom\/scenario\/$/);
+  await page.getByRole("button", { name: "파일에서 불러온다", exact: true }).click();
   const wasm = page.waitForResponse(response =>
     /clocktower_custom_wasm_bg.*\.wasm$/.test(response.url()) && response.ok());
   await page.getByLabel("시나리오 JSON 파일").setInputFiles({
@@ -83,4 +84,5 @@ test("custom scenario initializes the production runtime and opens setup", async
   await expect(page.getByRole("heading", { name: "최종 검토", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "새 마도서 쓰기", exact: true }).click();
   await expect(page.getByRole("main", { name: "커스텀 시나리오 마도서", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/custom\/grimoire\/\?mode=setup$/);
 });

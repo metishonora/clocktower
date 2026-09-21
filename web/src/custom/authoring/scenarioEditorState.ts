@@ -7,7 +7,7 @@ export type EditorError = { section: DefinitionSection | 'operation'; message: s
 import type { ValidatedScenario } from '../core/definitionValidator.js';
 export type ScenarioEditorState = {
   step: EditorStep;
-  source: 'new' | 'json';
+  source: 'new' | 'json' | 'saved';
   draft: CustomScriptDefinitionDraft;
   change: number;
   validation: 'idle' | 'pending' | 'valid' | 'invalid';

@@ -49,6 +49,18 @@ export default defineConfig({
         navigateFallback: null,
         runtimeCaching: [
           {
+            // Both entries boot the same router. Query IDs select data, not HTML.
+            // Explicit fetches warm this shell after first Service Worker activation.
+            urlPattern: ({ url }) => url.origin === self.location.origin
+              && /^\/clocktower\/custom\/(scenario|grimoire)\/(index\.html)?$/.test(url.pathname),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "clocktower-custom-pages",
+              plugins: [{ cacheKeyWillBeUsed: async ({ request }) =>
+                new URL('/clocktower/custom/scenario/', request.url).href }],
+            },
+          },
+          {
             urlPattern: ({ request, url }) =>
               request.mode === "navigate" && url.pathname.startsWith("/clocktower/"),
             handler: "NetworkFirst",
@@ -64,6 +76,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         landing: `${webRoot}index.html`,
+        customScenario: `${webRoot}custom/scenario/index.html`,
+        customGrimoire: `${webRoot}custom/grimoire/index.html`,
         troubleBrewing: `${webRoot}trouble-brewing/index.html`,
         sectsAndViolets: `${webRoot}sects-and-violets/index.html`,
         badMoonRising: `${webRoot}bad-moon-rising/index.html`,

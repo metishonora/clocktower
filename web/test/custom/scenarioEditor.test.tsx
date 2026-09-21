@@ -51,7 +51,7 @@ it('recommendation shortages allow save; editing to an invalid name disables it 
 it('source input can reselect the same file and a canceled selection preserves the draft', async () => {
   const { controller } = setup();
   render(<Source controller={controller} />);
-  fireEvent.click(screen.getByRole('button', { name: 'JSON에서 불러온다' }));
+  fireEvent.click(screen.getByRole('button', { name: '파일에서 불러온다' }));
   const input = screen.getByLabelText('시나리오 JSON 파일') as HTMLInputElement;
   const selected = { name: 'scenario.json', text: async () => scenario };
   fireEvent.change(input, { target: { files: [selected] } });

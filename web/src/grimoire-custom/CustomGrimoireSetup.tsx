@@ -9,14 +9,14 @@ import './customGrimoireSetup.css';
 import './customBmrTheme.css';
 
 /** Existing official presentations, with custom-owned state and rules supplied as data. */
-export function CustomGrimoireSetup({ controller, onNewGame, onNewScenario, onImport }: { controller: GrimoireSetupController } & CustomUtilityActions) {
+export function CustomGrimoireSetup({ controller, onNewGame, onNewScenario, onSavedGames, onImport }: { controller: GrimoireSetupController } & CustomUtilityActions) {
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const { draft, definition, replay, tab } = state;
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [controller, tab]);
   const [selectedSeat, setSelectedSeat] = useState<number>();
   const [pendingId, setPendingId] = useState<string>();
   const locked = state.busy || !!replay || state.saveFailed;
-  const utilities = useCustomUtilities({definition,busy:locked,onNewGame,onNewScenario,onImport});
+  const utilities = useCustomUtilities({definition,busy:locked,onNewGame,onNewScenario,onSavedGames,onImport});
   const complete = rosterComplete(state);
   const assigned = draft.players.filter(player => player.actualCharacter).length;
   const selected = draft.players.find(player => player.seat === selectedSeat);

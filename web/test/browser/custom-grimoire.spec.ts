@@ -5,7 +5,7 @@ const scenario = { type:'clocktower-custom-scenario',version:2,scenario:{otherNi
   {kind:'character',characterId:'poisoner',actionId:'choosePoisonTarget'},{kind:'character',characterId:'chef',actionId:'learnEvilPairs'},
   {kind:'character',characterId:'empath',actionId:'learnEvilNeighbors'},{kind:'character',characterId:'clockmaker',actionId:'learnSteps'},{kind:'system',actionId:'dawn'}]}};
 async function enter(page:Page) { await page.goto('./');await page.getByRole('button',{name:'Custom Scenario 선택'}).click();await expect(page.getByRole('heading',{name:'Ⅰ. 시나리오 선택'})).toBeVisible(); }
-async function upload(page:Page,json:unknown) { await page.getByRole('button',{name:'JSON에서 불러온다'}).click();await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'input.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(json))});await expect(page.getByRole('heading',{name:'최종 검토',exact:true})).toBeVisible(); }
+async function upload(page:Page,json:unknown) { await page.getByRole('button',{name:'파일에서 불러온다'}).click();await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'input.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(json))});await expect(page.getByRole('heading',{name:'최종 검토',exact:true})).toBeVisible(); }
 async function slots(page:Page) {return page.evaluate(async()=>{if(!(await indexedDB.databases()).some(db=>db.name==='clocktower'))return [];return new Promise<unknown[]>((resolve,reject)=>{const r=indexedDB.open('clocktower');r.onerror=()=>reject(r.error);r.onsuccess=()=>{const db=r.result;if(!db.objectStoreNames.contains('game')){db.close();resolve([]);return;}const get=db.transaction('game').objectStore('game').getAll();get.onsuccess=()=>{resolve(get.result);db.close();};get.onerror=()=>reject(get.error);};});});}
 async function setup(page:Page) {
   await enter(page);await expect(page.getByRole('button',{name:'저장본을 연다'})).toHaveCount(0);await upload(page,scenario);
@@ -94,7 +94,7 @@ for(const width of [1366,390,820,320])test(`C05/C06/C16/C21/C27/C34/C37: Product
 });
 test('C36: custom runtime load failure stays recoverable and never creates a game',async({browser},info)=>{
   const context=await browser.newContext({baseURL:info.project.use.baseURL,serviceWorkers:'block'});const page=await context.newPage();let blocked=0;
-  await page.route('**/clocktower_custom_wasm_bg*.wasm',route=>{blocked++;return route.abort();});await enter(page);await page.getByRole('button',{name:'JSON에서 불러온다'}).click();await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'scenario.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(scenario))});await expect.poll(()=>blocked).toBeGreaterThan(0);await expect(page.getByRole('alert')).toBeVisible();await expect(page.getByRole('heading',{name:'최종 검토',exact:true})).toHaveCount(0);expect(await slots(page)).toEqual([]);
+  await page.route('**/clocktower_custom_wasm_bg*.wasm',route=>{blocked++;return route.abort();});await enter(page);await page.getByRole('button',{name:'파일에서 불러온다'}).click();await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'scenario.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(scenario))});await expect.poll(()=>blocked).toBeGreaterThan(0);await expect(page.getByRole('alert')).toBeVisible();await expect(page.getByRole('heading',{name:'최종 검토',exact:true})).toHaveCount(0);expect(await slots(page)).toEqual([]);
   await page.unroute('**/clocktower_custom_wasm_bg*.wasm');await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'scenario.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(scenario))});await expect(page.getByRole('heading',{name:'최종 검토',exact:true})).toBeVisible();await context.close();
 });
 
@@ -199,7 +199,9 @@ for(const width of [320,390,820,1366])test(`U01/U03/U04/U09/U10/U12: role inspec
  await page.getByRole('button',{name:'마도서',exact:true}).click();await page.locator('.bmrGrimoireBoard').getByRole('button',{name:/^1번 /}).click();await expect(page.getByRole('dialog',{name:/플레이어 상세/})).not.toContainText('생존');await page.getByRole('button',{name:'플레이어 상세 닫기'}).click();
  await page.getByRole('button',{name:'배치로 돌아가기',exact:true}).click();await page.getByRole('dialog',{name:'진행 상태 초기화 확인'}).getByRole('button',{name:'취소'}).click();expect(await slots(page)).toEqual(before);
  await page.getByRole('button',{name:'배치로 돌아가기',exact:true}).click();await page.getByRole('dialog',{name:'진행 상태 초기화 확인'}).getByRole('button',{name:'초기화하고 돌아가기',exact:true}).click();await expect(page.getByRole('button',{name:'좌석 확정',exact:true})).toBeEnabled();expect(await slots(page)).toEqual(before);
- await page.reload();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();expect(await slots(page)).toEqual(before);
+ await page.reload();await expect(page.getByText('게임 설정이 저장되지 않았습니다.')).toBeVisible();
+ await expect(page.getByRole('main',{name:'커스텀 자동 저장 목록'})).toBeVisible();expect(await slots(page)).toEqual(before);
+ await page.getByRole('button',{name:/이어하기/}).click();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();expect(await slots(page)).toEqual(before);
 });
 
 test('U11: 320px progress navigation, phase label and timer never overlap',async({page})=>{
