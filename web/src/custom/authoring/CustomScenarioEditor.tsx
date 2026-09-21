@@ -10,8 +10,9 @@ import { ScenarioReviewSheet } from './ScenarioReviewSheet.js';
 import { catalog, countsFor, characterPresentation, type KindFilter, type SourceFilter } from './characterPresentation.js';
 import './scenarioEditor.css';
 import './nightOrders.css';
-export function CustomScenarioEditor({ onExit, onNewGrimoire, onResume, sourceFile }: { onExit: () => void; sourceFile?: File; onNewGrimoire?: (scenario: ValidatedScenario) => void; onResume?: (game: ImportedGame) => void }) {
+export function CustomScenarioEditor({ onExit, onNewGrimoire, onResume, sourceFile, onSavedGames, active = true }: { onSavedGames?: () => void; active?: boolean; onExit: () => void; sourceFile?: File; onNewGrimoire?: (scenario: ValidatedScenario) => void; onResume?: (game: ImportedGame) => void }) {
   const { state, controller } = useScenarioEditor();
+  useEffect(() => { if (active) controller.resumePending(); else controller.suspend(); }, [active, controller]);
   useEffect(() => { if (sourceFile) void controller.importFile(sourceFile); }, [controller, sourceFile]);
   const [kind, setKind] = useState<KindFilter>('Townsfolk');
   const [source, setSource] = useState<SourceFilter>('all');
@@ -48,7 +49,7 @@ export function CustomScenarioEditor({ onExit, onNewGrimoire, onResume, sourceFi
     <div className="issue202AltProductStage"><main className={`issue202AltEditor is-${state.step}`} aria-label="커스텀 시나리오 작성">
       <figure className="issue202AltArtwork" aria-hidden="true"><img src={manuscript} alt="" /></figure><div className="issue202AltVignette" aria-hidden="true" />
       <div className={`scenarioSheets${entering ? ' is-entering' : ''}`}>
-        {state.step === 'scenario' ? <ScenarioSourceSheet state={state} controller={controller} onExit={onExit} />
+        {state.step === 'scenario' ? <ScenarioSourceSheet state={state} controller={controller} onExit={onExit} onSavedGames={onSavedGames} />
         : state.step === 'characters' ? <CharacterPoolSheet name={state.draft.name} selectedIds={state.draft.characterIds} counts={countsFor(state.draft.characterIds)}
           activeKind={kind} sourceFilter={source} query={query} characters={visible} focusedCharacter={focused ? characterPresentation(focused) : undefined}
           onNameChange={controller.setName} onActiveKindChange={changeKind} onSourceFilterChange={changeSource} onQueryChange={changeQuery}

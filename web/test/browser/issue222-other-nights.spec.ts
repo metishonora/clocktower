@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises';
 const file=async()=>JSON.parse(await readFile(new URL('../../../fixtures/acceptance/custom-first-night/compatibility/day.game.json',import.meta.url),'utf8'));
 async function enter(page:Page,json:unknown) {
  await page.goto('./?fresh=1');await page.getByRole('button',{name:'Custom Scenario 선택'}).click();
- await page.getByRole('button',{name:'JSON에서 불러온다'}).click();
+ await page.getByRole('button',{name:'파일에서 불러온다'}).click();
  await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'nights.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(json))});
  await expect(page.getByRole('heading',{name:'최종 검토',exact:true})).toBeVisible();
 }

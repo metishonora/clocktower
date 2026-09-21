@@ -9,7 +9,7 @@ import { GameBugReportDialog, type BugReportBuildInput, type BugReportResult } f
 import { currentBugReportEnvironment, DEFAULT_BUG_REPORT_EMAIL } from '../bugReportDelivery';
 import type { WorkflowDestination } from '../shared-ui/ProductionApplicationShell';
 
-export type CustomUtilityActions = { onNewGame: () => void; onNewScenario?: () => void; onImport: (file:File) => void };
+export type CustomUtilityActions = { onNewGame: () => void; onSavedGames?: () => void; onNewScenario?: () => void; onImport: (file:File) => void };
 type ReportContext = { eventCount:number; phase:string };
 type ReportSource = {definition:CustomScriptDefinition; file?:GameFileV5};
 export function buildCustomReport({gameFile:source,symptom,environment,reproductionContext,includeOriginalGameFile}:BugReportBuildInput<ReportContext,ReportSource>):BugReportResult<ReportContext,ReportSource> {
@@ -23,7 +23,7 @@ export function buildCustomReport({gameFile:source,symptom,environment,reproduct
   const attachmentJson = JSON.stringify({type:'clocktower.custom.bug-report',metadata,symptom,reproductionContext,fixture,...(includeOriginalGameFile?{original:source}:{})},null,2);
   return {subject:'[Clocktower Custom] 버그 제보',body:attachmentJson,attachmentJson,metadata,fixture,reproductionContext,reportType:'clocktower.custom.bug-report',reportSchemaVersion:1};
 }
-export function useCustomUtilities({definition,file,busy,onNewGame,onNewScenario,onImport,history}:{history?:ReactNode;definition:CustomScriptDefinition;file?:GameFileV5;busy:boolean}&CustomUtilityActions) {
+export function useCustomUtilities({definition,file,busy,onNewGame,onNewScenario,onImport,onSavedGames,history}:{history?:ReactNode;definition:CustomScriptDefinition;file?:GameFileV5;busy:boolean}&CustomUtilityActions) {
   const [confirmNewScenario,setConfirmNewScenario] = useState(false);
   const [confirmNewGame,setConfirmNewGame] = useState(false);
   const [open,setOpen] = useState<'storage'|'bug-report'>();
@@ -41,6 +41,7 @@ export function useCustomUtilities({definition,file,busy,onNewGame,onNewScenario
     {confirmNewScenario && <GameConfirmationDialog label="새 시나리오 확인" title="새 시나리오를 작성할까요?" description="현재 화면을 닫고 빈 시나리오 작성 화면으로 돌아갑니다. 기존 자동 저장은 유지됩니다." confirmLabel="새 시나리오 작성" onCancel={()=>setConfirmNewScenario(false)} onConfirm={()=>{if(busy)return;setConfirmNewScenario(false);setOpen(undefined);onNewScenario?.();}}/>}
     <input ref={input} hidden type="file" accept=".json,application/json" aria-label="마도서 JSON 파일" onChange={e=>{const next=e.currentTarget.files?.[0];e.currentTarget.value='';if(next){setOpen(undefined);onImport(next);}}}/>
     {open==='storage' && <section className="customBmrStorage snvTabPanel" aria-label="저장 / 불러오기">
+      {onSavedGames && <button type="button" disabled={busy} onClick={onSavedGames}>자동 저장 목록</button>}
       <GameStorageView canExport busy={busy} onExport={()=>download(!!file)} onImport={()=>input.current?.click()} description="시나리오 또는 게임 파일을 검토합니다."/>
       {history}
       {error && <p role="alert">{error}</p>}

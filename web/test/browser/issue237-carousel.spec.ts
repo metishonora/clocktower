@@ -19,7 +19,7 @@ function fixture(notify:boolean) {
 async function enter(page:Page,notify:boolean|Buffer) {
  await page.goto('./?fresh=1');
  await page.getByRole('button',{name:'Custom Scenario 선택',exact:true}).click();
- await page.getByRole('button',{name:'JSON에서 불러온다'}).click();
+ await page.getByRole('button',{name:'파일에서 불러온다'}).click();
  await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'carousel237.game.json',mimeType:'application/json',buffer:typeof notify==='boolean'?fixture(notify):notify});
  await page.getByRole('button',{name:'마도서 이어 쓰기',exact:true}).click();
 }

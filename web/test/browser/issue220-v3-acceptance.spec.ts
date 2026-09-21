@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 async function enter(page:Page) { await page.goto('./');await page.getByRole('button',{name:'Custom Scenario 선택'}).click();await expect(page.getByRole('heading',{name:'Ⅰ. 시나리오 선택'})).toBeVisible(); }
-async function upload(page:Page,json:unknown) { await page.getByRole('button',{name:'JSON에서 불러온다'}).click();await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'input.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(json))});await expect(page.getByRole('heading',{name:'최종 검토',exact:true})).toBeVisible(); }
+async function upload(page:Page,json:unknown) { await page.getByRole('button',{name:'파일에서 불러온다'}).click();await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'input.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(json))});await expect(page.getByRole('heading',{name:'최종 검토',exact:true})).toBeVisible(); }
 async function slots(page:Page) {return page.evaluate(async()=>{if(!(await indexedDB.databases()).some(db=>db.name==='clocktower'))return [];return new Promise<unknown[]>((resolve,reject)=>{const r=indexedDB.open('clocktower');r.onerror=()=>reject(r.error);r.onsuccess=()=>{const db=r.result;if(!db.objectStoreNames.contains('game')){db.close();resolve([]);return;}const get=db.transaction('game').objectStore('game').getAll();get.onsuccess=()=>{resolve(get.result);db.close();};get.onerror=()=>reject(get.error);};});});}
 async function discloseAndCommit(page:Page) {
  await page.getByRole('button',{name:'정보 공개',exact:true}).click();

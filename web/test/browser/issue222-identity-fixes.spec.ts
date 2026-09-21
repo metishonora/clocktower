@@ -1,7 +1,7 @@
 import {test,expect,type Page} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 const original=async()=>JSON.parse(await readFile(new URL('../../../fixtures/acceptance/custom-first-night/compatibility/day.game.json',import.meta.url),'utf8'));
-async function enter(page:Page,file:unknown){await page.goto('./');await page.getByRole('button',{name:'Custom Scenario 선택'}).click();await page.getByRole('button',{name:'JSON에서 불러온다'}).click();await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'identity.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(file))});await page.getByRole('button',{name:'마도서 이어 쓰기',exact:true}).click();}
+async function enter(page:Page,file:unknown){await page.goto('./');await page.getByRole('button',{name:'Custom Scenario 선택'}).click();await page.getByRole('button',{name:'파일에서 불러온다'}).click();await page.getByLabel('시나리오 JSON 파일').setInputFiles({name:'identity.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(file))});await page.getByRole('button',{name:'마도서 이어 쓰기',exact:true}).click();}
 async function nextNight(page:Page){for(const name of ['발표 완료','공개 토론으로','지명 및 투표로','지명 종료','확정','다음 밤으로'])await page.getByRole('button',{name,exact:true}).click();}
 for(const width of [390,1366]) {
  test(`daytime Scarlet Woman succession waits for night at ${width}`,async({page},info)=>{

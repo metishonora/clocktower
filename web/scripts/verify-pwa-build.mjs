@@ -7,7 +7,7 @@ const files = walk(root.pathname).map((path) => path.slice(root.pathname.length)
 const index = readFileSync(new URL("index.html", root), "utf8");
 
 assert.match(index, /(?:src|href)="\/clocktower\//, "build assets must use the /clocktower/ Pages base");
-for (const page of ["index.html", "trouble-brewing/index.html", "sects-and-violets/index.html"]) {
+for (const page of ["index.html", "trouble-brewing/index.html", "sects-and-violets/index.html", "custom/scenario/index.html", "custom/grimoire/index.html"]) {
   assert.ok(files.includes(page), `production page is missing: ${page}`);
 }
 for (const logo of ["assets/scripts/trouble-brewing.png", "assets/scripts/sects-and-violets.png"]) {
@@ -39,7 +39,7 @@ assert.equal(
   "multi-page script routes must not be replaced by the landing page navigation fallback",
 );
 const precacheUrls = extractPrecacheUrls(serviceWorker);
-for (const page of ["index.html", "trouble-brewing/index.html", "sects-and-violets/index.html"]) {
+for (const page of ["index.html", "trouble-brewing/index.html", "sects-and-violets/index.html", "custom/scenario/index.html", "custom/grimoire/index.html"]) {
   assert.equal(
     precacheUrls.some((url) => url === `/clocktower/${page}` || url === page),
     false,
@@ -47,7 +47,7 @@ for (const page of ["index.html", "trouble-brewing/index.html", "sects-and-viole
   );
 }
 
-const navigationRoute = findCallContaining(serviceWorker, "registerRoute", /NetworkFirst/);
+const navigationRoute = findCallContaining(serviceWorker, "registerRoute", /cacheName:["\']clocktower-pages["\']/);
 assert.ok(navigationRoute, "navigation NetworkFirst route is missing");
 assert.match(navigationRoute, /NetworkFirst/);
 assert.match(navigationRoute, /clocktower-pages/, "navigation route must use the explicit page cache");
@@ -61,6 +61,12 @@ assert.match(
   /(?:pathname|url)[\s\S]*startsWith\s*\(["']\/clocktower\/["']\)/,
   "page cache route must be limited to the /clocktower/ path",
 );
+const customNavigationRoute = findCallContaining(serviceWorker, "registerRoute", /clocktower-custom-pages/);
+assert.ok(customNavigationRoute, "custom page cache route is missing");
+assert.match(customNavigationRoute, /NetworkFirst/);
+assert.match(customNavigationRoute, /cacheKeyWillBeUsed/, "custom game query IDs must share one HTML cache key");
+assert.match(customNavigationRoute, /\/clocktower\/custom\/scenario\//);
+assert.match(customNavigationRoute, /scenario\|grimoire/, "both custom entries must be reloadable offline");
 for (const requiredAsset of [
   "assets/scripts/trouble-brewing.png",
   "assets/scripts/sects-and-violets.png",

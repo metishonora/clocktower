@@ -180,6 +180,62 @@ describe('scenario files through the production authoring controller and shared 
     expect(controller.getSnapshot().validated?.definition).toMatchObject(content);
   });
 
+  it.each(['pool change', 'first-night reset'] as const)('resumes a suspended %s without losing edits or accepting its late response', async operation => {
+    const pending = deferred<Awaited<ReturnType<typeof customFirstNightPlan>>>();
+    const propose = vi.fn(customFirstNightPlan);
+    const { controller } = editor({ proposeOrder: propose });
+    await controller.importFile(file());
+    propose.mockImplementationOnce(() => pending.promise);
+    if (operation === 'pool change') controller.toggleCharacter('washerwoman');
+    else controller.restoreOrder('first');
+    const draft = controller.getSnapshot().draft;
+    controller.suspend(); controller.resumePending(); await settled(controller);
+    const result = controller.getSnapshot();
+    expect(result.validation).toBe('valid');
+    expect(result.draft.characterIds).toEqual(draft.characterIds);
+    expect(result.draft.name).toBe(content.name);
+    if (operation === 'pool change') {
+      expect(result.draft.firstNightOrder!.filter(action => !('characterId' in action) || action.characterId !== 'washerwoman')).toEqual(order);
+    } else {
+      // Reset asks for the pool's default, not the file's explicit order.
+      const expected = await customFirstNightPlan({id:draft.id, name:draft.name, characterIds:draft.characterIds,
+        nightOrderVersion:draft.nightOrderVersion});
+      expect(expected.ok).toBe(true);
+      if (expected.ok) expect(result.draft.firstNightOrder).toEqual(expected.value.plan);
+    }
+    pending.resolve(await customFirstNightPlan({ id:'stale', name:'old', characterIds:[] }));
+    await Promise.resolve(); await Promise.resolve();
+    expect(controller.getSnapshot()).toBe(result);
+  });
+
+  it('resumes interrupted validation and discards a late failure', async () => {
+    const pending = deferred<CustomDefinitionValidator>();
+    const load = vi.fn(loadCustomDefinitionValidator);
+    const { controller } = editor({ loadValidator:load });
+    await controller.importFile(file());
+    load.mockImplementationOnce(() => pending.promise);
+    controller.setName('복귀한 편집');
+    controller.suspend(); controller.resumePending(); await settled(controller);
+    const result = controller.getSnapshot();
+    expect(result.validated?.definition).toMatchObject({...content, name:'복귀한 편집'});
+    pending.reject(Error('late failure'));
+    await Promise.resolve(); await Promise.resolve();
+    expect(controller.getSnapshot()).toBe(result);
+  });
+
+  it('cancels a hidden file read without leaving a spinner or overwriting the draft on return', async () => {
+    const { controller } = editor();
+    await controller.importFile(file());
+    const draft = controller.getSnapshot().draft, delayed = deferred<string>();
+    const importing = controller.importFile({name:'delayed.json',text:()=>delayed.promise});
+    controller.suspend(); controller.resumePending();
+    expect(controller.getSnapshot().importStatus).toBe('idle');
+    delayed.resolve(JSON.stringify(envelope({...content, name:'discarded'}))); await importing;
+    expect(controller.getSnapshot().draft).toBe(draft);
+    await controller.importFile(file());
+    expect(controller.getSnapshot().importStatus).toBe('ready');
+  });
+
   it('an import already waiting for the validator cannot overwrite a subsequently edited draft', async () => {
     const pending = deferred<CustomDefinitionValidator>();
     const load = vi.fn(loadCustomDefinitionValidator);
