@@ -18,7 +18,7 @@ try {
   if (process.argv.includes('--official')) {
     verifyOfficialOnly();
   } else {
-  for (const path of ['crates/custom-domain', 'crates/custom-wasm', 'Cargo.lock', 'web/src/custom', 'web/test/custom', 'web/src/vite-env.d.ts', 'web/tsconfig.custom.json', 'web/tsconfig.custom-test.json', 'web/vitest.custom.config.ts', 'web/vitest.custom-fixtures.config.ts', 'fixtures/acceptance/custom-first-night', 'fixtures/acceptance/custom-composite']) copy(path);
+  for (const path of ['crates/custom-domain', 'crates/custom-wasm', 'Cargo.lock', 'web/src/custom', 'web/test/custom', 'web/src/vite-env.d.ts', 'web/tsconfig.custom.json', 'web/tsconfig.custom-test.json', 'web/vitest.custom.config.ts', 'web/vitest.custom-fixtures.config.ts', 'fixtures/acceptance/custom-first-night', 'fixtures/acceptance/custom-composite', 'fixtures/acceptance/issue251']) copy(path);
   copy('web/src/assets/prototypes/issue-200/continuous-manuscript-dolly-master-v6.png');
   copy('web/src/assets/fonts/NanumPenScript-Regular.ttf');
   writeFileSync(resolve(isolated, 'Cargo.toml'), '[workspace]\nmembers = ["crates/custom-domain", "crates/custom-wasm"]\nresolver = "2"\n');

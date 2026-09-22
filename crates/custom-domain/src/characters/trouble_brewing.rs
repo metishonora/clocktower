@@ -125,6 +125,7 @@ pub(crate) fn registration_source(facts: &CustomGameFacts, id: &str) -> Option<A
                 && crate::reducer::current_ability_instance(facts, s)
                 && crate::characters::carousel::grant_enabled(facts, s)
                 && !crate::effects::ability_impaired(facts, s)
+                && !crate::characters::carousel::preacher_suppressed(facts, s)
         })
 }
 fn same_source(a: &ActionOccurrence, b: &ActionOccurrence) -> bool {
@@ -951,6 +952,8 @@ impl TbHandler {
             }
             prompt.computed_result = Some(actual.clone());
             prompt.target_checks.push(TargetInformationCheck {
+                number_constraint: None,
+                wake_audit: vec![],
                 fixed_character_id: None,
                 target_player_ids: vec![death.participant.player_id.clone()],
                 computed_result: actual,
@@ -1006,6 +1009,8 @@ impl TbHandler {
                     }
                 }
                 prompt.target_checks.push(TargetInformationCheck {
+                    number_constraint: None,
+                    wake_audit: vec![],
                     fixed_character_id: None,
                     target_player_ids: vec![player.id.clone()],
                     computed_result: actual,
@@ -1165,6 +1170,8 @@ impl TbHandler {
             }
             if self.character() == "fortuneTeller" {
                 prompt.target_checks.push(TargetInformationCheck {
+                    number_constraint: None,
+                    wake_audit: vec![],
                     fixed_character_id: None,
                     target_player_ids: targets,
                     computed_result: actual,
@@ -3068,4 +3075,15 @@ fn recluse_sage_jinx(c: &crate::jinxes::RegistrationContext<'_>) -> Option<Regis
             character_id: None,
             scope: None,
         })
+}
+pub(super) fn wakes_actor(action: &crate::contracts::FirstNightActionRef) -> bool {
+    matches!(action, crate::contracts::FirstNightActionRef::Character {character_id, action_id}
+        if matches!((character_id.as_str(),action_id.as_str()),
+            ("poisoner", "choosePoisonTarget") | ("washerwoman", "learnTownsfolk") |
+            ("librarian", "learnOutsider") | ("investigator", "learnMinion") |
+            ("chef", "learnEvilPairs") | ("empath", "learnEvilNeighbors") |
+            ("fortuneTeller", "checkDemon") | ("butler", "chooseMaster") |
+            ("monk", "protectPlayer") | ("imp", "attackPlayer") |
+            ("undertaker", "learnExecutedCharacter") | ("ravenkeeper", "learnCharacter") |
+            ("spy", "inspectGrimoire")))
 }

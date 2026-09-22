@@ -119,9 +119,12 @@ fn official_coverage_rejects_missing_duplicate_metadata_only_and_unknown_binding
         vec![
             "balloonist--marionette",
             "boffin--drunk",
+            "boffin--preacher",
+            "chambermaid--mathematician",
             "drunk--mathematician",
             "fanggu--scarletwoman",
             "marionette--mathematician",
+            "marionette--preacher",
             "recluse--sage"
         ]
     );

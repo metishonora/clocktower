@@ -188,6 +188,10 @@
     "kind": "Demon"
   },
   {
+    "id": "preacher",
+    "kind": "Townsfolk"
+  },
+  {
     "id": "zealot",
     "kind": "Outsider"
   },
@@ -210,5 +214,9 @@
   {
     "id": "marionette",
     "kind": "Minion"
+  },
+  {
+    "id": "chambermaid",
+    "kind": "Townsfolk"
   }
 ]

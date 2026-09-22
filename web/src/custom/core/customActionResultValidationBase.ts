@@ -18,6 +18,7 @@ export function isCustomActionResult(
   const effect = typeof value.effective === "boolean";
   const day = Number.isInteger(value.day) && (value.day as number) >= 1 && (value.day as number) <= 65535;
   switch (value.kind) {
+    case 'preacherSelected':return hasExactKeys(value,['kind','targetPlayerId','effective'])&&target&&effect;
     case 'marionetteShown':return hasExactKeys(value,['kind','characterId'])&&isKnownCharacter(value.characterId);
     case 'boffinGranted':return hasExactKeys(value,['kind','targetPlayerId','characterId'])&&target&&isKnownCharacter(value.characterId);
     case 'balloonistLearned':return hasExactKeys(value,['kind','targetPlayerId','registeredKind'])&&target&&['Townsfolk','Outsider','Minion','Demon'].includes(String(value.registeredKind));

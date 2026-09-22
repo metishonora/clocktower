@@ -15,7 +15,7 @@ import { InformationTaskPresentation, InformationPairInput, InformationBinaryInp
 import { CharacterAbilityInput, InformationInputPresentation, InformationNumberInput, InformationTreatmentInput } from '../shared-ui/InformationInputPresentation';
 import type { InformationResult, PhaseStep, RegistrationJudgment, ReplayState } from '../custom/core/types.js';
 import { characterPresentation } from '../custom/authoring/characterPresentation.js';
-import { isPlayerPairInformation, judgmentsEqual } from '../custom/grimoire/stepInputModel.js';
+import { selectedInformationPrompt, isPlayerPairInformation, judgmentsEqual } from '../custom/grimoire/stepInputModel.js';
 import type { FirstNightController } from '../custom/grimoire/firstNightController.js';
 export function CustomStepInputs({ step, replay, controller, disabled }: { step: PhaseStep; replay: ReplayState; controller: FirstNightController; disabled: boolean }) {
   const model=taskPresentationModel(controller);
@@ -53,6 +53,18 @@ export function CustomStepInputs({ step, replay, controller, disabled }: { step:
   const canEditPrepared = preparation?.result.kind === 'informationPrepared';
   const submit = (skip = false) => controller.prepareCurrent(skip);
   const hasTargets=playerIds.length>=minPlayers;
+  if(step.character==='chambermaid'&&hasTargets) {
+    const prompt=selectedInformationPrompt(step,playerIds)!;
+    const check=step.informationPrompt?.targetChecks?.find(c=>c.targetPlayerIds.length===playerIds.length&&c.targetPlayerIds.every(id=>playerIds.includes(id)));
+    const person=(id:string)=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;};
+    return <>
+      <InformationInputPresentation label="대상">{playerIds.map(person).join(' · ')}</InformationInputPresentation>
+      <InformationInputPresentation label="진실">{prompt.computedResult?.kind==='number'?`${prompt.computedResult.value}명`:''}</InformationInputPresentation>
+      <details className="snvMathematicianAudit" aria-label="판정 근거"><summary><span>판정 근거</span><small>{prompt.computedResult?.kind==='number'?`${prompt.computedResult.value}명`:''}</small></summary><ol className="snvMathematicianAuditList">{check?.wakeAudit?.map(row=><MathematicianAuditRowView key={row.playerId} player={person(row.playerId)} character={row.evidence.map(e=>characterPresentation(e.characterId)?.label??e.characterId).join(' · ')} outcome={row.woke?row.evidence.some(e=>e.forecast)?'깨어날 예정':'깨어남':'깨어나지 않음'} />)}</ol></details>
+      {prompt.numberConstraint&&<NumberInformationEditor id={step.id} value={numberText} unit="명" busy={disabled} {...numericInputFeedback(prompt,choices,numberText)} onChange={text=>controller.updateInput(numericInputDraft(prompt,choices,text))}/>}
+      {!disabled&&<div className="snvStepActions snvInformationTargetActions"><button type="button" className="secondary" onClick={()=>controller.beginSelection()}>대상 변경</button></div>}
+    </>;
+  }
   const targeted=['dreamer','seamstress'].includes(step.character ?? '');
   const registration=registrationPresentation(step,replay,controller.getSnapshot().inputDraft);
   if(step.character==='boffin')return <>
@@ -140,4 +152,4 @@ export function informationLabel(result: InformationResult, replay: ReplayState)
   }
 }
 
-function effectLabel(effect:string):string {const labels:Record<string,string>={poisonerPoison:'중독 미적용',butlerMaster:'주인 지정 미적용',mutantExecution:'처형 효과 미발동',philosopherAcquisition:'능력 획득 실패',witchCurse:'저주 미적용',cerenovusMadness:'광기 미적용',evilTwinRelationship:'쌍둥이 관계 미적용',snakeCharmerSwap:'악마 선택 · 교환되지 않음',witchDeath:'저주 대상 지명 · 생존',sweetheartDrunkenness:'사망 · 취함 미적용',demonDeath:'유효 대상 공격 · 사망 없음',pitHagCharacterChange:'직업 변경 실패',noDashiiPoison:'이웃 중독 효과 해제',vigormortisOngoingEffect:'유지 중인 효과 해제',vortoxFalseInformation:'참 정보 전달',vortoxExecution:'처형 없음 효과 미발동'};return labels[effect] ?? effect;}
+function effectLabel(effect:string):string {const labels:Record<string,string>={preacherSuppression:'하수인 능력 상실 미적용',poisonerPoison:'중독 미적용',butlerMaster:'주인 지정 미적용',mutantExecution:'처형 효과 미발동',philosopherAcquisition:'능력 획득 실패',witchCurse:'저주 미적용',cerenovusMadness:'광기 미적용',evilTwinRelationship:'쌍둥이 관계 미적용',snakeCharmerSwap:'악마 선택 · 교환되지 않음',witchDeath:'저주 대상 지명 · 생존',sweetheartDrunkenness:'사망 · 취함 미적용',demonDeath:'유효 대상 공격 · 사망 없음',pitHagCharacterChange:'직업 변경 실패',noDashiiPoison:'이웃 중독 효과 해제',vigormortisOngoingEffect:'유지 중인 효과 해제',vortoxFalseInformation:'참 정보 전달',vortoxExecution:'처형 없음 효과 미발동'};return labels[effect] ?? effect;}

@@ -76,10 +76,17 @@ mod tests {
         let result = query(&serde_json::json!({"characterIds": ids}).to_string()).unwrap();
         let registered = crate::jinxes::production().unwrap().related(&ids);
         assert_eq!(result.len(), registered.len());
-        assert_eq!(result.len(), 6);
+        assert_eq!(result.len(), 9);
         for entry in result {
             assert!(!entry.reason_ko.is_empty());
-            assert_eq!(entry.source_revision, crate::jinxes::SOURCE_REVISION);
+            assert_eq!(
+                entry.source_revision,
+                registered
+                    .iter()
+                    .find(|m| m.id == entry.id)
+                    .unwrap()
+                    .source_revision
+            );
         }
     }
     #[test]
