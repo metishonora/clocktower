@@ -44,6 +44,7 @@ for(const width of [320,390,820,1366]){
   await open(page,'twin',width);await page.getByRole('button',{name:'쌍둥이 선택',exact:true}).click();await page.getByRole('button',{name:/^2번 P2,/}).click();await page.getByRole('button',{name:'선택 확정',exact:true}).click();
   const prompt=page.getByRole('dialog',{name:'쌍둥이 확인 안내'});await expect(prompt).toBeVisible();await expect(page.locator('.evilTwinCenterPrompt')).toBeVisible();expect(await page.locator('.evilTwinCenterPrompt').evaluate(el=>Number(getComputedStyle(el).zIndex))).toBeGreaterThan(6);await page.screenshot({path:test.info().outputPath('twin-prompt.png'),fullPage:true});
   await expect(page.getByRole('dialog',{name:'플레이어 정보'})).toHaveCount(0);
+  await expect(prompt).toContainText('악한 쌍둥이를 깨웁니다.');await expect(prompt).toContainText('[6번 P6]');await expect(prompt).not.toContainText('P2');
   await prompt.getByRole('button',{name:'공개',exact:true}).click();
   const reveal=page.getByRole('dialog',{name:'플레이어 정보'});
   await expect(reveal).toContainText('쌍둥이의 직업을 흉내내세요.');
@@ -52,7 +53,8 @@ for(const width of [320,390,820,1366]){
   expect(await reveal.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
   await page.screenshot({path:test.info().outputPath('twin-private-140.png'),fullPage:true});
   await page.getByRole('button',{name:'확인했으면 다음 단계로'}).click();
-  await expect(reveal).toContainText('선한 쌍둥이도 함께 깨우세요.');
+  await expect(reveal).toContainText('선한 쌍둥이');await expect(reveal).toContainText('2번');await expect(reveal).toContainText('P2');await expect(reveal).toContainText('를 깨웁니다.');await expect(reveal).not.toContainText('P6');
+  await page.screenshot({path:test.info().outputPath('twin-wake-good-140.png'),fullPage:true});
   await expect(page.locator('#root')).toHaveCSS('visibility','hidden');
   await page.getByRole('button',{name:'두 쌍둥이에게 공개'}).click();
   await expect(reveal).toContainText('여러분은 쌍둥이입니다.');

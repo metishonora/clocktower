@@ -1,10 +1,19 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { CustomReveal } from '../../src/grimoire-custom/CustomReveal';
+import { CustomNotificationPrompt } from '../../src/grimoire-custom/CustomNotificationPrompt';
 import type { RevealPayload } from '../../src/custom/core/types';
 beforeEach(()=>{const values=new Map<string,string>();vi.stubGlobal('localStorage',{getItem:(key:string)=>values.get(key)??null,setItem:(key:string,value:string)=>values.set(key,value)});});
 afterEach(()=>{cleanup();document.getElementById('root')?.remove();vi.restoreAllMocks();vi.unstubAllGlobals();});
 const person={playerId:'p7',seat:7,name:'유진'};
+
+it('asks to wake only the evil twin before the first reveal, regardless of payload order',()=>{
+ const onReveal=vi.fn();
+ render(<CustomNotificationPrompt payload={{kind:'evilTwinPair',players:[{...person,characterId:'dreamer',alignment:'good'},{playerId:'p4',seat:4,name:'도윤',characterId:'evilTwin',alignment:'evil'}]}} players={[]} sequence={1} total={1} onReveal={onReveal}/>);
+ expect(screen.getByText('악한 쌍둥이를 깨웁니다.')).toBeTruthy();
+ expect(screen.getByText('[4번 도윤]')).toBeTruthy();expect(screen.queryByText(/유진/)).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'공개'}));expect(onReveal).toHaveBeenCalledOnce();
+});
 
 it('keeps the Storyteller hidden through both twin reveals and closes only after shared confirmation',()=>{
  const root=document.createElement('div');root.id='root';root.textContent='STORYTELLER SECRET';document.body.append(root);
@@ -13,7 +22,7 @@ it('keeps the Storyteller hidden through both twin reveals and closes only after
  expect(root.style.visibility).toBe('hidden');expect(root.inert).toBe(true);
  expect(screen.getByText('쌍둥이의 직업을 흉내내세요.')).toBeTruthy();
  fireEvent.click(screen.getByRole('button',{name:'확인했으면 다음 단계로'}));
- expect(screen.getByText('선한 쌍둥이도 함께 깨우세요.')).toBeTruthy();
+ expect(screen.getByText('선한 쌍둥이')).toBeTruthy();expect(screen.getByText('7번')).toBeTruthy();expect(screen.getByText('유진')).toBeTruthy();expect(screen.getByText('를 깨웁니다.')).toBeTruthy();
  expect(screen.queryByText('도윤')).toBeNull();expect(onClose).not.toHaveBeenCalled();
  expect(root.style.visibility).toBe('hidden');
  fireEvent.click(screen.getByRole('button',{name:'두 쌍둥이에게 공개'}));
@@ -31,7 +40,7 @@ it('keeps focus inside the reveal controls, saves size, and does not let Escape 
  smaller.focus();fireEvent.keyDown(document,{key:'Tab',shiftKey:true});expect(document.activeElement).toBe(screen.getByRole('button',{name:'확인했으면 다음 단계로'}));
  for(let i=0;i<4;i++)fireEvent.click(bigger);
  expect((bigger as HTMLButtonElement).disabled).toBe(true);
- fireEvent.keyDown(document,{key:'Escape'});expect(onClose).not.toHaveBeenCalled();expect(screen.getByText('선한 쌍둥이도 함께 깨우세요.')).toBeTruthy();
+ fireEvent.keyDown(document,{key:'Escape'});expect(onClose).not.toHaveBeenCalled();expect(screen.getByText('선한 쌍둥이')).toBeTruthy();expect(screen.getByText('유진')).toBeTruthy();
  view.unmount();render(<CustomReveal payload={{kind:'numericInformation',characterId:'clockmaker',value:0}} onClose={onClose}/>);
  expect(screen.getByText('글씨 크기 140%')).toBeTruthy();expect(screen.getByText('0')).toBeTruthy();
 });

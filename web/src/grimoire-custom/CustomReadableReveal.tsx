@@ -45,7 +45,7 @@ export function CustomReadableReveal({payload:p,onClose,closeRef}:{payload:Reada
         <button type="button" aria-label="글씨 크게" disabled={size>=140} onClick={()=>resize(10)}>+</button>
       </div>
       <section className="bmrRoleReveal customReadablePanel">
-        {twin ? twinStage==='wake'?<p>선한 쌍둥이도 함께 깨우세요.</p>:<>
+        {twin ? twinStage==='wake'?<section className="customReadableSection"><p>선한 쌍둥이</p><People players={p.players.filter(player=>player.alignment==='good')}/><p>를 깨웁니다.</p></section>:<>
           <h1>사악한 쌍둥이</h1>
           <section className="customReadableSection">{twinStage==='private'?<><p>당신의 쌍둥이를 확인하세요.</p><p>쌍둥이의 직업을 흉내내세요.</p></>:<p>여러분은 쌍둥이입니다.</p>}</section>
           <div className="evilTwinRevealPair customReadableTwins">{p.players.map((player,i)=><Fragment key={player.playerId}>{i>0&&<b aria-hidden="true">↔</b>}<article className={`evilTwinRevealIdentity alignment-${player.alignment}`}>
