@@ -14,12 +14,50 @@ async function open(page:Page,name:string,width:number){
  await page.getByRole('button',{name:'마도서 이어 쓰기'}).click();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();
 }
 async function saved(page:Page){return page.evaluate(async()=>new Promise<unknown>((resolve,reject)=>{const r=indexedDB.open('clocktower');r.onerror=()=>reject(r.error);r.onsuccess=()=>{const db=r.result,q=db.transaction('game').objectStore('game').getAll();q.onsuccess=()=>{resolve(q.result);db.close();};q.onerror=()=>reject(q.error);};}));}
+for(const width of [390,1366])test(`Readable team cards retain enlarged text and external controls at ${width}`,async({page})=>{
+ await open(page,'start',width);
+ await page.getByRole('button',{name:'정보 공개',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'플레이어 정보'});
+ await expect(dialog).toContainText('여러분은 하수인입니다.');
+ for(let i=0;i<4;i++)await dialog.getByRole('button',{name:'글씨 크게'}).click();
+ const assertLayout=async()=>{
+  expect(await dialog.evaluate(el=>{
+   const panel=el.querySelector('.customReadablePanel')!.getBoundingClientRect();
+   const controls=el.querySelector('.customRevealSizeControls')!.getBoundingClientRect();
+   const close=el.querySelector('.customReadableClose')!.getBoundingClientRect();
+   return el.scrollWidth<=el.clientWidth+1&&controls.bottom<=panel.top&&close.top>=panel.bottom;
+  })).toBe(true);
+ };
+ await assertLayout();await page.screenshot({path:test.info().outputPath('minion-140.png'),fullPage:true});
+ await page.getByRole('button',{name:'확인했으면 눈을 감으세요'}).click();
+ await page.getByRole('button',{name:'다음으로',exact:true}).click();
+ for(let i=0;i<3;i++)await page.locator('.bmrBluffGrid button').nth(i).click();
+ await page.getByRole('button',{name:'정보 공개',exact:true}).click();
+ await expect(dialog).toContainText('이 직업들은 이번 게임에 없습니다.');
+ await expect(dialog.getByRole('button',{name:'글씨 크게'})).toBeDisabled();
+ await assertLayout();await page.screenshot({path:test.info().outputPath('demon-140.png'),fullPage:true});
+ await page.getByRole('button',{name:'확인했으면 눈을 감으세요'}).click();
+ await expect(page.locator('#root')).not.toHaveCSS('visibility','hidden');
+});
 for(const width of [320,390,820,1366]){
  test(`T13 P3 twin assignment directly opens board prompt and one Undo restores assignment at ${width}`,async({page})=>{
   await open(page,'twin',width);await page.getByRole('button',{name:'쌍둥이 선택',exact:true}).click();await page.getByRole('button',{name:/^2번 P2,/}).click();await page.getByRole('button',{name:'선택 확정',exact:true}).click();
   const prompt=page.getByRole('dialog',{name:'쌍둥이 확인 안내'});await expect(prompt).toBeVisible();await expect(page.locator('.evilTwinCenterPrompt')).toBeVisible();expect(await page.locator('.evilTwinCenterPrompt').evaluate(el=>Number(getComputedStyle(el).zIndex))).toBeGreaterThan(6);await page.screenshot({path:test.info().outputPath('twin-prompt.png'),fullPage:true});
   await expect(page.getByRole('dialog',{name:'플레이어 정보'})).toHaveCount(0);
-  await prompt.getByRole('button',{name:'공개',exact:true}).click();await page.getByRole('button',{name:'확인했으면 눈을 감으세요'}).click();
+  await prompt.getByRole('button',{name:'공개',exact:true}).click();
+  const reveal=page.getByRole('dialog',{name:'플레이어 정보'});
+  await expect(reveal).toContainText('쌍둥이의 직업을 흉내내세요.');
+  for(let i=0;i<4;i++)await reveal.getByRole('button',{name:'글씨 크게'}).click();
+  await expect(reveal.getByRole('button',{name:'글씨 크게'})).toBeDisabled();
+  expect(await reveal.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+  await page.screenshot({path:test.info().outputPath('twin-private-140.png'),fullPage:true});
+  await page.getByRole('button',{name:'확인했으면 다음 단계로'}).click();
+  await expect(reveal).toContainText('선한 쌍둥이도 함께 깨우세요.');
+  await expect(page.locator('#root')).toHaveCSS('visibility','hidden');
+  await page.getByRole('button',{name:'두 쌍둥이에게 공개'}).click();
+  await expect(reveal).toContainText('여러분은 쌍둥이입니다.');
+  await page.screenshot({path:test.info().outputPath('twin-shared-140.png'),fullPage:true});
+  await page.getByRole('button',{name:'확인했으면 눈을 감으세요'}).click();
   await expect(page.getByRole('button',{name:'마도서',exact:true})).toHaveAttribute('aria-current','page');
   await page.getByRole('button',{name:/최근 행동 되돌리기:.*쌍둥이/}).click();await page.getByRole('button',{name:'되돌리기',exact:true}).click();
   await page.getByRole('button',{name:'진행',exact:true}).click();await expect(page.getByRole('button',{name:'쌍둥이 선택',exact:true})).toBeVisible();

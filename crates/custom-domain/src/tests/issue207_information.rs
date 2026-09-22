@@ -181,7 +181,7 @@ fn healthy_shapes_require_truth_keep_dreamer_discretion_and_exact_reveals() {
     );
     assert_eq!(
         dream["revealPayload"],
-        json!({"kind":"dreamerInformation","characterIds":["artist","imp"]})
+        json!({"kind":"dreamerInformation","characterIds":["artist","imp"],"targetPlayer":{"playerId":"p4","seat":4,"name":"P4"}})
     );
     for ids in [json!(["p1", "p1"]), json!(["p1", "p3"])] {
         assert_eq!(

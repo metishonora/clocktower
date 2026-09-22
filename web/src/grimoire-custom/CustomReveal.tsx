@@ -1,3 +1,5 @@
+import {CustomReadableReveal,isReadableReveal} from './CustomReadableReveal';
+import type {PublicInstruction} from '../custom/grimoire/publicInstruction';
 import {ProductionApplicationShell} from '../shared-ui/ProductionApplicationShell';
 import {customPlayerTokens} from './customPlayerPresentation';
 import {customCharacterDetail} from './customCharacterDetails';
@@ -28,7 +30,7 @@ import { BmrRevealSurface } from '../shared-ui/BmrRevealSurface';
 import type { RevealPayload } from '../custom/core/types.js';
 import { characterPresentation } from '../custom/authoring/characterPresentation.js';
 /** This component receives only an allowlisted reveal payload, never a session or Storyteller state. */
-export function CustomReveal({ payload, onClose }: { payload: RevealPayload; onClose: () => void }) {
+export function CustomReveal({ payload, onClose }: { payload: RevealPayload | PublicInstruction; onClose: () => void }) {
   const close = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
@@ -45,8 +47,14 @@ export function CustomReveal({ payload, onClose }: { payload: RevealPayload; onC
         else if(!event.shiftKey&&document.activeElement===buttons.at(-1)){event.preventDefault();buttons[0]?.focus();}
         return;
       }
-      if (event.key === 'Tab') { event.preventDefault(); close.current?.focus(); }
-      if (event.key === 'Escape') { event.preventDefault(); onClose(); }
+      if (event.key === 'Tab') {
+        const readable=document.querySelector('.customReadableReveal');
+        const buttons=readable?Array.from(readable.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')):[];
+        if(!buttons.length){event.preventDefault();close.current?.focus();}
+        else if(event.shiftKey&&document.activeElement===buttons[0]){event.preventDefault();buttons.at(-1)?.focus();}
+        else if(!event.shiftKey&&document.activeElement===buttons.at(-1)){event.preventDefault();buttons[0]?.focus();}
+      }
+      if (event.key === 'Escape') { event.preventDefault(); if(isReadableReveal(payload))close.current?.click();else onClose(); }
     };
     document.addEventListener('keydown', keys, true);
     return () => { document.removeEventListener('keydown', keys, true); if (root) { root.inert = wasInert; root.style.visibility = previousVisibility; } previous?.focus(); };
@@ -58,6 +66,7 @@ export function CustomReveal({ payload, onClose }: { payload: RevealPayload; onC
     stages={[{id:'roles',label:'직업',disabled:true},{id:'seating',label:'마도서',active:true,disabled:true},{id:'play',label:'진행',disabled:true}]} onNavigate={()=>{}}>
     <SpyBoard payload={payload} onClose={onClose} closeRef={close}/>
   </ProductionApplicationShell></div>,document.body);
+  if(isReadableReveal(payload))return createPortal(<CustomReadableReveal key={JSON.stringify(payload)} payload={payload} onClose={onClose} closeRef={close}/>,document.body);
   return createPortal(<BmrRevealSurface variant={'kind' in payload && ['minionInformation','demonInformation'].includes(payload.kind)?'team':'role'} dialogLabel="플레이어 정보" className={revealClass(payload)} closeLabel="확인했으면 눈을 감으세요" closeButtonRef={close} onClose={onClose}><RevealContent payload={payload} /></BmrRevealSurface>, document.body);
 }
 function RevealContent({payload:p}:{payload:RevealPayload}) {

@@ -16,7 +16,7 @@ it("runs all nine Production handlers and simulation through real WASM, parser, 
   const clock = await take(session, "clockmaker", null); events.push(clock.proposal.event);
   expect(clock.proposal.revealPayload).toEqual({ kind: "numericInformation", characterId: "clockmaker", value: 1 });
   const dream = await take(session, "dreamer", { playerIds: ["p7"] }, { kind: "characterPair", characterIds: ["artist", "witch"] }); events.push(dream.proposal.event);
-  expect(dream.proposal.revealPayload).toEqual({ kind: "dreamerInformation", characterIds: ["artist", "witch"] });
+  expect(dream.proposal.revealPayload).toEqual({ kind: "dreamerInformation", characterIds: ["artist", "witch"], targetPlayer: { playerId: "p7", seat: 7, name: "P7" } });
   let state = await replayOrThrow(session.snapshot.canonical);
   expect(state.currentStep?.playerId).toBe("p1"); expect(state.currentStep?.abilityUse).toBeUndefined();
   events.push((await take(session, "seamstress", { playerIds: ["p3", "p4"] }, { kind: "boolean", value: false })).proposal.event);
@@ -36,6 +36,8 @@ it("runs all nine Production handlers and simulation through real WASM, parser, 
   const loaded = await CustomCanonicalSession.load({ core: realWasmCore(), storage });
   if (loaded.status !== "loaded") throw new Error(loaded.status);
   expect(await replayOrThrow(loaded.session.snapshot.canonical)).toEqual(completed);
+  const historicalDream = await realWasmCore().confirmedEventReveal!(loaded.session.snapshot.canonical, dream.proposal.event.id);
+  expect(historicalDream).toEqual({ok:true,value:dream.proposal.revealPayload});
 });
 
 it("enforces the approved actual-truth Vortox policy through the TypeScript boundary", async () => {

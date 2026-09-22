@@ -458,6 +458,7 @@ export type CharacterInformationRevealPayload = {
 export type DreamerInformationRevealPayload = {
   kind: "dreamerInformation";
   characterIds: [string, string];
+  targetPlayer?: RevealPlayer;
 };
 
 

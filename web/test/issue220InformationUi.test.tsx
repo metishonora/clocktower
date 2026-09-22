@@ -27,7 +27,7 @@ it('U07: actual Dreamer target check keeps the real character and sends the sele
  const good=screen.getByRole('combobox',{name:'선한 캐릭터'}) as HTMLSelectElement;expect(good.value).toBe('artist');const actualCandidateLocked=good.disabled;
  fireEvent.change(screen.getByRole('combobox',{name:'악한 캐릭터'}),{target:{value:'witch'}});
  fireEvent.click(screen.getByRole('button',{name:/정보 공개$/}));
- await waitFor(()=>expect(p.getSnapshot().public).toBe(true));expect(p.getSnapshot().reveal).toEqual({kind:'dreamerInformation',characterIds:['artist','witch']});app.dispose();expect(actualCandidateLocked).toBe(true);
+ await waitFor(()=>expect(p.getSnapshot().public).toBe(true));expect(p.getSnapshot().reveal).toEqual({kind:'dreamerInformation',targetPlayer:{playerId:'p7',seat:7,name:'P7'},characterIds:['artist','witch']});app.dispose();expect(actualCandidateLocked).toBe(true);
 });
 it('U07: constrained number accepts zero and rejects excluded value without delivering it',()=>{
  const onChange=vi.fn();render(<InformationNumberInput value={undefined} min={0} max={15} excludedValues={[1]} disabled={false} onChange={onChange}/>);

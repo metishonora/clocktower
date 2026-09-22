@@ -21,3 +21,12 @@ it("rejects extra secrets on each delivered information and instruction shape", 
   const payloads = [{ kind: "numericInformation", characterId: "clockmaker", value: 2 }, { kind: "dreamerInformation", characterIds: ["artist", "imp"] }, { kind: "seamstressInformation", targetPlayers: [{ playerId: "p1", seat: 1, name: "P1" }, { playerId: "p2", seat: 2, name: "P2" }], sameAlignment: false }, { kind: "madnessAssignment", playerId: "p1", characterId: "artist" }];
   for (const payload of payloads) { expect(isRevealPayload(payload)).toBe(true); expect(isRevealPayload({ ...payload, computedResult: { kind: "boolean", value: true } })).toBe(false); }
 });
+
+it("allowlists only the Dreamer target identity and retains legacy targetless payloads", () => {
+  const payload = {kind:"dreamerInformation",characterIds:["artist","imp"],targetPlayer:{playerId:"p4",seat:4,name:"P4"}};
+  expect(isRevealPayload(payload)).toBe(true);
+  expect(isRevealPayload({...payload,targetPlayer:{...payload.targetPlayer,actualCharacter:"imp"}})).toBe(false);
+  expect(isRevealPayload({...payload,targetPlayer:{...payload.targetPlayer,seat:0}})).toBe(false);
+  expect(isRevealPayload({...payload,targetPlayer:null})).toBe(false);
+  expect(isRevealPayload({kind:"barberInstruction"})).toBe(false);
+});

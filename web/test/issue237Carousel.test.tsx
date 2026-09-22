@@ -26,8 +26,8 @@ it('Demon information places a distinct Marionette group beside ordinary Minions
  const dialog=screen.getByRole('dialog',{name:'플레이어 정보'});
  const minions=within(dialog).getByRole('region',{name:'하수인'}),puppets=within(dialog).getByRole('region',{name:'꼭두각시'});
  expect(minions.parentElement).toBe(puppets.parentElement);
- expect(minions.parentElement?.className).toBe('bmrRevealTeamGroups');
- expect(puppets.classList.contains('bmrRevealMarionettes')).toBe(true);
+ expect(minions.classList.contains('customReadableSection')).toBe(true);
+ expect(puppets.classList.contains('customReadableSection')).toBe(true);
  expect(within(minions).queryByText('시우')).toBeNull();
  expect(within(puppets).getByText('시우')).toBeDefined();
  expect(within(dialog).queryByText(/^꼭두각시 ·/)).toBeNull();
