@@ -34,6 +34,12 @@ pub fn custom_script_catalog_json() -> String {
     serde_json::to_string(&characters::custom_script_catalog()).expect("catalog serialization")
 }
 
+/// Build-time metadata for characters supported only in the editor and reference document.
+pub fn custom_reference_character_catalog_json() -> String {
+    serde_json::to_string(characters::REFERENCE_CHARACTERS)
+        .expect("reference catalog serialization")
+}
+
 #[cfg(test)]
 mod tests;
 

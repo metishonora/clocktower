@@ -4,10 +4,11 @@ import type { ValidatedScenario } from '../core/definitionValidator.js';
 import type { ScenarioEditorController } from './scenarioEditorController.js';
 import { blockingMessage } from './scenarioEditorController.js';
 import type { ScenarioEditorState } from './scenarioEditorState.js';
-import { countsFor, kindOrder, kindLabels, recommendedMinimums, characterPresentation } from './characterPresentation.js';
+import { scenarioCountsFor as countsFor, kindOrder, scenarioKindOrder, kindLabels, recommendedMinimums, characterPresentation } from './characterPresentation.js';
 export function ScenarioReviewSheet({ state, controller, onNewGrimoire, onResume }: { state: ScenarioEditorState; controller: ScenarioEditorController; onNewGrimoire?: (scenario: ValidatedScenario) => void; onResume?: (game: ImportedGame) => void }) {
   const { draft } = state;
   const counts = countsFor(draft.characterIds);
+  const visibleKinds = scenarioKindOrder.filter(kind => kind !== 'Traveller' || counts.Traveller > 0);
   const error = blockingMessage(state.error);
   const shortages = kindOrder.filter(kind => counts[kind] < recommendedMinimums[kind]);
   const resumable = controller.getResumableGame();
@@ -15,15 +16,15 @@ export function ScenarioReviewSheet({ state, controller, onNewGrimoire, onResume
   return <section className={`issue202Gate4Sheet${invalid ? ' is-invalid' : ''}`} aria-labelledby="review-title">
     <header className="issue202Gate4Header"><div><small>Ⅳ</small><div><h1 id="review-title">최종 검토</h1><p>{draft.name || '이름 없는 시나리오'}</p></div></div></header>
     <div className="issue202Gate4ReviewScroll">
-      <dl className="issue202Gate4Composition">
+      <dl className={`issue202Gate4Composition${counts.Traveller ? ' has-travellers' : ''}`}>
         <div className="is-name"><dt><label htmlFor="scenario-name">시나리오 이름</label></dt><dd><input id="scenario-name" value={draft.name}
           placeholder="시나리오 이름" aria-invalid={state.error?.section === 'name'} onChange={event => controller.setName(event.currentTarget.value)} /></dd></div>
         <div><dt>Character</dt><dd>{draft.characterIds.length}명</dd></div>
-        {kindOrder.map(kind => <div key={kind}><dt>{kindLabels[kind]}</dt><dd>{counts[kind]}명</dd></div>)}
+        {visibleKinds.map(kind => <div key={kind}><dt>{kindLabels[kind]}</dt><dd>{counts[kind]}명</dd></div>)}
       </dl>
       <div className="issue202Gate4Content">
         <section className="issue202Gate4Roster" aria-label="Character 목록"><header><h2>Character 목록</h2><span>{draft.characterIds.length}명</span></header>
-          <div className="issue202Gate4RosterGroups">{kindOrder.map(kind => <section key={kind} className={`is-${kindLabels[kind]}`}>
+          <div className="issue202Gate4RosterGroups">{visibleKinds.map(kind => <section key={kind} className={`is-${kindLabels[kind]}`}>
             <h3>{kindLabels[kind]}<small>{counts[kind]}</small></h3><ul>{draft.characterIds.map(characterPresentation).filter(entry => entry?.kind === kind).map(entry => entry &&
               <li key={entry.id}><span><img src={entry.image} alt="" /></span><strong>{entry.label}</strong></li>)}</ul>
           </section>)}</div>

@@ -5,7 +5,7 @@ export type PdfCharacter = { id: string; kind: string; label: string; ability: s
 export type PdfJinx = { ids: string[]; text: string };
 export type ReferencePdfInput = { name: string; characters: PdfCharacter[]; jinxes: PdfJinx[]; regular: Uint8Array; bold: Uint8Array };
 const width = 595.28, height = 841.89, margin = 36, contentWidth = width - margin * 2;
-const groups = [['Townsfolk','마을 주민'],['Outsider','이방인'],['Minion','하수인'],['Demon','악마'],['jinxes','징크스']] as const;
+const groups = [['Townsfolk','마을 주민'],['Outsider','이방인'],['Minion','하수인'],['Demon','악마'],['Traveller','여행자'],['jinxes','징크스']] as const;
 const ink = rgb(.17,.16,.19), muted = rgb(.34,.31,.33), accent = rgb(.30,.14,.20);
 
 function wrap(text: string, font: PDFFont, size: number, maxWidth: number): string[] {

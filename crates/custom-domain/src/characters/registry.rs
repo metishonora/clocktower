@@ -16,6 +16,19 @@ pub(crate) struct CharacterRegistryEntry {
     pub(crate) kind: CharacterKind,
 }
 
+/// Authoring/reference metadata only. These entries never become runtime characters.
+#[derive(Debug, Serialize, Copy, Clone)]
+pub(crate) struct ReferenceCharacterRegistryEntry {
+    pub(crate) id: &'static str,
+    pub(crate) kind: &'static str,
+}
+
+pub(crate) const REFERENCE_CHARACTERS: &[ReferenceCharacterRegistryEntry] =
+    &[ReferenceCharacterRegistryEntry {
+        id: "deviant",
+        kind: "Traveller",
+    }];
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ResolvedScriptContext {
     entries: Vec<CharacterRegistryEntry>,
@@ -202,6 +215,12 @@ pub(crate) fn resolve_custom_script_ids(
         if !seen.insert(character_id.as_str()) {
             return Err(ErrorKind::DuplicateCustomScriptCharacter.into_error());
         }
+        if REFERENCE_CHARACTERS
+            .iter()
+            .any(|entry| entry.id == character_id)
+        {
+            continue;
+        }
         let entry = catalog
             .get(character_id.as_str())
             .copied()
@@ -216,4 +235,54 @@ pub(crate) fn resolve_custom_script_ids(
         kinds_by_id,
         related_jinxes: crate::jinxes::production()?.related(character_ids),
     })
+}
+
+#[cfg(test)]
+mod reference_tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    #[test]
+    fn reference_only_deviant_does_not_enter_runtime_choices() {
+        let ids = vec!["imp".into(), "deviant".into(), "monk".into()];
+        let context = resolve_custom_script_ids(&ids).unwrap();
+        assert_eq!(context.character_ids(), vec!["imp", "monk"]);
+        assert!(!custom_transformation_character_ids(&context).contains(&"deviant".into()));
+        assert!(!custom_script_catalog().iter().any(|c| c.id == "deviant"));
+        assert!(resolve_custom_script_ids(&["deviant".into(), "deviant".into()]).is_err());
+        assert!(resolve_custom_script_ids(&["Deviant".into()]).is_err());
+    }
+
+    #[test]
+    fn reference_only_pool_preserves_game_replay_but_rejects_deviant_assignment() {
+        let mut game: Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../fixtures/acceptance/custom-first-night/compatibility/day.game.json"
+        )))
+        .unwrap();
+        let mut baseline: Value =
+            serde_json::from_str(&crate::replay_json(&game.to_string())).unwrap();
+        assert_eq!(baseline["ok"], true);
+        game["game"]["script"]["definition"]["characterIds"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!("deviant"));
+        let result: Value = serde_json::from_str(&crate::replay_json(&game.to_string())).unwrap();
+        baseline["value"]["script"] = game["game"]["script"].clone();
+        assert_eq!(result, baseline);
+        let mut players = game["game"]["events"][0]["payload"]["players"].clone();
+        players[0]["actualCharacter"] = json!("deviant");
+        players[0]["shownCharacter"] = json!("deviant");
+        game["game"]["events"] = json!([]);
+        let result: Value = serde_json::from_str(&crate::propose_json(
+            &game.to_string(),
+            &json!({
+                "type":"createGame", "payload": {"players": players}
+            })
+            .to_string(),
+        ))
+        .unwrap();
+        assert_eq!(result["ok"], false);
+        assert_eq!(result["error"]["code"], "CHARACTER_NOT_IN_SCRIPT");
+    }
 }

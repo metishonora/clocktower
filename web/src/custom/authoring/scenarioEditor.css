@@ -1894,3 +1894,20 @@
   .scenarioCharacterBulkActions { padding: 1px 2px; }
   .customScenarioSurface .scenarioCharacterBulkActions button { padding-inline: 8px; font-size: .76rem; }
 }
+
+/* Reference-only Travellers share the existing authoring controls. */
+.issue200CharacterKinds .kind-traveller,
+.issue200CharacterGrid .kind-traveller,
+.issue200CharacterDetail.kind-traveller {
+  --issue200-kind-accent: #b994d2;
+  --issue200-kind-glow: rgba(185, 148, 210, .58);
+  --issue200-kind-surface: rgba(95, 62, 122, .34);
+}
+.issue200CharacterKinds { flex-wrap: wrap; }
+@media (min-width: 681px) {
+  .issue202Gate4Composition.has-travellers {
+    grid-template-columns: minmax(130px, 1.5fr) repeat(6, minmax(45px, .62fr));
+  }
+}
+
+.scenarioReferenceOnlyNotice { display: block; margin-top: 3px; font-size: .6rem; line-height: 1.35; color: #cdbcd8; }
