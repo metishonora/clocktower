@@ -3,7 +3,7 @@ import {reviewedAction,type HandoffStep} from './actionResult';
 import {actionAdapter,revealDisposition} from './actions/registry';
 import {registrationPresentation,type RegistrationSelections} from './registrationPresentation.js';
 import { actionInputIdentity, actionPresentation } from './actionPresentation.js';
-import { isPlayerPairInformation, judgmentsEqual, stepConfirmation, informationChoices, normalizeSetupDraft, selectedSetupChoice, setupSelectionCanComplete } from './stepInputModel.js';
+import { selectedInformationPrompt, isPlayerPairInformation, judgmentsEqual, stepConfirmation, informationChoices, normalizeSetupDraft, selectedSetupChoice, setupSelectionCanComplete } from './stepInputModel.js';
 import type { SetupDistributionResult, InformationResult, RegistrationJudgment } from '../core/types.js';
 import type { CoreAdapter } from '../core/coreAdapter.js';
 import type { GameFileV5, PhaseStep, PhaseStepConfirmation, Proposal, ReplayState, RevealPayload } from '../core/types.js';
@@ -200,7 +200,7 @@ export class FirstNightController {
     const d=this.state.inputDraft, choices=informationChoices(step,d.playerIds);
     if(!skip && isPlayerPairInformation(step) && (d.playerIds.length!==2 || d.choiceIndex==='' || !choices[Number(d.choiceIndex)] || !judgmentsEqual(choices[Number(d.choiceIndex)].registrationJudgments,d.judgments)))return;
     if(!skip && step.requiredInput.kind==='setupInfo'&&!selectedSetupChoice(step,d))return;
-    const constraint=step.informationPrompt?.numberConstraint;
+    const constraint=selectedInformationPrompt(step,d.playerIds)?.numberConstraint;
     if(!skip&&constraint&&(!d.delivery||d.delivery.kind!=='number'||d.delivery.value<constraint.min||d.delivery.value>constraint.max||constraint.excludedValues.includes(d.delivery.value)))return;
     await this.prepare(stepConfirmation(step,{playerIds:d.playerIds,characterIds:d.characterIds,correctPlayerId:d.correct,zero:d.zero,execute:d.execute,choice:d.choiceIndex!==''?choices[Number(d.choiceIndex)]:choices.length===1||choices[0]?.result.kind==='characterPair'?choices[0]:undefined,registrationJudgments:d.judgments,deliveredResult:d.delivery,mayorDecision:d.mayorDecision,successorPlayerId:d.successorPlayerId,chooserPlayerId:this.chooserPlayerId},skip));
     const next=this.step;
@@ -324,7 +324,7 @@ export class FirstNightController {
     this.patch({public:false,activeReveal:undefined,reveal:this.currentReveal});
     if(notification && this.state.handoff?.stage==='notification') {
       const handoff=this.state.handoff,notificationIndex=handoff.notificationIndex+1;
-      this.patch({handoff:notificationIndex<handoff.notifications.length?{...handoff,notificationIndex}:undefined});
+      this.patch({handoff:notificationIndex<handoff.notifications.length?{...handoff,notificationIndex}:handoff.result&&actionAdapter(handoff.step)?.notificationBeforeResult?{...handoff,stage:'result',notifications:[],notificationIndex:0}:undefined});
     }
   };
   private get hasCheckpoint() {return this.state.handoff?.stage==='result'||this.state.handoff?.stage==='notification';}
@@ -339,7 +339,7 @@ export class FirstNightController {
     const last=this.state.file.game.events.at(-1),review=reviewedAction(last);
     if(!review)return;
     const notifications=this.state.replay.pendingIdentityReveals?.filter(r=>(r.deliveryEventId??r.sourceEventId)===last!.id).map(r=>r.payload)??[];
-    this.patch({handoff:{...review,stage:'result',file:this.state.file,notifications,notificationIndex:0}});
+    this.patch({handoff:{...review,stage:notifications.length&&actionAdapter(review.step)?.notificationBeforeResult?'notification':'result',file:this.state.file,notifications,notificationIndex:0}});
   }
   showNotification = () => {const h=this.state.handoff;if(h?.stage==='notification')this.showPayload(h.notifications[h.notificationIndex]);};
   freeAction = async (id:string,input:PhaseStepConfirmation['input']) => {
@@ -389,7 +389,7 @@ export class FirstNightController {
       if(review&&!handoff)handoff={...review,stage:'editing',file:this.state.file,notifications:[],notificationIndex:0};
       if(handoff?.stage==='editing') {
         const notifications=[...new Map([...handoff.notifications,...pending].map(p=>[JSON.stringify(p),p])).values()];
-        this.savedHandoff=review?{...handoff,...review,file:this.state.file,stage:'result',notifications,notificationIndex:0}:notifications.length?{...handoff,file:this.state.file,stage:'notification',notifications,notificationIndex:0}:undefined;
+        this.savedHandoff=review?{...handoff,...review,file:this.state.file,stage:notifications.length&&actionAdapter(review.step)?.notificationBeforeResult?'notification':'result',notifications,notificationIndex:0}:notifications.length?{...handoff,file:this.state.file,stage:'notification',notifications,notificationIndex:0}:undefined;
       }
       const saved=await this.observeSave(result.value.autosave);
       if(!saved) {this.patch({handoff:undefined});return;}

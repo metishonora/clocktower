@@ -75,7 +75,7 @@ export function CharacterPoolSheet({
           ))}
         </div>
         <div className="issue200CharacterSources" role="group" aria-label="원본 스크립트">
-          {(["all", "troubleBrewing", "sectsAndViolets", "carousel"] as SourceFilter[]).map((source) => (
+          {(["all", "troubleBrewing", "sectsAndViolets", "badMoonRising", "carousel"] as SourceFilter[]).map((source) => (
             <button
               key={source}
               type="button"

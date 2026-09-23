@@ -1,5 +1,11 @@
 import type { InformationResult, PhaseStep, PhaseStepConfirmation, RegistrationJudgment } from '../core/types.js';
 export type InformationChoice = { result: InformationResult; registrationJudgments: RegistrationJudgment[]; isComputed: boolean };
+/** Select a Core-projected target contract; never recalculate its truth in the UI. */
+export function selectedInformationPrompt(step:PhaseStep, playerIds:string[]) {
+  const prompt=step.informationPrompt;
+  const check=prompt?.targetChecks?.find(c=>c.targetPlayerIds.length===playerIds.length&&c.targetPlayerIds.every(id=>playerIds.includes(id)));
+  return prompt&&check?{...prompt,computedResult:check.computedResult,numberConstraint:check.numberConstraint}:prompt;
+}
 export function isPlayerPairInformation(step: PhaseStep): boolean {
   return step.requiredInput.kind === 'none' && step.informationPrompt?.computedResult?.kind === 'playerPair';
 }

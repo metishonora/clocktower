@@ -1,5 +1,6 @@
 // Presentation validation only; character handlers own generation and lifetime.
 export const automaticReminderPairs = new Set([
+  'preacher:noAbility',
   'marionette:isTheMarionette',
   'boffin:grantedAbility',
   'balloonist:know',

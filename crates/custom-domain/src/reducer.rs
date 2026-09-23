@@ -50,6 +50,7 @@ pub(crate) fn reduce_custom_facts(
     apply_snv_facts(&mut next, event)?;
     crate::characters::carousel::apply_marionette(&mut next, event)?;
     crate::characters::carousel::apply_boffin_assignment(&mut next, event)?;
+    crate::characters::carousel::apply_preacher(&mut next, event)?;
     crate::characters::carousel::resolve_pixie_deaths(previous, &mut next, event.id());
     if event.phase() == crate::model::Phase::Night {
         for death in event
@@ -181,6 +182,13 @@ fn validate_grant_changes(
             return Err(invalid_fact());
         }
         validate_custom_character_membership(context, &transition.character_id)?;
+        if !crate::characters::carousel::may_acquire(
+            previous,
+            &transition.source,
+            &transition.character_id,
+        ) {
+            return Err(invalid_fact());
+        }
         validate_custom_character_membership(context, &transition.source.character_id)?;
         if !previous
             .players
@@ -767,6 +775,12 @@ fn apply_snv_facts(
             })
         };
         let payload = match notification {
+            crate::event::PlayerNotification::Preacher { recipient_id } => {
+                crate::contracts::RevealPayload::PreacherInformation {
+                    kind: "preacherInformation",
+                    recipient_player: reveal_player(recipient_id)?,
+                }
+            }
             crate::event::PlayerNotification::ApparentIdentity {
                 recipient_id,
                 character_id,

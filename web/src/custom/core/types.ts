@@ -260,6 +260,8 @@ export type InformationPrompt = {
 
 
 export type TargetCheck = {
+  numberConstraint?: InformationPrompt['numberConstraint'];
+  wakeAudit?: {playerId:string;woke:boolean;evidence:{characterId:string;eventId:string|null;forecast:boolean}[]}[];
   fixedCharacterId?: string;
   targetPlayerIds: string[];
   computedResult: InformationResult;
@@ -299,7 +301,7 @@ export type PendingIdentityReveal = {
   deliveryEventId?: string;
   sourceEventId: string;
   sequence: number;
-  payload: CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload | NightwatchmanRevealPayload | GrantedAbilityRevealPayload | MarionetteRevealPayload;
+  payload: PreacherRevealPayload | CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload | NightwatchmanRevealPayload | GrantedAbilityRevealPayload | MarionetteRevealPayload;
 };
 export type RuleState = {
   automaticReminders?: AutomaticReminder[];
@@ -521,7 +523,9 @@ export type LearnedCharacterRevealPayload={kind:'learnedCharacter';sourceCharact
 export type LearnedPlayerRevealPayload={kind:'learnedPlayer';sourceCharacterId:'balloonist';player:RevealPlayer};
 export type GrantedAbilityRevealPayload={kind:'grantedAbilityInformation';recipientPlayer:RevealPlayer;recipientIsSource:boolean;characterId:string;sourceCharacterId:'boffin'};
 export type MarionetteRevealPayload={kind:'marionetteInformation';recipientPlayer:RevealPlayer;marionettePlayer:RevealPlayer};
-export type RevealPayload = MarionetteRevealPayload | GrantedAbilityRevealPayload | LearnedPlayerRevealPayload | LearnedCharacterRevealPayload | NightwatchmanRevealPayload | MutantExecutionRevealPayload | TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload | MadnessAssignmentRevealPayload;
+export type PreacherRevealPayload = {kind:'preacherInformation';recipientPlayer:RevealPlayer};
+export type ChambermaidRevealPayload = {kind:'chambermaidInformation';targetPlayers:RevealPlayer[];value:number};
+export type RevealPayload = PreacherRevealPayload | ChambermaidRevealPayload | MarionetteRevealPayload | GrantedAbilityRevealPayload | LearnedPlayerRevealPayload | LearnedCharacterRevealPayload | NightwatchmanRevealPayload | MutantExecutionRevealPayload | TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload | MadnessAssignmentRevealPayload;
 export type SetupDistributionRequest = { customDefinition: CustomScriptDefinition; playerCount: number; actualCharacters: string[]; setupChoiceId?:string;boffinAbility?:string;marionetteCharacter?:string };
 
 
@@ -560,6 +564,7 @@ export type GuidanceCause = { kind: "initialDrunk" | "acquiredDrunk" | "marionet
 export type CustomGameEnd = { winningAlignment: "good" | "evil"; reason: "goodTwinExecuted"|"saintExecuted"|"mayorNoExecution"|"vortoxNoExecution"|"demonAbsent"|"twoLivingPlayers"|"klutzChoice"|"storytellerDecision"; sourceEventId: string };
 export type InformationPreparation = { information: InformationResult; correctPlayerId: string | null };
 export type CustomActionResult =
+  | {kind:'preacherSelected';targetPlayerId:string;effective:boolean}
   | {kind:'pixieLearned';targetPlayerId:string;characterId:string}
   | {kind:'balloonistLearned';targetPlayerId:string;registeredKind:'Townsfolk'|'Outsider'|'Minion'|'Demon'}
   | {kind:'boffinGranted';targetPlayerId:string;characterId:string}

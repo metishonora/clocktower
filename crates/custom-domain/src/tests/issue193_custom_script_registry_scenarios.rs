@@ -56,7 +56,7 @@ fn custom_registry_exhaustively_projects_each_tb_and_snv_id_to_one_canonical_kin
     let catalog = custom_script_catalog();
     let ids = catalog.iter().map(|entry| entry.id).collect::<HashSet<_>>();
 
-    assert_eq!(catalog.len(), 53);
+    assert_eq!(catalog.len(), 55);
     assert_eq!(ids.len(), catalog.len());
 
     let mut kind_counts = [0; 4];
@@ -83,6 +83,8 @@ fn custom_registry_exhaustively_projects_each_tb_and_snv_id_to_one_canonical_kin
                 ("nightwatchman", CharacterKind::Townsfolk),
                 ("pixie", CharacterKind::Townsfolk),
                 ("balloonist", CharacterKind::Townsfolk),
+                ("preacher", CharacterKind::Townsfolk),
+                ("chambermaid", CharacterKind::Townsfolk),
                 ("boffin", CharacterKind::Minion),
                 ("marionette", CharacterKind::Minion)
             ]
@@ -96,7 +98,7 @@ fn custom_registry_exhaustively_projects_each_tb_and_snv_id_to_one_canonical_kin
         }] += 1;
     }
 
-    assert_eq!(kind_counts, [29, 9, 10, 5]);
+    assert_eq!(kind_counts, [31, 9, 10, 5]);
 
     let all_character_ids = catalog.iter().map(|entry| entry.id).collect::<Vec<_>>();
     let context = resolve_custom_script(&definition(&all_character_ids)).unwrap();

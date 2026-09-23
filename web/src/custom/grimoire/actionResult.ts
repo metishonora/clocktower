@@ -17,6 +17,7 @@ export function reviewedAction(event:GameEvent|undefined) {
 }
 export function actionResultRows(result:CustomActionResult,person:(id:string)=>string,role:(id:string)=>string, pendingNightDeath=false) {
  switch(result.kind){
+ case 'preacherSelected':return [{label:'선택 대상',value:person(result.targetPlayerId)},{label:'적용 결과',value:result.effective?'하수인 선택':'아무 일도 없음'}];
  case 'nightDeathsResolved':return result.playerIds.length?result.playerIds.map(id=>({label:'사망',value:person(id)})):[{label:'결과',value:'사망 없음'}];
  case 'nightAttack':return [{label:'공격 대상',value:person(result.targetPlayerId)},{label:'결과',value:result.killedPlayerId?`${person(result.killedPlayerId)} 사망`:pendingNightDeath?'사망 결정 대기':'사망 없음'}];
  case 'witch':return [{label:'저주 대상',value:person(result.targetPlayerId)}];

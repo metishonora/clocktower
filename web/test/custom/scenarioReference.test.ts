@@ -8,7 +8,7 @@ test('WASM uses the full public pool, has all translations, and distinguishes em
   const all = await scenarioJinxes(customScriptCharacters.map(c => c.id));
   expect(all.ok).toBe(true);
   if (!all.ok) throw Error(all.error.messageKo);
-  expect(all.value).toHaveLength(6);
+  expect(all.value).toHaveLength(9);
   expect(all.value.every(j => j.reasonKo && j.characterIds.includes(j.sourceCharacterId))).toBe(true);
   expect(await scenarioJinxes(['drunk'])).toEqual({ ok: true, value: [] });
   const pair = await scenarioJinxes(['drunk', 'mathematician']);

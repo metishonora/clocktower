@@ -16,6 +16,7 @@ use crate::{
 /// ability or an impairment's provenance.
 #[derive(Debug, Default, Clone)]
 pub(crate) struct CustomGameFacts {
+    pub(crate) preacher_selections: Vec<crate::characters::carousel::PreacherSelection>,
     pub(crate) boffin_assignments: Vec<crate::characters::carousel::BoffinAssignment>,
     pub(crate) pixie_resolutions: Vec<crate::characters::carousel::PixieResolution>,
     pub(crate) canonical_event_index: Option<usize>,
@@ -136,6 +137,7 @@ pub(crate) enum MalfunctionOutcome {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FailedEffect {
+    PreacherSuppression,
     NightwatchmanNotification,
     DemonDeath,
     PitHagCharacterChange,

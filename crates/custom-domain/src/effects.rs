@@ -67,9 +67,16 @@ pub(crate) fn occurrence_impaired(
             .as_ref()
             .is_some_and(|s| ability_impaired(facts, s))
 }
-pub(crate) fn effective(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
+pub(crate) fn available(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
     current_ability_instance(facts, source)
+        && !crate::characters::carousel::preacher_suppressed(facts, source)
         && crate::characters::carousel::grant_enabled(facts, source)
+}
+pub(crate) fn suppressed(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
+    crate::characters::carousel::preacher_suppressed(facts, source)
+}
+pub(crate) fn effective(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
+    available(facts, source)
         && facts.player(&source.owner_player_id).is_some_and(|p| {
             p.alive || crate::characters::sects_and_violets::vigor_retains(facts, source)
         })
@@ -100,6 +107,7 @@ pub(crate) fn resolve_effects(
     context: &ResolvedScriptContext,
     facts: &mut CustomGameFacts,
 ) -> Result<(), CoreError> {
+    crate::characters::carousel::expire_preacher(facts);
     let previous = std::mem::take(&mut facts.resolved_impairments);
     facts
         .active_impairments
