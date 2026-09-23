@@ -102,6 +102,81 @@ describe('scenario files through the production authoring controller and shared 
     expect(next.getSnapshot().validation).toBe('valid');
   });
 
+  it('bulk selection preserves outside characters and both edited orders with one proposal per night, then round-trips', async () => {
+    const proposeOrder = vi.fn(customFirstNightPlan);
+    const proposeOtherOrder = vi.fn(customOtherNightPlan);
+    const { controller, download } = editor({ proposeOrder, proposeOtherOrder });
+    await controller.importFile(file());
+    controller.moveAction(actionKey({ kind: 'character', characterId: 'imp', actionId: 'attackPlayer' }), -1, 'other');
+    await settled(controller);
+    expect(controller.getSnapshot().validation).toBe('valid');
+    const before = controller.getSnapshot().draft;
+    const targets = ['philosopher', 'washerwoman', 'monk', 'washerwoman'];
+    controller.toggleCharacters(targets);
+    expect(controller.getSnapshot().draft.characterIds).toEqual(['philosopher', 'poisoner', 'imp', 'washerwoman', 'monk']);
+    await settled(controller);
+    expect(proposeOrder).toHaveBeenCalledTimes(1);
+    expect(proposeOtherOrder).toHaveBeenCalledTimes(1);
+    expect(controller.getSnapshot().validation).toBe('valid');
+    for (const field of ['firstNightOrder', 'otherNightOrder'] as const) {
+      const originalKeys = new Set(before[field]!.map(actionKey));
+      expect(controller.getSnapshot().draft[field]!.filter(action => originalKeys.has(actionKey(action)))).toEqual(before[field]);
+    }
+    controller.toggleCharacters(targets);
+    await settled(controller);
+    expect(controller.getSnapshot().draft.characterIds).toEqual(['poisoner', 'imp']);
+    expect(proposeOrder).toHaveBeenCalledTimes(2);
+    expect(proposeOtherOrder).toHaveBeenCalledTimes(2);
+    for (const field of ['firstNightOrder', 'otherNightOrder'] as const) {
+      expect(controller.getSnapshot().draft[field]).toEqual(before[field]!.filter(action => !('characterId' in action) || action.characterId !== 'philosopher'));
+    }
+    controller.toggleCharacters(targets);
+    await settled(controller);
+    expect(controller.getSnapshot().draft.characterIds).toEqual(['poisoner', 'imp', 'philosopher', 'washerwoman', 'monk']);
+    controller.save();
+    const exported = JSON.parse(download.mock.calls[0][0]);
+    const fresh = editor().controller;
+    await fresh.importFile(file(exported));
+    expect(fresh.getSnapshot().validation).toBe('valid');
+    for (const field of ['characterIds', 'firstNightOrder', 'otherNightOrder'] as const) {
+      expect(fresh.getSnapshot().draft[field]).toEqual(controller.getSnapshot().draft[field]);
+    }
+  });
+
+  it('an empty bulk target preserves validation, download feedback and both orders without a proposal', async () => {
+    const proposeOrder = vi.fn(customFirstNightPlan);
+    const proposeOtherOrder = vi.fn(customOtherNightPlan);
+    const { controller } = editor({ proposeOrder, proposeOtherOrder });
+    await controller.importFile(file());
+    controller.save();
+    const before = controller.getSnapshot();
+    controller.toggleCharacters([]);
+    expect(controller.getSnapshot()).toBe(before);
+    expect(proposeOrder).not.toHaveBeenCalled();
+    expect(proposeOtherOrder).not.toHaveBeenCalled();
+  });
+
+  it('late bulk proposals cannot overwrite a subsequent bulk removal and individual edit', async () => {
+    const first = deferred<Awaited<ReturnType<typeof customFirstNightPlan>>>();
+    const other = deferred<Awaited<ReturnType<typeof customOtherNightPlan>>>();
+    const proposeOrder = vi.fn(customFirstNightPlan).mockImplementationOnce(() => first.promise);
+    const proposeOtherOrder = vi.fn(customOtherNightPlan).mockImplementationOnce(() => other.promise);
+    const { controller } = editor({ proposeOrder, proposeOtherOrder });
+    await controller.importFile(file());
+    controller.toggleCharacters(['washerwoman', 'monk']);
+    const stale = proposeOrder.mock.calls[0][0];
+    controller.toggleCharacters(['washerwoman', 'monk']);
+    controller.toggleCharacter('chef');
+    await settled(controller);
+    expect(controller.getSnapshot().draft.characterIds).toEqual(['philosopher', 'poisoner', 'imp', 'chef']);
+    expect(controller.getSnapshot().validation).toBe('valid');
+    const current = controller.getSnapshot();
+    first.resolve(await customFirstNightPlan(stale));
+    other.resolve(await customOtherNightPlan(stale));
+    await Promise.resolve(); await Promise.resolve();
+    expect(controller.getSnapshot()).toBe(current);
+  });
+
   it.each([
     ['official script', ['imp', { id: '_meta', name: 'official' }]],
     ['GameFile', { formatVersion: 1, gameId: 'game', events: [] }],

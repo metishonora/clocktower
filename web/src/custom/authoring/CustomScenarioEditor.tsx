@@ -54,6 +54,7 @@ export function CustomScenarioEditor({ onExit, onNewGrimoire, onResume, sourceFi
           activeKind={kind} sourceFilter={source} query={query} characters={visible} focusedCharacter={focused ? characterPresentation(focused) : undefined}
           onNameChange={controller.setName} onActiveKindChange={changeKind} onSourceFilterChange={changeSource} onQueryChange={changeQuery}
           onToggleCharacter={id => { setFocused(id); controller.toggleCharacter(id); }} onCloseCharacter={() => setFocused(undefined)}
+          onToggleVisible={() => controller.toggleCharacters(visible.map(character => character.id))}
           onBack={() => controller.setStep('scenario')} onContinue={() => controller.setStep('nightOrder')} />
         : state.step === 'nightOrder' ? <FirstNightOrderSheet state={state} controller={controller} />
         : <ScenarioReviewSheet state={state} controller={controller} onNewGrimoire={onNewGrimoire} onResume={onResume} />}
