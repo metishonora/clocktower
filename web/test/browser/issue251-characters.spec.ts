@@ -19,9 +19,9 @@ for(const width of [390,1280]){
   await page.screenshot({path:info.outputPath(`preacher-notification-${width}.png`),fullPage:true});
   await prompt.getByRole('button',{name:'공개',exact:true}).click();
   const reveal=page.getByRole('dialog',{name:'플레이어 정보'});
-  await expect(reveal).toContainText('이 캐릭터가 당신을 선택했습니다');
+  await expect(reveal).toContainText('전도사가 당신을 선택했습니다.');
   await expect(reveal).not.toContainText('민지');
-  expect((await reveal.locator('img').boundingBox())?.width).toBeGreaterThanOrEqual(150);
+  await expect(reveal.getByAltText('전도사')).toBeVisible();
   await page.screenshot({path:info.outputPath(`preacher-reveal-${width}.png`),fullPage:true});
   await reveal.getByRole('button',{name:'확인했으면 눈을 감으세요'}).click();
   await expect(page.getByText('적용 결과',{exact:true})).toBeVisible();
@@ -46,10 +46,11 @@ for(const width of [390,1280]){
   await page.screenshot({path:info.outputPath(`${mode}-progress-${width}.png`),fullPage:true});
   await page.getByRole('button',{name:mode==='chambermaid'?'정보 공개':mode.endsWith('vortox')?'거짓 정보 공개':'중독 정보 공개',exact:true}).click();
   const reveal=page.getByRole('dialog',{name:'플레이어 정보'});
-  await expect(reveal).toContainText('1번 민지 · 3번 서윤 중');
+  await expect(reveal.locator('.customReadableCard').nth(0)).toHaveText('1번민지');
+  await expect(reveal.locator('.customReadableCard').nth(1)).toHaveText('3번서윤');
   await expect(reveal).toContainText(mode==='chambermaid'?'2명':'7명');
-  await expect(reveal).toContainText('깨어남');
-  await expect(reveal.locator('.customWakeNumber')).toHaveCSS('color','rgb(255, 245, 241)');
+  await expect(reveal).toContainText('이 깨어났습니다.');
+  await expect(reveal.locator('.customReadableInlineAnswer')).toHaveCSS('color','rgb(233, 195, 110)');
   await expect(reveal).not.toContainText('수학자');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+1);
   await page.screenshot({path:info.outputPath(`${mode}-reveal-${width}.png`),fullPage:true});

@@ -55,7 +55,7 @@ it('shows minions first and retains the demon-only Marionette identity',()=>{
  expect(screen.getByText('유진')).toBeTruthy();expect(screen.getByText('하린')).toBeTruthy();
  expect(document.body.textContent?.indexOf('유진')).toBeLessThan(document.body.textContent?.indexOf('악마는')??0);
  view.unmount();render(<CustomReveal payload={{kind:'demonInformation',minionPlayers:[],marionettePlayers:[person],bluffCharacterIds:['artist','sage','oracle']}} onClose={()=>{}}/>);
- expect(screen.getByText('당신의 하수인은 없습니다.')).toBeTruthy();expect(screen.getByText('꼭두각시는')).toBeTruthy();expect(screen.getByText('유진')).toBeTruthy();
+ expect(screen.queryByText('당신의 하수인은 없습니다.')).toBeNull();expect(screen.getByText('꼭두각시')).toBeTruthy();expect(screen.getByText('유진')).toBeTruthy();
  expect(screen.getByText('이 직업들은 이번 게임에 없습니다.')).toBeTruthy();
 });
 it('renders the requested Cerenovus emphasis and preserves current alignment on character change',()=>{
@@ -66,13 +66,13 @@ it('renders the requested Cerenovus emphasis and preserves current alignment on 
  view.unmount();render(<CustomReveal payload={{kind:'characterChange',playerId:'p7',characterId:'witch',alignment:'good'}} onClose={()=>{}}/>);
  expect(screen.getByText('선')).toBeTruthy();expect(screen.getByText('마녀')).toBeTruthy();expect(screen.queryByText('마귀할멈')).toBeNull();
 });
-it('handles both boolean answers and keeps TB numeric reveals on their existing path',()=>{
+it('handles both boolean answers and uses the readable layout for TB numbers',()=>{
  const view=render(<CustomReveal payload={{kind:'booleanInformation',characterId:'flowergirl',value:false}} onClose={()=>{}}/>);
  expect(screen.getByText('투표하지 않음')).toBeTruthy();view.unmount();
  const yes=render(<CustomReveal payload={{kind:'booleanInformation',characterId:'townCrier',value:true}} onClose={()=>{}}/>);
  expect(screen.getByText('지목함')).toBeTruthy();yes.unmount();
  render(<CustomReveal payload={{kind:'numericInformation',characterId:'chef',value:2}} onClose={()=>{}}/>);
- expect(document.querySelector('.customReadableReveal')).toBeNull();expect(screen.getByText('2쌍')).toBeTruthy();
+ expect(document.querySelector('.customReadableReveal')).not.toBeNull();expect(document.querySelector('.customReadableNumber')?.textContent).toBe('2쌍');
 });
 it('renders Barber instructions and remains usable when preferences cannot be saved',()=>{
  vi.spyOn(localStorage,'setItem').mockImplementation(()=>{throw Error('storage unavailable');});

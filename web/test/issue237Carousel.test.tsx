@@ -21,16 +21,14 @@ import {isRevealPayload} from '../src/custom/core/revealPayload';
 import type {CustomScriptDefinition,PhaseStepInput,SetupPlayerInput,PhaseStep,GameEvent,CustomActionSource} from '../src/custom/core/types';
 
 afterEach(cleanup);
-it('Demon information places a distinct Marionette group beside ordinary Minions',()=>{
+it('Demon information includes a distinct Marionette card among its Minions',()=>{
  render(<CustomReveal payload={{kind:'demonInformation',minionPlayers:[{seat:8,name:'수아'}],marionettePlayers:[{seat:9,name:'시우'}],bluffCharacterIds:['nightwatchman','artist','saint']}} onClose={()=>{}}/>);
  const dialog=screen.getByRole('dialog',{name:'플레이어 정보'});
- const minions=within(dialog).getByRole('region',{name:'하수인'}),puppets=within(dialog).getByRole('region',{name:'꼭두각시'});
- expect(minions.parentElement).toBe(puppets.parentElement);
- expect(minions.classList.contains('customReadableSection')).toBe(true);
- expect(puppets.classList.contains('customReadableSection')).toBe(true);
- expect(within(minions).queryByText('시우')).toBeNull();
- expect(within(puppets).getByText('시우')).toBeDefined();
- expect(within(dialog).queryByText(/^꼭두각시 ·/)).toBeNull();
+ const minions=within(dialog).getByRole('region',{name:'하수인'});
+ expect(within(minions).getByText('수아')).toBeDefined();
+ expect(within(minions).getByText('시우').closest('article')?.classList.contains('customReadableMarionetteCard')).toBe(true);
+ expect(within(minions).getByText('꼭두각시')).toBeDefined();
+ expect(dialog.querySelector('.customRevealRoleIcon')).toBeNull();
 });
 it.each(['demonInformation','minionInformation'] as const)('Ordinary %s keeps its layout without a Marionette group',kind=>{
  const players=[{seat:8,name:'수아'}];
@@ -133,11 +131,11 @@ it.each([true,false])('Boffin private reveal labels the recipient then shows onl
  expect(isRevealPayload({...payload,recipientIsSource:undefined})).toBe(false);
  render(<CustomReveal payload={payload} onClose={()=>{}}/>);
  const dialog=screen.getByRole('dialog',{name:'플레이어 정보'});
- expect(dialog.classList.contains('snakeCharmerReveal')).toBe(true);
- const title=within(dialog).getByText(recipientIsSource?'악마에게 부여한 능력':'과학자가 부여한 능력');
- const name=within(dialog).getByRole('heading',{name:'야경꾼'});
- const icon=dialog.querySelector('img')!;
- expect(icon.parentElement?.className).toBe('snakeCharmerRevealIdentity');
+ expect(dialog.classList.contains('customReadableReveal')).toBe(true);
+ const title=within(dialog).getByText(recipientIsSource?'악마에게 부여한 능력':'과학자가 준 능력');
+ const name=within(dialog).getByText('야경꾼');
+ expect(within(dialog).getByAltText('과학자')).toBeDefined();
+ const icon=dialog.querySelector('.customReadableCard img')!;
  expect(icon.classList.contains('tbRevealIcon')).toBe(false);
  expect(icon.getAttribute('src')).toContain('nightwatchman');
  expect(title.compareDocumentPosition(icon)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -316,13 +314,12 @@ it('Pixie reveals only the absent role under Vortox, never the marked player',as
  const payload=controller.getSnapshot().reveal;
  expect(payload).toEqual({kind:'learnedCharacter',sourceCharacterId:'pixie',characterId:'nightwatchman'});
  view.unmount();render(<CustomReveal payload={payload!} onClose={()=>{}}/>);
- expect(screen.queryByText(/P2/)).toBeNull();expect(screen.getByRole('heading',{name:'야경꾼'})).toBeDefined();
+ expect(screen.queryByText(/P2/)).toBeNull();expect(screen.getByText('야경꾼')).toBeDefined();
  const reveal=screen.getByRole('dialog',{name:'플레이어 정보'});
- expect(reveal.classList.contains('snakeCharmerReveal')).toBe(true);
- const identity=reveal.querySelector('.snakeCharmerRevealIdentity')!;
- expect(Array.from(identity.children).map(el=>el.tagName)).toEqual(['H1','IMG','H2']);
- expect(identity.querySelector('h1')?.textContent).toBe('집착할 직업');
- expect(identity.querySelector('img')?.getAttribute('src')).toContain('nightwatchman');
+ expect(reveal.classList.contains('customReadableReveal')).toBe(true);
+ expect(within(reveal).getByAltText('픽시')).toBeDefined();
+ expect(within(reveal).getByText('이 직업이 게임에 있습니다.')).toBeDefined();
+ expect(reveal.querySelector('.customReadableCard img')?.getAttribute('src')).toContain('nightwatchman');
  controller.dispose();
 });
 it.each([

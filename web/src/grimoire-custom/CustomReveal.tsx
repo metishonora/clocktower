@@ -12,15 +12,10 @@ import '../features/identity-change/characterChangeReveal.css';
 import '../features/evil-twin/evilTwinReveal.css';
 import '../shared-ui/styles/informationTask.css';
 import '../shared-ui/styles/bmrRolePresentation.css';
-import './preacherChambermaid.css';
-import {EvilTwinRevealContent} from "../shared-ui/EvilTwinRevealContent";
 import {SpyGrimoireView} from '../shared-ui/SpyGrimoireView';
 import type {Ref} from 'react';
-import {SnvInformationRevealContent} from '../shared-ui/SnvInformationRevealContent';
 import {GrimoireSeatContent} from '../shared-ui/GrimoireSeatContent';
-import {EvilInformationRevealContent} from '../shared-ui/EvilInformationRevealContent';
 import { RoleRevealContent } from '../shared-ui/RoleRevealContent';
-import { MadnessRevealContent } from '../shared-ui/MadnessRevealContent';
 import { scalarInformationLabel, scalarInformationValueLabel } from '../shared-ui/scalarInformationPresentation';
 import { grimoireHeights, rectangularSeatPositions } from '../shared-ui/GrimoirePresentation';
 import type { CSSProperties } from 'react';
@@ -39,7 +34,7 @@ export function CustomReveal({ payload, onClose }: { payload: RevealPayload | Pu
     const wasInert = root?.inert ?? false;
     const previousVisibility = root?.style.visibility ?? '';
     if (root) { root.inert = true; root.style.visibility = 'hidden'; }
-    close.current?.focus();
+    close.current?.focus({preventScroll:isReadableReveal(payload)});
     const keys = (event: KeyboardEvent) => {
       if(document.querySelector('.playerTokenDetailDialog'))return;
       if('kind' in payload&&payload.kind==='spyGrimoire'&&event.key==='Tab'){
@@ -71,19 +66,8 @@ export function CustomReveal({ payload, onClose }: { payload: RevealPayload | Pu
   return createPortal(<BmrRevealSurface variant={'kind' in payload && ['minionInformation','demonInformation'].includes(payload.kind)?'team':'role'} dialogLabel="플레이어 정보" className={revealClass(payload)} closeLabel="확인했으면 눈을 감으세요" closeButtonRef={close} onClose={onClose}><RevealContent payload={payload} /></BmrRevealSurface>, document.body);
 }
 function RevealContent({payload:p}:{payload:RevealPayload}) {
- if('kind' in p&&p.kind==='preacherInformation')return <div className="snakeCharmerRevealIdentity"><h1>이 캐릭터가 당신을 선택했습니다</h1>{revealAssets.icon('preacher')}<h2>전도사</h2></div>;
- if('kind' in p&&p.kind==='chambermaidInformation')return <><p className="customWakeTargets">{p.targetPlayers.map((player,i)=><span key={player.playerId}>{i>0?' · ':''}{player.seat}번 {player.name}</span>)} 중</p><strong className="customWakeNumber">{p.value}<span>명</span></strong><p className="customWakeOutcome">깨어남</p></>;
  if('kind' in p&&p.kind==='marionetteInformation')return <>{revealAssets.icon('marionette','tbRevealIcon')}<h2>{p.marionettePlayer.seat}번 {p.marionettePlayer.name}</h2><p>꼭두각시입니다</p></>;
- if('kind' in p&&p.kind==='learnedCharacter')return <div className="snakeCharmerRevealIdentity"><h1>집착할 직업</h1>{revealAssets.icon(p.characterId)}<h2>{revealAssets.label(p.characterId)}</h2></div>;
- if('kind' in p&&p.kind==='grantedAbilityInformation')return <div className="snakeCharmerRevealIdentity"><h1>{p.recipientIsSource?'악마에게 부여한 능력':'과학자가 부여한 능력'}</h1>{revealAssets.icon(p.characterId)}<h2>{revealAssets.label(p.characterId)}</h2></div>;
- if('kind' in p&&p.kind==='learnedPlayer')return <>{revealAssets.icon(p.sourceCharacterId,'tbRevealIcon')}<h2>{p.player.seat}번 {p.player.name}</h2></>;
- if('kind' in p && p.kind==='nightwatchmanInformation')return <div className="snakeCharmerRevealIdentity">{revealAssets.icon('nightwatchman')}<h2>{p.nightwatchmanPlayer.seat}번 {p.nightwatchmanPlayer.name}</h2><p className="tbRevealDescription">야경꾼입니다</p></div>;
- if('kind' in p && p.kind==='evilTwinPair')return <EvilTwinRevealContent players={p.players} label={revealAssets.label} icon={revealAssets.icon}/>;
- if('kind' in p && (p.kind==='booleanInformation'||p.kind==='dreamerInformation'||p.kind==='seamstressInformation'||p.kind==='sageInformation'||p.kind==='numericInformation'&&characterPresentation(p.characterId)?.source==='sectsAndViolets'))return <SnvInformationRevealContent payload={p} label={revealAssets.label} icon={revealAssets.icon}/>;
- if('kind' in p && (p.kind==='minionInformation'||p.kind==='demonInformation'))return <EvilInformationRevealContent minion={p.kind==='minionInformation'} players={p.kind==='minionInformation'?p.demonPlayers:p.minionPlayers} marionettePlayers={p.kind==='demonInformation'?p.marionettePlayers:undefined} bluffs={p.kind==='demonInformation'?p.bluffCharacterIds.map(id=>({id,label:characterPresentation(id)?.label ?? id,icon:<img src={characterPresentation(id)?.image} width={64} height={64} alt=""/>})):[]}/>;
- if ('kind' in p && p.kind==='spyGrimoire') return null;
- if ('kind' in p && p.kind==='madnessAssignment') {const role=characterPresentation(p.characterId);return <MadnessRevealContent characterName={role?.label ?? p.characterId} icon={<img src={role?.image} alt={role?.label}/>}/>;}
- if ('kind' in p && p.kind==='mutantExecution') return null; // Storyteller result, never a new player-facing reveal.
+ if ('kind' in p) return null; // Readable roles and Spy are handled above; mutantExecution is Storyteller-only.
  return <RoleRevealContent payload={p} assets={revealAssets} onClose={()=>undefined}/>;
 }
 const ContentSurface=({children}:{children:React.ReactNode})=><>{children}</>;
@@ -111,16 +95,5 @@ function SpyBoard({payload,onClose,closeRef}:{payload:SpyGrimoireRevealPayload;o
 }
 
 function revealClass(p:RevealPayload):string {
- const base='customPublicReveal';
- if(!('kind' in p))return `${base} tbInformationReveal tb-textReveal`;
- if(p.kind==='evilTwinPair')return `${base} evilTwinReveal`;
- if(p.kind==='characterChange')return `${base} snakeCharmerReveal ${p.alignment}`;
- if(p.kind==='preacherInformation')return `${base} snakeCharmerReveal customPreacherReveal`;
- if(p.kind==='chambermaidInformation')return `${base} snvProductionInformationReveal customChambermaidReveal`;
- if(p.kind==='grantedAbilityInformation'||p.kind==='nightwatchmanInformation'||p.kind==='learnedCharacter')return `${base} snakeCharmerReveal`;
- if(p.kind==='madnessAssignment')return `${base} cerenovusMadnessReveal`;
- if(p.kind==='booleanInformation')return `${base} snvProductionInformationReveal customBooleanReveal`;
- if(p.kind==='dreamerInformation'||p.kind==='seamstressInformation'||p.kind==='sageInformation'||p.kind==='numericInformation'&&characterPresentation(p.characterId)?.source==='sectsAndViolets')return `${base} snvProductionInformationReveal`;
- if(p.kind==='minionInformation'||p.kind==='demonInformation')return base;
- return `${base} tbInformationReveal tb-${p.kind}`;
+ return `customPublicReveal tbInformationReveal tb-${'kind' in p?p.kind:'textReveal'}`;
 }

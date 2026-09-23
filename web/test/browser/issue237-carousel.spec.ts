@@ -31,11 +31,9 @@ for(const width of [390,1280])test(`Nightwatchman private notification at ${widt
  await expect(page.getByRole('dialog',{name:'플레이어 정보'})).toHaveCount(0);
  await prompt.getByRole('button',{name:'공개',exact:true}).click();
  const reveal=page.getByRole('dialog',{name:'플레이어 정보'});
- await expect(reveal).toContainText('1번 P1');
+ await expect(reveal.locator('.customReadableCard')).toHaveText('1번P1');
  await expect(reveal).toContainText('야경꾼입니다');
- const iconBox=await reveal.locator('.snakeCharmerRevealIdentity img').boundingBox();
- expect(iconBox?.width).toBeGreaterThanOrEqual(150);
- expect(iconBox?.height).toBeGreaterThanOrEqual(150);
+ await expect(reveal.locator('.customRevealRoleIcon')).toBeVisible();
  await expect(reveal).not.toContainText('임프');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+1);
  await page.screenshot({path:info.outputPath(`nightwatchman-${width}.png`),fullPage:true});
@@ -73,7 +71,7 @@ for(const width of [390,1280])test(`Carousel progress and private Boffin reveal 
  await prompt.getByRole('button',{name:'공개',exact:true}).click();
  const reveal=page.getByRole('dialog',{name:'플레이어 정보'});
  await expect(reveal).toContainText('악마에게 부여한 능력');
- await expect(reveal.getByRole('heading',{name:'야경꾼',exact:true})).toBeVisible();await expect(reveal).not.toContainText('임프');
+ await expect(reveal.getByText('야경꾼',{exact:true})).toBeVisible();await expect(reveal).not.toContainText('임프');
  await reveal.getByRole('button',{name:'확인했으면 눈을 감으세요'}).click();
  await expect(page.getByRole('dialog',{name:'능력 통지 2/2'})).toContainText('5번 P5');
  await expect(reveal).toHaveCount(0);
@@ -96,9 +94,7 @@ test('Pixie uses Vortox role choices without showing its marked player',async({p
  await page.getByRole('button',{name:'거짓 정보 공개',exact:true}).click();
  const reveal=page.getByRole('dialog',{name:'플레이어 정보'});
  await expect(reveal).toContainText('야경꾼');await expect(reveal).not.toContainText('P2');
- await expect(reveal.getByRole('heading',{name:'집착할 직업'})).toBeVisible();
- const iconBox=await reveal.locator('.snakeCharmerRevealIdentity img').boundingBox();
- expect(iconBox?.width).toBeGreaterThanOrEqual(150);
- expect(iconBox?.height).toBeGreaterThanOrEqual(150);
+ await expect(reveal.getByText('이 직업이 게임에 있습니다.')).toBeVisible();
+ await expect(reveal.locator('.customRevealRoleIcon')).toBeVisible();
  await page.screenshot({path:info.outputPath('pixie-private.png'),fullPage:true});
 });

@@ -5,11 +5,10 @@ import { characterPresentation } from '../custom/authoring/characterPresentation
 import { scalarInformationLabel, scalarInformationValueLabel } from '../shared-ui/scalarInformationPresentation';
 import './customReadableReveal.css';
 
-type ReadablePayload = Extract<RevealPayload, {kind:'minionInformation'|'demonInformation'|'evilTwinPair'|'madnessAssignment'|'characterChange'|'dreamerInformation'|'seamstressInformation'|'sageInformation'|'booleanInformation'|'numericInformation'}> | PublicInstruction;
+type ReadablePayload = Extract<RevealPayload, {kind:'minionInformation'|'demonInformation'|'evilTwinPair'|'madnessAssignment'|'characterChange'|'dreamerInformation'|'seamstressInformation'|'sageInformation'|'booleanInformation'|'numericInformation'|'setupInformation'|'fortuneTellerInformation'|'characterInformation'|'preacherInformation'|'chambermaidInformation'|'learnedCharacter'|'learnedPlayer'|'grantedAbilityInformation'|'nightwatchmanInformation'}> | PublicInstruction;
 export function isReadableReveal(payload: RevealPayload | PublicInstruction): payload is ReadablePayload {
   if (!('kind' in payload)) return false;
-  if (payload.kind === 'numericInformation') return characterPresentation(payload.characterId)?.source === 'sectsAndViolets';
-  return ['minionInformation','demonInformation','evilTwinPair','madnessAssignment','characterChange','dreamerInformation','seamstressInformation','sageInformation','booleanInformation','barberInstruction'].includes(payload.kind);
+  return ['minionInformation','demonInformation','evilTwinPair','madnessAssignment','characterChange','dreamerInformation','seamstressInformation','sageInformation','booleanInformation','barberInstruction','numericInformation','setupInformation','fortuneTellerInformation','characterInformation','preacherInformation','chambermaidInformation','learnedCharacter','learnedPlayer','grantedAbilityInformation','nightwatchmanInformation'].includes(payload.kind);
 }
 const sizeKey = 'clocktower.custom-reveal.text-size';
 function savedSize() {
@@ -23,8 +22,11 @@ function Icon({id, heading=false}:{id:string;heading?:boolean}) {
 function Character({id,label}:{id:string;label?:string}) {
   return <article className="customReadableCard"><Icon id={id}/><strong>{label??characterPresentation(id)?.label??id}</strong></article>;
 }
-function People({players}:{players:readonly RevealIdentity[]}) {
-  return <div className="customReadableCards">{players.length?players.map(p=><article className="customReadableCard" key={p.seat}><span>{p.seat}번</span><strong>{p.name}</strong></article>):<strong>없음</strong>}</div>;
+function People({players,marionette=false}:{players:readonly RevealIdentity[];marionette?:boolean}) {
+  return <div className="customReadableCards">{players.length?players.map(p=><article className={`customReadableCard${marionette?' customReadableMarionetteCard':''}`} key={p.seat}><span>{p.seat}번</span><strong>{p.name}</strong>{marionette&&<small>꼭두각시</small>}</article>):<strong>없음</strong>}</div>;
+}
+function Role({id}:{id:string}) {
+  return <div className="customReadableCards"><Character id={id}/></div>;
 }
 function PairPeople({players}:{players:readonly RevealIdentity[]}) {
   return <div className="customReadablePair">{players.map((p,i)=><Fragment key={p.seat}>{i>0&&<b>또는</b>}<article className="customReadableCard"><span>{p.seat}번</span><strong>{p.name}</strong></article></Fragment>)}</div>;
@@ -32,7 +34,7 @@ function PairPeople({players}:{players:readonly RevealIdentity[]}) {
 export function CustomReadableReveal({payload:p,onClose,closeRef}:{payload:ReadablePayload;onClose:()=>void;closeRef:RefObject<HTMLButtonElement|null>}) {
   const [size,setSize]=useState(savedSize);
   const [twinStage,setTwinStage]=useState<'private'|'wake'|'both'>('private');
-  useEffect(()=>{closeRef.current?.focus();},[twinStage,closeRef]);
+  useEffect(()=>{closeRef.current?.focus({preventScroll:true});},[twinStage,closeRef]);
   const resize=(delta:number)=>{const next=Math.max(80,Math.min(140,size+delta));setSize(next);try{localStorage.setItem(sizeKey,String(next));}catch{/* Memory state still works. */}};
   const twin=p.kind==='evilTwinPair';
   const advance=()=>{if(twin&&twinStage!=='both')setTwinStage(twinStage==='private'?'wake':'both');else onClose();};
@@ -60,8 +62,17 @@ export function CustomReadableReveal({payload:p,onClose,closeRef}:{payload:Reada
 function Content({payload:p}:{payload:Exclude<ReadablePayload,{kind:'evilTwinPair'}>}) {
   switch(p.kind) {
     case 'minionInformation': return <><h1>하수인 정보</h1><section className="customReadableSection" aria-label="하수인"><People players={p.minionPlayers}/><p>여러분은 <strong>하수인</strong>입니다.</p></section><section className="customReadableSection" aria-label="악마"><p>악마는</p><People players={p.demonPlayers}/><p>입니다.</p></section></>;
-    case 'demonInformation': return <><h1>악마 정보</h1><section className="customReadableSection" aria-label="하수인">{p.minionPlayers.length?<><p>당신의 하수인은</p><People players={p.minionPlayers}/><p>입니다.</p></>:<p>당신의 하수인은 없습니다.</p>}</section>{!!p.marionettePlayers?.length&&<section className="customReadableSection" aria-label="꼭두각시"><p>꼭두각시는</p><People players={p.marionettePlayers}/><p>입니다.</p></section>}<section className="customReadableSection"><p>이 직업들은 이번 게임에 없습니다.</p><div className="customReadableCards">{p.bluffCharacterIds.map(id=><Character key={id} id={id}/>)}</div></section></>;
-    case 'numericInformation': return <><Icon id={p.characterId} heading/><p>{scalarInformationLabel(p.characterId)}</p><strong className="customReadableNumber">{p.value}</strong></>;
+    case 'demonInformation': return <><h1>악마 정보</h1><section className="customReadableSection" aria-label="하수인">{p.minionPlayers.length||p.marionettePlayers?.length?<><p>당신의 하수인은</p><div className="customReadableMinionGroup">{!!p.minionPlayers.length&&<People players={p.minionPlayers}/>} {!!p.marionettePlayers?.length&&<People players={p.marionettePlayers} marionette/>}</div><p>입니다.</p></>:<p>당신의 하수인은 없습니다.</p>}</section><section className="customReadableSection"><p>이 직업들은 이번 게임에 없습니다.</p><div className="customReadableCards">{p.bluffCharacterIds.map(id=><Character key={id} id={id}/>)}</div></section></>;
+    case 'setupInformation': return <><Icon id={p.characterId} heading/>{p.zeroOutsiders?<p>이 게임에는 외부인이 없습니다.</p>:<><People players={p.candidatePlayers}/><p>둘 중 한 명은</p><Role id={p.revealedCharacterId}/><p>입니다.</p></>}</>;
+    case 'numericInformation': return <><Icon id={p.characterId} heading/><p>{p.characterId==='chef'?'서로 이웃한 악한 플레이어 쌍':p.characterId==='empath'?<>살아 있는 양옆 이웃 중<br/>악한 플레이어</>:scalarInformationLabel(p.characterId)}</p><strong className="customReadableNumber">{p.value}{p.characterId==='chef'?<small>쌍</small>:p.characterId==='empath'?<small>명</small>:null}</strong></>;
+    case 'fortuneTellerInformation': return <><Icon id="fortuneTeller" heading/><People players={p.targetPlayers}/><p>이 중 악마가</p><strong className="customReadableAnswer">{p.hasDemon?'있습니다.':'없습니다.'}</strong></>;
+    case 'characterInformation': return <><Icon id={p.characterId} heading/><People players={[p.targetPlayer]}/><p>이 사람의 직업은</p><Role id={p.revealedCharacterId}/><p>입니다.</p></>;
+    case 'chambermaidInformation': return <><Icon id="chambermaid" heading/><People players={p.targetPlayers}/><p>이 중 <strong className="customReadableInlineAnswer">{p.value}명</strong>이 깨어났습니다.</p></>;
+    case 'preacherInformation': return <><Icon id="preacher" heading/><p><strong>전도사</strong>가 당신을 선택했습니다.</p></>;
+    case 'nightwatchmanInformation': return <><Icon id="nightwatchman" heading/><People players={[p.nightwatchmanPlayer]}/><p>이 사람이 <strong>야경꾼</strong>입니다.</p></>;
+    case 'learnedPlayer': return <><Icon id={p.sourceCharacterId} heading/><People players={[p.player]}/></>;
+    case 'learnedCharacter': return <><Icon id={p.sourceCharacterId} heading/><p>이 직업이 게임에 있습니다.</p><Role id={p.characterId}/></>;
+    case 'grantedAbilityInformation': return <><Icon id={p.sourceCharacterId} heading/><p>{p.recipientIsSource?'악마에게 부여한 능력':'과학자가 준 능력'}</p><Role id={p.characterId}/></>;
     case 'booleanInformation': return <><Icon id={p.characterId} heading/><p>{p.characterId==='flowergirl'?'오늘 악마가':'오늘 하수인이'}</p><strong className="customReadableAnswer">{scalarInformationValueLabel(p.characterId,p.value)}</strong></>;
     case 'dreamerInformation': return <><Icon id="dreamer" heading/>{p.targetPlayer&&<People players={[p.targetPlayer]}/>}<p>이 자의 직업은</p><div className="customReadablePair">{p.characterIds.map((id,i)=><Fragment key={`${id}-${i}`}>{i>0&&<b>또는</b>}<Character id={id}/></Fragment>)}</div></>;
     case 'seamstressInformation': return <><Icon id="seamstress" heading/><People players={p.targetPlayers}/><strong className="customReadableAnswer">{p.sameAlignment?'같은 진영':'다른 진영'}</strong></>;
