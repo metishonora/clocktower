@@ -153,3 +153,29 @@ test('Deviant can be selected, saved and printed as a Traveller without entering
   await page.getByRole('button',{name:'직업 일람',exact:true}).click();
   expect((await pdfBytes(page)).equals(bytes)).toBe(true);
 });
+
+test('Deviant leaves a restored grimoire unchanged through reload', async ({page}) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const game = JSON.parse(readFileSync(new URL('../../../fixtures/acceptance/custom-first-night/compatibility/day.game.json', import.meta.url), 'utf8'));
+  await upload(page, game);
+  await page.getByRole('button', {name:'마도서 이어 쓰기', exact:true}).click();
+  const main = page.getByRole('main', {name:'커스텀 마도서', exact:true});
+  await expect(main).toBeVisible();
+  const snapshot = () => main.evaluate(element => {
+    const clone = element.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('time').forEach(timer => timer.remove());
+    return clone.textContent?.replace(/\s+/g, ' ').trim();
+  });
+  const baseline = await snapshot();
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  game.game.script.definition.characterIds.push('deviant');
+  await upload(page, game);
+  await page.getByRole('button', {name:'마도서 이어 쓰기', exact:true}).click();
+  await expect(main).toBeVisible();
+  await expect.poll(snapshot).toBe(baseline);
+  await page.reload();
+  await expect(main).toBeVisible();
+  await expect.poll(snapshot).toBe(baseline);
+  expect(errors).toEqual([]);
+});
