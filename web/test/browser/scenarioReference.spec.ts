@@ -108,3 +108,48 @@ test('installed production assets can create the first PDF while offline',async(
   expect(pdf.getTitle()).toBe('쀍의 마을');
   await expect(page.locator('.scenarioReferencePdfCanvas')).toHaveCount(pdf.getPageCount());
 });
+
+test('Deviant can be selected, saved and printed as a Traveller without entering game setup', async ({page}, info) => {
+  await upload(page, scenario([...mixed, 'deviant'], '괴짜와 함께'));
+  await page.getByRole('button', {name:'← 밤 행동 순서로 돌아가기'}).click();
+  await page.getByRole('button', {name:'← 캐릭터 설정으로', exact:true}).click();
+  await page.getByRole('tab', {name:/여행자/}).click();
+  await expect(page.getByRole('button', {name:'괴짜', exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button', {name:'괴짜', exact:true}).click();
+  await page.getByRole('button', {name:'괴짜', exact:true}).click();
+  await expect(page.getByText('게임 배정 미지원')).toBeVisible();
+  for (const width of [390, 820, 1366]) {
+    await page.setViewportSize({width,height:900});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await page.screenshot({path:info.outputPath(`deviant-editor-${width}.png`),fullPage:true});
+  }
+  await page.getByRole('button', {name:'선택 완료',exact:true}).click();
+  await expect(page.getByRole('region', {name:'첫날 밤 순서',exact:true}).getByText('괴짜')).toHaveCount(0);
+  await page.getByRole('button', {name:'최종 검토로',exact:true}).click();
+  for (const width of [390, 820, 1366]) {
+    await page.setViewportSize({width,height:900});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await expect(page.getByRole('heading', {name:/여행자/})).toBeVisible();
+    await page.screenshot({path:info.outputPath(`deviant-review-${width}.png`),fullPage:true});
+  }
+  const pendingDownload = page.waitForEvent('download');
+  await page.getByRole('button', {name:'시나리오 저장',exact:true}).click();
+  const download = await pendingDownload;
+  const saved = JSON.parse(readFileSync((await download.path())!, 'utf8'));
+  expect(saved.scenario.characterIds).toContain('deviant');
+  await upload(page, saved);
+  await page.getByRole('button',{name:'직업 일람',exact:true}).click();
+  const bytes = await pdfBytes(page);
+  await mkdir(info.outputDir,{recursive:true});
+  await writeFile(info.outputPath('deviant.pdf'),bytes);
+  const pdf = await PDFDocument.load(bytes);
+  const canvases = page.locator('.scenarioReferencePdfCanvas');
+  await expect(canvases).toHaveCount(pdf.getPageCount());
+  for (let i=0;i<pdf.getPageCount();i++) await canvases.nth(i).screenshot({path:info.outputPath(`deviant-pdf-${i+1}.png`)});
+  await page.getByRole('button',{name:'미리보기 닫기'}).click();
+  await page.getByRole('button',{name:'새 마도서 쓰기',exact:true}).click();
+  await expect(page.getByRole('main',{name:'커스텀 시나리오 마도서',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'괴짜',exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'직업 일람',exact:true}).click();
+  expect((await pdfBytes(page)).equals(bytes)).toBe(true);
+});

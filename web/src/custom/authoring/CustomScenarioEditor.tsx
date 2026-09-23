@@ -7,7 +7,7 @@ import { ScenarioSourceSheet } from './ScenarioSourceSheet.js';
 import { CharacterPoolSheet } from './CharacterPoolSheet.js';
 import { FirstNightOrderSheet } from './FirstNightOrderSheet.js';
 import { ScenarioReviewSheet } from './ScenarioReviewSheet.js';
-import { catalog, countsFor, characterPresentation, type KindFilter, type SourceFilter } from './characterPresentation.js';
+import { catalog, scenarioCountsFor as countsFor, characterPresentation, type KindFilter, type SourceFilter } from './characterPresentation.js';
 import './scenarioEditor.css';
 import './nightOrders.css';
 export function CustomScenarioEditor({ onExit, onNewGrimoire, onResume, sourceFile, onSavedGames, active = true }: { onSavedGames?: () => void; active?: boolean; onExit: () => void; sourceFile?: File; onNewGrimoire?: (scenario: ValidatedScenario) => void; onResume?: (game: ImportedGame) => void }) {

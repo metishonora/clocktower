@@ -1,3 +1,4 @@
+import { isCustomScriptCharacter } from '../custom/characterCatalog';
 import { CustomRoleSetup } from './CustomRoleSetup';
 import { useCustomUtilities, type CustomUtilityActions } from './CustomUtilities';
 import { useEffect, useState, useSyncExternalStore } from 'react';
@@ -20,7 +21,7 @@ export function CustomGrimoireSetup({ controller, onNewGame, onNewScenario, onSa
   const complete = rosterComplete(state);
   const assigned = draft.players.filter(player => player.actualCharacter).length;
   const selected = draft.players.find(player => player.seat === selectedSeat);
-  const characters: AssignmentCharacter[] = definition.characterIds.map(id => {
+  const characters: AssignmentCharacter[] = definition.characterIds.filter(isCustomScriptCharacter).map(id => {
     const role = characterPresentation(id)!;
     return { id, name: role.label, kind: role.kind.toLowerCase() as AssignmentCharacter['kind'], image: role.image };
   });

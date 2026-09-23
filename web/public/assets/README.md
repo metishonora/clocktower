@@ -22,3 +22,7 @@ using official `botc-release` revision `f10cd02e3401af227ce406287eaae7bb99a06a42
 Their inclusion does not imply endorsement by The Pandemonium Institute. The in-app notice links to
 the official Community Content policy. The Clocktower app icon under `icons/` is original to this
 project and is not an official Blood on the Clocktower asset.
+
+The reference-only Deviant portrait uses the same pinned official `botc-release`
+revision `f10cd02e3401af227ce406287eaae7bb99a06a42`,
+`resources/characters/snv/deviant.webp` (the neutral Traveller portrait).

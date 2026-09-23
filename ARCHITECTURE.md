@@ -1276,3 +1276,13 @@ consume the same adapter policy for skip/decline presentation.
 Product UI tests that import `grimoire-custom` belong to the integration suite,
 not the standalone `web/test/custom` suite. CI runs the affected UI tests and source
 boundary check explicitly; isolation does not copy official UI to satisfy a test.
+
+### Reference-only scenario characters
+
+The custom editor and public reference document may include explicitly registered
+reference-only characters (currently Deviant). Their build-time catalog is generated
+from `characters/registry.rs` separately from the playable custom catalog. Definitions
+retain these IDs across save/import and game creation, but resolved runtime contexts
+exclude them: they cannot be assigned, acquired, transformed into, or scheduled for
+night actions. The setup distribution and playable character catalog remain unchanged.
+This authoring support does not enable Traveller gameplay or a manual fallback.

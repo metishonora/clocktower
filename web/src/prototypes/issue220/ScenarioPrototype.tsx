@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import manuscript from '../../assets/prototypes/issue-200/continuous-manuscript-dolly-master-v6.png';
 import { CharacterPoolSheet } from '../../custom/authoring/CharacterPoolSheet';
-import { catalog, countsFor, kindOrder, kindLabels, recommendedMinimums, characterPresentation, type KindFilter, type SourceFilter } from '../../custom/authoring/characterPresentation';
+import { catalog, scenarioCountsFor as countsFor, kindOrder, kindLabels, recommendedMinimums, characterPresentation, type KindFilter, type SourceFilter } from '../../custom/authoring/characterPresentation';
 import { OrderPanel, type OrderEntry } from './OrderPanel';
 import orderFixture from './firstNight.fixture.json';
 import '../../custom/authoring/scenarioEditor.css';

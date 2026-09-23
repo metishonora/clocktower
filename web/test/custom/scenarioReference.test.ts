@@ -10,6 +10,7 @@ test('WASM uses the full public pool, has all translations, and distinguishes em
   if (!all.ok) throw Error(all.error.messageKo);
   expect(all.value).toHaveLength(9);
   expect(all.value.every(j => j.reasonKo && j.characterIds.includes(j.sourceCharacterId))).toBe(true);
+  expect(await scenarioJinxes(['deviant'])).toEqual({ ok: true, value: [] });
   expect(await scenarioJinxes(['drunk'])).toEqual({ ok: true, value: [] });
   const pair = await scenarioJinxes(['drunk', 'mathematician']);
   expect(pair.ok && pair.value.map(j => j.id)).toEqual(['drunk--mathematician']);
