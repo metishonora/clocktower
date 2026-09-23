@@ -480,6 +480,8 @@ pub(crate) enum RevealPayload {
         kind: &'static str,
         #[serde(rename = "characterIds")]
         character_ids: Vec<String>,
+        #[serde(rename = "targetPlayer", skip_serializing_if = "Option::is_none")]
+        target_player: Option<RevealPlayer>,
     },
     SeamstressInformation {
         kind: &'static str,

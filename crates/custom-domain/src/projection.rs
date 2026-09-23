@@ -277,6 +277,7 @@ pub(crate) fn system_reveal(
 pub(crate) fn custom_information_reveal(
     action_ref: &FirstNightActionRef,
     result: &crate::model::InformationResult,
+    target_player: Option<crate::contracts::RevealPlayer>,
 ) -> Option<RevealPayload> {
     let FirstNightActionRef::Character { character_id, .. } = action_ref else {
         return None;
@@ -309,6 +310,7 @@ pub(crate) fn custom_information_reveal(
             Some(RevealPayload::DreamerInformation {
                 kind: "dreamerInformation",
                 character_ids: character_ids.clone(),
+                target_player,
             })
         }
         _ => None,
@@ -349,7 +351,7 @@ pub(crate) fn event_reveal(
             })
         }
         Some(crate::contracts::CustomActionResult::Information { value }) => {
-            custom_information_reveal(action_ref, value)
+            custom_information_reveal(action_ref, value, None)
         }
         Some(crate::contracts::CustomActionResult::InformationDelivered {
             information, ..
@@ -487,7 +489,11 @@ pub(crate) fn event_reveal(
                     same_alignment: *value,
                 })
             } else {
-                custom_information_reveal(action_ref, &information.delivered_result)
+                custom_information_reveal(
+                    action_ref,
+                    &information.delivered_result,
+                    information.target_player_ids.first().and_then(|id| reveal_player(id)),
+                )
             }
         }
         Some(crate::contracts::CustomActionResult::MutantExecution {

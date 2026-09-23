@@ -1,3 +1,4 @@
+import type { PublicInstruction } from './publicInstruction';
 import {reviewedAction,type HandoffStep} from './actionResult';
 import {actionAdapter,revealDisposition} from './actions/registry';
 import {registrationPresentation,type RegistrationSelections} from './registrationPresentation.js';
@@ -32,7 +33,7 @@ export type FirstNightState = {
   setupDistribution?:SetupDistributionResult; setupDistributionPending?:boolean; setupDistributionError?:string;
   handoff?: {stage:'editing'|'result'|'notification';step:HandoffStep;result?:import('../core/types').CustomActionResult;playerIds:string[];file:GameFileV5;notifications:RevealPayload[];notificationIndex:number};
   inputDraft: CurrentInputDraft; selecting: boolean; selectionRevision:number; selectionKind?: 'action'|'delivery';
-  activeReveal?: {origin:'current'|'history'|'notification';identity:string;payload:RevealPayload};
+  activeReveal?: {origin:'current'|'history'|'notification';identity:string;payload:RevealPayload} | {origin:'instruction';identity:string;payload:PublicInstruction};
   replay: ReplayState; file: GameFileV5; selectedStepId?: string; busy: boolean; error?: string;
   saveStatus: 'saved' | 'saving' | 'failed'; lastSavedEventCount: number;
   proposal?: Proposal; proposedFile?: GameFileV5; reveal?: RevealPayload; public: boolean; revealShown: boolean;
@@ -350,6 +351,11 @@ export class FirstNightController {
     await this.prepare({input},candidate);
     if(this.step?.id===regularStep&&!this.state.replay.gameEnd)this.patch({inputDraft:regular});
     this.inputIdentity=actionInputIdentity(this.state.file,this.step);
+  };
+  showBarberInstruction = () => {
+    const step=this.step;
+    if(this.state.busy||this.state.public||this.hasCheckpoint||this.state.saveStatus!=='saved'||step?.actionRef?.kind!=='character'||step.actionRef.characterId!=='barber'||step.actionRef.actionId!=='swapCharacters')return;
+    this.patch({public:true,activeReveal:{origin:'instruction',identity:step.id,payload:{kind:'barberInstruction'}}});
   };
   showPayload = (payload: RevealPayload) => { if (!this.state.busy && !this.state.public) this.patch({ reveal: payload, public: true, activeReveal:{origin:'notification',identity:JSON.stringify(payload),payload} }); };
   history = async (eventId: string) => {

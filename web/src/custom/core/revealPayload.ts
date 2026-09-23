@@ -117,7 +117,8 @@ export function isRoleInformationRevealPayload(value: unknown): value is RoleInf
       && hasExactKeys(payload, ["characterId", "kind", "revealedCharacterId", "targetPlayer"]);
   }
   if (payload.kind === "dreamerInformation") {
-    return hasExactKeys(payload, ["characterIds", "kind"])
+    return hasExactKeys(payload, payload.targetPlayer === undefined ? ["characterIds", "kind"] : ["characterIds", "kind", "targetPlayer"])
+      && (payload.targetPlayer === undefined || isRevealPlayer(payload.targetPlayer))
       && Array.isArray(payload.characterIds) && payload.characterIds.length === 2
       && payload.characterIds.every((id) => typeof id === "string" && characterIds.has(id));
   }

@@ -28,7 +28,13 @@ it('a late Barber offers only legal counts, a Core-projected chooser and sequent
   const i=d.otherNightOrder.findIndex(a=>a.kind==='character'&&a.characterId==='barber');const [barber]=d.otherNightOrder.splice(i,1);d.otherNightOrder.splice(1,0,barber);
  });
  await choose(c,['p1']);await choose(c,['p6']);expect(c.step?.actionRef?.actionId).toBe('swapCharacters');
- c.finishHandoff();c.beginSelection();c.togglePlayer('p1');expect(c.selectionReady).toBe(false);c.togglePlayer('p3');expect(c.selectionReady).toBe(true);
+ c.showBarberInstruction();expect(c.getSnapshot().public).toBe(false); // Finish the attack result first.
+ c.finishHandoff();await vi.waitFor(()=>expect(c.getSnapshot().saveStatus).toBe('saved'));
+ const before=c.getSnapshot().file,stepId=c.step?.id;
+ c.showBarberInstruction();expect(c.getSnapshot().activeReveal).toMatchObject({origin:'instruction',payload:{kind:'barberInstruction'}});
+ expect(c.getSnapshot().public).toBe(true);expect(c.getSnapshot().file).toBe(before);
+ c.conceal();expect(c.getSnapshot().public).toBe(false);expect(c.getSnapshot().activeReveal).toBeUndefined();expect(c.step?.id).toBe(stepId);expect(c.getSnapshot().file).toBe(before);
+ c.beginSelection();c.togglePlayer('p1');expect(c.selectionReady).toBe(false);c.togglePlayer('p3');expect(c.selectionReady).toBe(true);
  expect(c.chooserPlayerId).toBe('p8');await c.acceptSelection();expect(c.getSnapshot().error).toBeUndefined();
  expect(c.getSnapshot().replay.players[0].actualCharacter).toBe('virgin');expect(c.getSnapshot().handoff?.notifications).toHaveLength(2);
  c.finishHandoff();c.showNotification();c.conceal();expect(c.getSnapshot().handoff?.notificationIndex).toBe(1);c.showNotification();c.conceal();expect(c.getSnapshot().handoff).toBeUndefined();c.dispose();

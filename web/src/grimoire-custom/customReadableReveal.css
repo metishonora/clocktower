@@ -1,0 +1,56 @@
+/* Reuse the custom grimoire's BMR role palette; no prototype green surfaces. */
+.bmrRevealBackdrop.customReadableBackdrop { padding:20px; overflow:auto; align-items:safe center; }
+.customReadableReveal { display:grid; width:min(980px,100%); min-height:min(860px,calc(100dvh - 40px)); grid-template-rows:auto 1fr auto; gap:16px; color:var(--role-ink); }
+.customReadableReveal button { font:inherit; cursor:pointer; }
+.customReadableReveal button:focus-visible { outline:2px solid var(--role-accent); outline-offset:3px; }
+.customRevealSizeControls { display:flex; gap:2px; justify-self:start; align-items:center; }
+.customRevealSizeControls button { width:36px; height:36px; border:0; border-radius:8px; color:var(--role-muted); background:transparent; font-size:20px; }
+.customRevealSizeControls button:hover:not(:disabled) { background:var(--role-card); }
+.customRevealSizeControls button:disabled { opacity:.3; cursor:default; }
+.customRevealSrOnly { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0; }
+.bmrRoleReveal.customReadablePanel { width:100%; min-height:0; padding:30px 32px; gap:26px; align-content:center; text-align:center; }
+.bmrRoleReveal.customReadablePanel h1 { margin:0; color:var(--role-accent); font-size:calc(clamp(21px,2vw,26px) * var(--reveal-scale)); line-height:1.3; }
+.bmrRoleReveal.customReadablePanel p { margin:0; color:var(--role-ink); font-size:calc(clamp(23px,3vw,34px) * var(--reveal-scale)); line-height:1.35; word-break:keep-all; overflow-wrap:anywhere; }
+.customReadableSection { display:grid; justify-items:center; gap:14px; min-width:0; }
+.customReadableSection + .customReadableSection { padding-top:24px; border-top:1px solid var(--role-line); }
+.customRevealRoleIcon { justify-self:center; width:calc(76px * var(--reveal-scale)); height:calc(76px * var(--reveal-scale)); object-fit:contain; }
+.customReadableCards { display:flex; width:100%; flex-wrap:wrap; justify-content:center; gap:14px; }
+.customReadableCard { display:grid; width:calc(168px * var(--reveal-scale)); min-height:calc(132px * var(--reveal-scale)); padding:16px 10px; gap:10px; justify-items:center; align-content:center; border:1px solid var(--role-line); border-radius:20px; background:var(--role-card); }
+.customReadableCard > span { color:var(--role-accent); font-size:calc(28px * var(--reveal-scale)); font-weight:750; line-height:1.15; }
+.customReadableCard > strong { max-width:100%; font-size:calc(32px * var(--reveal-scale)); line-height:1.2; overflow-wrap:anywhere; }
+.customReadableCard img { width:calc(76px * var(--reveal-scale)); height:calc(76px * var(--reveal-scale)); object-fit:contain; }
+.customReadablePair { display:grid; width:min(100%,calc(440px * var(--reveal-scale))); grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:12px; align-items:center; justify-self:center; }
+.customReadablePair .customReadableCard { width:100%; height:100%; }
+.customReadablePair b { color:var(--role-accent); font-size:calc(18px * var(--reveal-scale)); }
+.bmrRoleReveal.customReadablePanel .customReadableNumber { color:var(--role-accent); font-size:calc(clamp(80px,12vw,128px) * var(--reveal-scale)); line-height:1.15; }
+.bmrRoleReveal.customReadablePanel .customReadableAnswer { color:var(--role-accent); font-size:calc(clamp(32px,5vw,56px) * var(--reveal-scale)); line-height:1.25; word-break:keep-all; overflow-wrap:anywhere; }
+.bmrRoleReveal.customReadablePanel .customRevealGoldAccent, .bmrRoleReveal.customReadablePanel .customRevealGoldAccent strong { color:var(--role-accent); }
+.bmrRoleReveal.customReadablePanel .customRevealEvilAccent, .bmrRoleReveal.customReadablePanel .customReadableAlignment.evil { color:#ff8894; }
+.bmrRoleReveal.customReadablePanel .customReadableAlignment.good { color:#9fd8f5; }
+.customReadableAlignment { justify-self:center; padding:8px 20px; border:1px solid currentColor; border-radius:999px; font-size:calc(26px * var(--reveal-scale)); }
+.customReadableReveal .customReadableClose { justify-self:center; max-width:100%; min-height:52px; padding:12px 24px; border:1px solid var(--role-accent); border-radius:999px; color:#2c1608; background:linear-gradient(135deg,#f3d78f,#d7a54d); font-size:calc(20px * var(--reveal-scale)); font-weight:900; line-height:1.3; }
+.customReadableTwins { width:min(100%,calc(560px * var(--reveal-scale))); margin-top:0; justify-self:center; align-items:stretch; }
+.customReadableTwins > b { align-self:center; font-size:calc(28px * var(--reveal-scale)); }
+.customReadableTwins .evilTwinRevealIdentity { min-height:calc(290px * var(--reveal-scale)); padding:calc(54px * var(--reveal-scale)) 14px 24px; gap:16px; }
+.customReadableTwins .evilTwinRevealIdentity > span { color:var(--role-ink); font-size:calc(24px * var(--reveal-scale)); line-height:1.3; overflow-wrap:anywhere; }
+.customReadableTwins .evilTwinRevealIdentity > img { width:calc(110px * var(--reveal-scale)); height:calc(110px * var(--reveal-scale)); max-width:100%; }
+.customReadableTwins .evilTwinRevealIdentity > strong { font-family:inherit; font-size:calc(26px * var(--reveal-scale)); line-height:1.3; word-break:keep-all; overflow-wrap:anywhere; }
+.customReadableTwins .evilTwinRevealIdentity > small { width:calc(30px * var(--reveal-scale)); height:calc(30px * var(--reveal-scale)); font-size:calc(16px * var(--reveal-scale)); }
+@media(max-width:620px) {
+ .bmrRevealBackdrop.customReadableBackdrop { padding:10px; }
+ .customReadableReveal { min-height:calc(100dvh - 20px); gap:12px; }
+ .bmrRoleReveal.customReadablePanel { padding:22px 14px; gap:22px; border-radius:24px; }
+ .customReadableCards { gap:8px; }
+ .customReadableCard { width:calc(112px * var(--reveal-scale)); min-height:calc(108px * var(--reveal-scale)); padding:12px 6px; border-radius:16px; }
+ .customReadableCard > span, .customReadableCard > strong { font-size:calc(24px * var(--reveal-scale)); }
+ .customReadableCard img { width:calc(60px * var(--reveal-scale)); height:calc(60px * var(--reveal-scale)); }
+ .customReadablePair { gap:7px; }
+ .customReadablePair b { font-size:calc(15px * var(--reveal-scale)); }
+ .customReadableReveal .customReadableClose { font-size:calc(18px * var(--reveal-scale)); padding:12px 18px; }
+ .customReadableTwins { grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr); gap:7px; }
+ .customReadableTwins > b { font-size:28px; }
+ .customReadableTwins .evilTwinRevealIdentity { min-height:calc(250px * var(--reveal-scale)); padding:calc(48px * var(--reveal-scale)) 8px 20px; gap:12px; }
+ .customReadableTwins .evilTwinRevealIdentity > span { font-size:calc(20px * var(--reveal-scale)); }
+ .customReadableTwins .evilTwinRevealIdentity > img { width:calc(84px * var(--reveal-scale)); height:calc(84px * var(--reveal-scale)); }
+ .customReadableTwins .evilTwinRevealIdentity > strong { font-size:calc(21px * var(--reveal-scale)); }
+}
