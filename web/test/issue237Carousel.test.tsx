@@ -268,13 +268,22 @@ it.each([false,true])('midgame Marionette stays in progress with isolated saved 
  expect(ns[1]).toMatchObject({kind:'marionetteInformation',recipientPlayer:{playerId:'p5'}});
  await vi.waitFor(()=>expect(controller.getSnapshot().public).toBe(true));
  expect(controller.getSnapshot().activeReveal?.payload).toMatchObject({kind:'characterChange',characterId:'nightwatchman'});
- expect(within(screen.getByRole('dialog',{name:'플레이어 정보'})).queryByText('꼭두각시입니다')).toBeNull();
+ expect(within(screen.getByRole('dialog',{name:'플레이어 정보'})).queryByText('꼭두각시입니다.')).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'확인했으면 눈을 감으세요'}));
  expect(controller.getSnapshot().public).toBe(false);
  expect(screen.getByRole('button',{name:'악마에게 공개'})).toBeDefined();
  expect(screen.getByRole('button',{name:'진행'}).className).toContain('active');
  fireEvent.click(screen.getByRole('button',{name:'악마에게 공개'}));
  expect(controller.getSnapshot().activeReveal?.payload).toMatchObject({kind:'marionetteInformation',recipientPlayer:{playerId:'p5'}});
+ const demonNotice=screen.getByRole('dialog',{name:'플레이어 정보'});
+ expect(within(demonNotice).getByAltText('꼭두각시')).toBeDefined();
+ expect(within(demonNotice).getByText('2번')).toBeDefined();
+ expect(within(demonNotice).getByText('P2')).toBeDefined();
+ expect(within(demonNotice).getByText('꼭두각시입니다.')).toBeDefined();
+ expect(within(demonNotice).queryByText('P5')).toBeNull();
+ expect(within(demonNotice).queryByText('악마 정보')).toBeNull();
+ expect(demonNotice.querySelector('.customReadablePanel button')).toBeNull();
+
  fireEvent.click(screen.getByRole('button',{name:'확인했으면 눈을 감으세요'}));
  expect(controller.getSnapshot().handoff).toBeUndefined();
  view.unmount();controller.dispose();

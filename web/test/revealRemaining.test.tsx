@@ -19,6 +19,7 @@ const cases:Array<{name:string;payload:RevealPayload;copy:string;people?:string[
  {name:'pixie',payload:{kind:'learnedCharacter',sourceCharacterId:'pixie',characterId:'monk'},copy:'이 직업이 게임에 있습니다.',role:'수도사',icon:'pixie'},
  ...[false,true].map(recipientIsSource=>({name:`boffin-${recipientIsSource}`,payload:{kind:'grantedAbilityInformation' as const,recipientPlayer:recipient,sourceCharacterId:'boffin' as const,characterId:'monk',recipientIsSource},copy:recipientIsSource?'악마에게 부여한 능력':'과학자가 준 능력',role:'수도사',icon:'boffin'})),
  {name:'preacher',payload:{kind:'preacherInformation',recipientPlayer:recipient},copy:'전도사가 당신을 선택했습니다.',icon:'preacher'},
+ {name:'marionette-notification',payload:{kind:'marionetteInformation',recipientPlayer:recipient,marionettePlayer:people[0]},copy:'꼭두각시입니다.',people:['민지'],icon:'marionette'},
  {name:'demon-marionette',payload:{kind:'demonInformation',minionPlayers:[people[0]],marionettePlayers:[people[1]],bluffCharacterIds:['monk','librarian','saint']},copy:'이 직업들은 이번 게임에 없습니다.',people:['민지','서윤']},
 ];
 const evidence:Array<{name:string;html:string}>=[];
@@ -36,6 +37,7 @@ it.each(cases)('$name exposes only the delivered information in the approved rea
  if(role)expect(cards.some(card=>card.querySelector('img')&&card.querySelector('strong')?.textContent===role)).toBe(true);
  const heading=panel.querySelector('.customRevealRoleIcon');
  if(icon)expect(heading?.getAttribute('src')?.toLowerCase()).toContain(icon.toLowerCase());else expect(heading).toBeNull();
+ if(name==='marionette-notification'){expect(cards).toHaveLength(1);expect(panel.textContent).not.toContain('악마 정보');expect(panel.textContent).not.toContain('이 직업들은');expect(panel.querySelector('.customReadableMarionetteCard')).toBeNull();}
  if(name==='balloonist'){expect(panel.querySelectorAll('p')).toHaveLength(0);expect(panel.querySelectorAll('img')).toHaveLength(1);}
  expect(panel.querySelector('button')).toBeNull();
  const close=screen.getByRole('button',{name:'확인했으면 눈을 감으세요'});expect(document.activeElement).toBe(close);

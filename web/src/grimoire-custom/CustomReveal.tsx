@@ -66,7 +66,6 @@ export function CustomReveal({ payload, onClose }: { payload: RevealPayload | Pu
   return createPortal(<BmrRevealSurface variant={'kind' in payload && ['minionInformation','demonInformation'].includes(payload.kind)?'team':'role'} dialogLabel="플레이어 정보" className={revealClass(payload)} closeLabel="확인했으면 눈을 감으세요" closeButtonRef={close} onClose={onClose}><RevealContent payload={payload} /></BmrRevealSurface>, document.body);
 }
 function RevealContent({payload:p}:{payload:RevealPayload}) {
- if('kind' in p&&p.kind==='marionetteInformation')return <>{revealAssets.icon('marionette','tbRevealIcon')}<h2>{p.marionettePlayer.seat}번 {p.marionettePlayer.name}</h2><p>꼭두각시입니다</p></>;
  if ('kind' in p) return null; // Readable roles and Spy are handled above; mutantExecution is Storyteller-only.
  return <RoleRevealContent payload={p} assets={revealAssets} onClose={()=>undefined}/>;
 }
