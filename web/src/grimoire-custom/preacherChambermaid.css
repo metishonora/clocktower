@@ -1,8 +1,1 @@
-.customPreacherReveal h1 {word-break:keep-all;text-wrap:balance}
 .customChambermaidTask .snvCurrentStepRoleName {font-size:clamp(30px,6vw,52px);word-break:keep-all}
-.bmrRoleReveal.customChambermaidReveal .customWakeTargets {margin:0 auto 28px;color:var(--role-ink);font:600 clamp(24px,4.5vw,32px)/1.5 system-ui,sans-serif;text-wrap:balance}
-.customWakeTargets > span {display:inline-block}
-.customChambermaidReveal .customWakeNumber {margin:0;color:var(--role-ink);font:clamp(80px,18vw,112px)/1.1 Georgia,serif}
-.customWakeNumber > span {margin-left:.12em;font:600 .55em/1 system-ui,sans-serif}
-.bmrRoleReveal.customChambermaidReveal .customWakeOutcome {margin:12px 0 0;color:var(--role-ink);font:600 clamp(28px,5vw,36px)/1.3 system-ui,sans-serif}
-.customChambermaidReveal > button {margin-top:40px;font-size:clamp(16px,3.5vw,20px)}
