@@ -6,7 +6,7 @@ export function customPlayerTokens(reminders:readonly Omit<AutomaticReminder,'so
   return reminders.map((token,index)=>{
     const granted=token.characterId==='boffin'&&token.tokenId==='grantedAbility';
     const role=characterPresentation(granted?token.label:token.characterId);
-    const label: string|undefined=({pixie:{mad:'집착',hasAbility:'능력 가짐'},nightwatchman:{noAbility:'능력 사용함'},balloonist:{know:'알아냄'},marionette:{isTheMarionette:'꼭두각시입니다'}} as Record<string,Record<string,string>>)[token.characterId]?.[token.tokenId];
+    const label: string|undefined=({preacher:{noAbility:'능력 없음'},pixie:{mad:'집착',hasAbility:'능력 가짐'},nightwatchman:{noAbility:'능력 사용함'},balloonist:{know:'알아냄'},marionette:{isTheMarionette:'꼭두각시입니다'}} as Record<string,Record<string,string>>)[token.characterId]?.[token.tokenId];
     return {
       instanceId:`${token.playerId}:${token.characterId}:${token.tokenId}:${index}`,
       label:granted?'과학자가 부여함':label ?? labels[token.tokenId] ?? token.label,

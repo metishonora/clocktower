@@ -1,8 +1,16 @@
 //! Carousel policies. Common flow consumes typed projections, never Character names.
 use crate::{effects::effective, state::CustomGameFacts};
 
+pub(super) fn wakes_actor(action: &crate::contracts::FirstNightActionRef) -> bool {
+    matches!(action, crate::contracts::FirstNightActionRef::Character {character_id, action_id}
+        if matches!((character_id.as_str(),action_id.as_str()),
+            ("preacher", "choosePlayer") | ("boffin", "grantAbility") |
+            ("balloonist", "learnPlayer") | ("pixie", "learnTownsfolk") | ("nightwatchman", "choosePlayer")))
+}
+
 pub(super) fn custom_registry_entries() -> Vec<(&'static str, crate::model::CharacterKind)> {
     vec![
+        ("preacher", crate::model::CharacterKind::Townsfolk),
         ("zealot", crate::model::CharacterKind::Outsider),
         ("nightwatchman", crate::model::CharacterKind::Townsfolk),
         ("pixie", crate::model::CharacterKind::Townsfolk),
@@ -29,6 +37,359 @@ use crate::{
 
 fn invalid() -> CoreError {
     ErrorKind::InvalidStepInput.into_error()
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct PreacherSelection {
+    pub(crate) source: crate::model::AbilityUseRef,
+    pub(crate) source_identity: crate::model::AbilityInstanceId,
+    pub(crate) target: crate::model::AbilityUseRef,
+    pub(crate) event_id: String,
+}
+pub(crate) fn apply_preacher(
+    f: &mut CustomGameFacts,
+    event: &crate::event::ValidatedCustomEvent,
+) -> Result<(), CoreError> {
+    if let CustomActionResult::PreacherSelected {
+        target_player_id,
+        effective: true,
+    } = &event.payload().result
+    {
+        let source = event.occurrence()?.ability_use.ok_or_else(invalid)?;
+        let source_identity = f
+            .player(&source.owner_player_id)
+            .ok_or_else(invalid)?
+            .ability_instance
+            .id
+            .clone();
+        let target = identity_ability(f.player(target_player_id).ok_or_else(invalid)?);
+        if !f
+            .preacher_selections
+            .iter()
+            .any(|s| s.source == source && s.target == target)
+        {
+            f.preacher_selections.push(PreacherSelection {
+                source,
+                source_identity,
+                target,
+                event_id: event.id().into(),
+            });
+        }
+    }
+    Ok(())
+}
+pub(crate) fn expire_preacher(f: &mut CustomGameFacts) {
+    let keep = f
+        .preacher_selections
+        .iter()
+        .map(|s| {
+            crate::reducer::current_ability_instance(f, &s.source)
+                && f.player(&s.source.owner_player_id)
+                    .is_some_and(|p| p.alive && p.ability_instance.id == s.source_identity)
+                && f.player(&s.target.owner_player_id)
+                    .is_some_and(|p| p.ability_instance.id == s.target.ability_instance_id)
+        })
+        .collect::<Vec<_>>();
+    let mut i = 0;
+    f.preacher_selections.retain(|_| {
+        let k = keep[i];
+        i += 1;
+        k
+    });
+}
+/// Suppression is not impairment, and does not destroy ownership/spent-use history.
+pub(crate) fn preacher_suppressed(
+    f: &CustomGameFacts,
+    ability: &crate::model::AbilityUseRef,
+) -> bool {
+    f.preacher_selections.iter().any(|s| {
+        s.target.owner_player_id == ability.owner_player_id
+            && f.player(&s.target.owner_player_id)
+                .is_some_and(|p| p.ability_instance.id == s.target.ability_instance_id)
+            && crate::reducer::current_ability_instance(f, &s.source)
+            && f.player(&s.source.owner_player_id)
+                .is_some_and(|p| p.alive && p.ability_instance.id == s.source_identity)
+            && !crate::effects::ability_impaired(f, &s.source)
+            && grant_enabled(f, &s.source)
+    })
+}
+
+struct Preacher {
+    action_ref: FirstNightActionRef,
+}
+impl Preacher {
+    fn occurrences(&self, c: &ActionContext<'_>) -> Result<Vec<ActionOccurrence>, CoreError> {
+        let f = facts(c)?;
+        let mut os = c
+            .rule_service
+            .try_owned_instances(&self.action_ref)?
+            .into_iter()
+            .map(|i| ActionOccurrence::character(self.action_ref.clone(), i.ability_use))
+            .collect::<Result<Vec<_>, _>>()?;
+        os.extend(c.rule_service.simulation_occurrences(&self.action_ref)?);
+        os.retain(|o| {
+            o.actor_player_id()
+                .and_then(|id| f.player(id))
+                .is_some_and(|p| p.alive)
+        });
+        Ok(os)
+    }
+    fn variants(
+        &self,
+        c: &ActionContext<'_>,
+        target: &str,
+    ) -> Result<Vec<Vec<crate::model::RegistrationJudgment>>, CoreError> {
+        let f = facts(c)?;
+        let d = c.rule_service.definition().ok_or_else(invalid)?;
+        let mut variants = vec![vec![]];
+        for value in [
+            crate::model::RegistrationValue::Minion,
+            crate::model::RegistrationValue::Townsfolk,
+        ] {
+            let js = vec![crate::model::RegistrationJudgment {
+                scope: None,
+                player_id: target.into(),
+                registered_as: value,
+                character_id: None,
+            }];
+            if super::trouble_brewing::registered_identity(d, f, target, &js).is_ok() {
+                variants.push(js);
+            }
+        }
+        Ok(variants)
+    }
+    fn step(&self, c: &ActionContext<'_>, o: &ActionOccurrence) -> Result<PhaseStep, CoreError> {
+        let f = facts(c)?;
+        let d = c.rule_service.definition().ok_or_else(invalid)?;
+        let mut step = base_step(c, o, "preacher")?;
+        step.required_input.kind = RequiredInputKind::PlayerIds;
+        step.required_input.target = Some(InputTarget::Player);
+        step.required_input.min_selections = Some(1);
+        step.required_input.max_selections = Some(1);
+        step.required_input.allowed_player_ids =
+            Some(f.players.iter().map(|p| p.id.clone()).collect());
+        let mut checks = vec![];
+        for p in &f.players {
+            let truth = InformationResult::Boolean {
+                value: d.character_kind(&p.actual_character)
+                    == Some(crate::model::CharacterKind::Minion),
+            };
+            let choices = self
+                .variants(c, &p.id)?
+                .into_iter()
+                .map(|js| {
+                    let value = super::trouble_brewing::registered_identity(d, f, &p.id, &js)?.1
+                        == crate::model::CharacterKind::Minion;
+                    Ok(TargetInformationChoice {
+                        result: InformationResult::Boolean { value },
+                        is_computed: js.is_empty(),
+                        registration_judgments: js,
+                    })
+                })
+                .collect::<Result<Vec<_>, CoreError>>()?;
+            checks.push(TargetInformationCheck {
+                number_constraint: None,
+                wake_audit: vec![],
+                fixed_character_id: None,
+                target_player_ids: vec![p.id.clone()],
+                computed_result: truth,
+                choices,
+            });
+        }
+        step.information_prompt = Some(InformationPrompt {
+            computed_result: None,
+            delivery_mode: InformationDeliveryMode::Selectable,
+            active_reasons: vec![],
+            registration_candidate_player_ids: vec![],
+            number_choices: vec![],
+            number_constraint: None,
+            boolean_choices: vec![],
+            setup_info_registration_options: vec![],
+            target_checks: checks,
+            mathematician_audit: None,
+        });
+        Ok(step)
+    }
+    fn resolve(
+        &self,
+        c: &ActionContext<'_>,
+        o: &ActionOccurrence,
+        input: &ActionInput,
+        event: &str,
+    ) -> Result<(CustomActionResult, CustomFactChanges), CoreError> {
+        if !self.occurrences(c)?.contains(&o.clone().in_night(1)) {
+            return Err(invalid());
+        }
+        let f = facts(c)?;
+        let d = c.rule_service.definition().ok_or_else(invalid)?;
+        let targets = crate::information::targets_with_policy(
+            &input.input,
+            1,
+            o.actor_player_id().ok_or_else(invalid)?,
+            true,
+        )?;
+        let target = f.player(&targets[0]).ok_or_else(invalid)?;
+        if !self
+            .variants(c, &target.id)?
+            .contains(&input.registration_judgments)
+        {
+            return Err(invalid());
+        }
+        let minion = super::trouble_brewing::registered_identity(
+            d,
+            f,
+            &target.id,
+            &input.registration_judgments,
+        )?
+        .1 == crate::model::CharacterKind::Minion;
+        if input
+            .delivered_result
+            .as_ref()
+            .is_some_and(|r| *r != InformationResult::Boolean { value: minion })
+        {
+            return Err(invalid());
+        }
+        let works = o.ability_use.as_ref().is_some_and(|s| effective(f, s));
+        let affected =
+            minion && !crate::jinxes::production()?.immune_to("preacher", &target.actual_character);
+        let notifications = if works && affected {
+            vec![PlayerNotification::Preacher {
+                recipient_id: target.id.clone(),
+            }]
+        } else {
+            vec![]
+        };
+        let audit = if affected && !works {
+            super::sects_and_violets::night_impairment_failure(
+                f,
+                o,
+                event,
+                FailedEffect::PreacherSuppression,
+            )
+        } else {
+            vec![]
+        };
+        Ok((
+            if o.simulation_source.is_some() {
+                CustomActionResult::Simulation {
+                    information: None,
+                    spent: false,
+                }
+            } else {
+                CustomActionResult::PreacherSelected {
+                    target_player_id: target.id.clone(),
+                    effective: works && affected,
+                }
+            },
+            CustomFactChanges::default()
+                .with_player_notifications(notifications)
+                .with_audit(audit),
+        ))
+    }
+}
+fn preacher_registration() -> RegisteredAction {
+    let action_ref = FirstNightActionRef::Character {
+        character_id: "preacher".into(),
+        action_id: "choosePlayer".into(),
+    };
+    RegisteredAction {
+        spec: ActionSpec {
+            action_ref: action_ref.clone(),
+            prerequisites: vec![],
+            continuation_sources: vec![
+                crate::first_night::execution::DependencySource::ImmediateOrigin,
+            ],
+            participates_in_first_night: true,
+            required_input_kind: RequiredInputKind::PlayerIds,
+            support: PhaseStepSupport::Automated,
+        },
+        handler: Box::new(Preacher { action_ref }),
+    }
+}
+impl ActionHandler for Preacher {
+    fn action_ref(&self) -> &FirstNightActionRef {
+        &self.action_ref
+    }
+    fn project(&self, _: &ActionSpec, c: &ActionContext<'_>) -> Result<Vec<PhaseStep>, CoreError> {
+        self.occurrences(c)?
+            .iter()
+            .map(|o| self.step(c, o))
+            .collect()
+    }
+    fn propose(
+        &self,
+        s: &ActionSpec,
+        c: &ActionContext<'_>,
+        o: &ActionOccurrence,
+        input: &StepInput,
+    ) -> Result<ActionEventDraft, CoreError> {
+        self.propose_input(
+            s,
+            c,
+            o,
+            &ActionInput {
+                input: input.clone(),
+                delivered_result: None,
+                registration_judgments: vec![],
+            },
+        )
+    }
+    fn propose_input(
+        &self,
+        _: &ActionSpec,
+        c: &ActionContext<'_>,
+        o: &ActionOccurrence,
+        input: &ActionInput,
+    ) -> Result<ActionEventDraft, CoreError> {
+        let (result, _) = self.resolve(c, o, input, c.event_id)?;
+        Ok(ActionEventDraft::Custom(CustomActionEventDraft {
+            step_id: o.step_id()?,
+            action_ref: self.action_ref.clone(),
+            ability_use: o.ability_use.clone(),
+            simulation_source: o.simulation_source.clone(),
+            follow_up_cause: o.follow_up_cause.clone(),
+            action_cause: o.action_cause.clone(),
+            input: input.input.clone(),
+            delivered_result: input.delivered_result.clone(),
+            registration_judgments: input.registration_judgments.clone(),
+            result,
+        }))
+    }
+    fn validate_event(
+        &self,
+        s: &ActionSpec,
+        c: &ActionContext<'_>,
+        o: &ActionOccurrence,
+        draft: &ActionEventDraft,
+    ) -> Result<CustomFactChanges, CoreError> {
+        self.validate_event_with_id(s, c, o, draft, c.event_id)
+    }
+    fn validate_event_with_id(
+        &self,
+        _: &ActionSpec,
+        c: &ActionContext<'_>,
+        o: &ActionOccurrence,
+        draft: &ActionEventDraft,
+        event: &str,
+    ) -> Result<CustomFactChanges, CoreError> {
+        let ActionEventDraft::Custom(d) = draft else {
+            return Err(invalid());
+        };
+        let (result, changes) = self.resolve(
+            c,
+            o,
+            &ActionInput {
+                input: d.input.clone(),
+                delivered_result: d.delivered_result.clone(),
+                registration_judgments: d.registration_judgments.clone(),
+            },
+            event,
+        )?;
+        if result != d.result {
+            return Err(invalid());
+        }
+        Ok(changes)
+    }
 }
 
 pub(crate) fn receives_minion_information(character: &str) -> bool {
@@ -407,6 +768,56 @@ pub(crate) fn jinx_registrations() -> Vec<crate::jinxes::RegisteredJinx> {
             )],
         },
     ]
+}
+pub(crate) fn product_jinx_registrations() -> Vec<(crate::jinxes::RegisteredJinx, &'static str)> {
+    use crate::jinxes::{RegisteredJinx, Rule};
+    vec![
+        (
+            RegisteredJinx {
+                id: "boffin--preacher",
+                characters: ["boffin", "preacher"],
+                evidence: &["issue251_boffin_preacher"],
+                rules: vec![Rule::ForbidGrantedAbility(|source, ability| {
+                    source == "boffin" && ability == "preacher"
+                })],
+            },
+            "과학자는 전도사 능력을 줄 수 없습니다.",
+        ),
+        (
+            RegisteredJinx {
+                id: "marionette--preacher",
+                characters: ["marionette", "preacher"],
+                evidence: &["issue251_marionette_preacher"],
+                rules: vec![Rule::EffectImmunity(|source, target| {
+                    source == "preacher" && target == "marionette"
+                })],
+            },
+            "꼭두각시는 전도사 능력에 영향 받지 않습니다.",
+        ),
+    ]
+}
+pub(crate) fn may_acquire(
+    f: &CustomGameFacts,
+    source: &crate::model::AbilityUseRef,
+    character: &str,
+) -> bool {
+    !(source.character_id == "boffin" || boffin_granted(f, source))
+        || crate::jinxes::production()
+            .is_ok_and(|j| !j.forbids_granted_ability("boffin", character))
+}
+pub(crate) fn acquisition_choices(
+    d: &super::ResolvedScriptContext,
+    f: &CustomGameFacts,
+    o: &ActionOccurrence,
+) -> Vec<String> {
+    let source = o
+        .ability_use
+        .as_ref()
+        .or_else(|| o.simulation_source.as_ref().map(|s| &s.source_ability_use));
+    super::custom_ability_acquisition_character_ids(d)
+        .into_iter()
+        .filter(|id| source.is_none_or(|s| may_acquire(f, s, id)))
+        .collect()
 }
 pub(crate) fn boffin_choices(
     d: &super::ResolvedScriptContext,
@@ -916,6 +1327,8 @@ impl Balloonist {
                     })
                     .collect::<Vec<_>>();
                 (!choices.is_empty()).then(|| TargetInformationCheck {
+                    number_constraint: None,
+                    wake_audit: vec![],
                     target_player_ids: vec![p.id.clone()],
                     computed_result: result,
                     fixed_character_id: None,
@@ -1133,7 +1546,7 @@ pub(crate) fn activation(
     matches!(c.action_ref, FirstNightActionRef::Character {character_id, action_id} if character_id == "pixie" && action_id == "learnTownsfolk").then_some(crate::first_night::ActivationDecision::RunImmediately)
 }
 
-fn base_step(
+pub(super) fn base_step(
     c: &ActionContext<'_>,
     o: &ActionOccurrence,
     character: &str,
@@ -1381,6 +1794,7 @@ pub(crate) fn resolve_pixie_deaths(
                 pixie_check(before, bond) == Some(crate::model::MadnessCheckResult::Clear),
             ) && after.player(&s.owner_player_id).is_some_and(|p| p.alive)
                 && crate::reducer::current_ability_instance(after, s)
+                && may_acquire(after, s, character_id)
         });
         if acquired {
             let source = bond.occurrence.ability_use.as_ref().unwrap();
@@ -1524,6 +1938,8 @@ impl Pixie {
                     character_id: p.actual_character.clone(),
                 };
                 Some(TargetInformationCheck {
+                    number_constraint: None,
+                    wake_audit: vec![],
                     target_player_ids: vec![p.id.clone()],
                     computed_result: truth.clone(),
                     fixed_character_id: None,
@@ -1798,6 +2214,19 @@ pub(crate) fn pixie_learned_characters(
         .character_ids_of_kind(CharacterKind::Townsfolk)
         .into_iter()
         .filter(|id| {
+            if source
+                .ability_use
+                .as_ref()
+                .or_else(|| {
+                    source
+                        .simulation_source
+                        .as_ref()
+                        .map(|s| &s.source_ability_use)
+                })
+                .is_some_and(|s| !may_acquire(f, s, id))
+            {
+                return false;
+            }
             if !f.vortox_sources.is_empty() && crate::simulation::townsfolk_observer(source) {
                 !f.players.iter().any(|p| p.actual_character == *id)
             } else if impaired {
@@ -1911,6 +2340,7 @@ pub(crate) fn registrations() -> Vec<RegisteredAction> {
         },
         handler: Box::new(Marionette { action_ref }),
     });
+    entries.push(preacher_registration());
     entries
 }
 
@@ -1922,6 +2352,24 @@ fn is_marionette_simulation(o: &ActionOccurrence) -> bool {
 
 pub(crate) fn reminder_handlers() -> Vec<crate::reminders::ReminderHandler> {
     vec![
+        crate::reminders::ReminderHandler {
+            character_id: "preacher",
+            project: |c| {
+                c.facts
+                    .preacher_selections
+                    .iter()
+                    .filter(|s| c.matches_ability(&s.source))
+                    .map(|s| {
+                        let mut token =
+                            c.token(&s.target.owner_player_id, "noAbility", &s.event_id);
+                        if !effective(c.facts, &s.source) {
+                            token.inactive_reason = Some("전도사 능력 비활성".into());
+                        }
+                        token
+                    })
+                    .collect()
+            },
+        },
         crate::reminders::ReminderHandler {
             character_id: "marionette",
             project: |c| {
@@ -2131,6 +2579,8 @@ impl Nightwatchman {
                 .players
                 .iter()
                 .map(|p| TargetInformationCheck {
+                    number_constraint: None,
+                    wake_audit: vec![],
                     target_player_ids: vec![p.id.clone()],
                     computed_result: truth.clone(),
                     fixed_character_id: None,

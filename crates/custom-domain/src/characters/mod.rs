@@ -1,3 +1,4 @@
+pub(crate) mod bad_moon_rising;
 pub(crate) mod carousel;
 pub(crate) mod registry;
 pub(crate) mod sects_and_violets;

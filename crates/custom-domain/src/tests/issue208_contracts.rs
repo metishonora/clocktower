@@ -22,7 +22,7 @@ fn additional_actions_never_become_required_definition_order_entries() {
         other_night_order: None,
     };
     let order = plan_for_draft(&draft).unwrap().plan;
-    assert_eq!(order.0.len(), 25);
+    assert_eq!(order.0.len(), 27);
     let other = crate::first_night::other_plan_for_draft(&draft)
         .unwrap()
         .plan;
@@ -40,7 +40,7 @@ fn additional_actions_never_become_required_definition_order_entries() {
         .copied()
         .chain(catalog::ADDITIONAL_ACTIONS.iter().map(|(c, a)| (*c, *a)))
         .collect::<std::collections::HashSet<_>>();
-    assert_eq!(all.len(), 31);
+    assert_eq!(all.len(), 33);
     for (c, a) in catalog::ADDITIONAL_ACTIONS {
         let mut altered = definition.clone();
         altered.first_night_order.0.insert(
@@ -133,9 +133,10 @@ fn production_registers_all_declared_character_actions() {
         .into_iter()
         .chain(crate::characters::sects_and_violets::registrations())
         .chain(crate::characters::carousel::registrations())
+        .chain(crate::characters::bad_moon_rising::registrations())
         .map(|r| r.spec.action_ref)
         .collect::<Vec<_>>();
-    assert_eq!(actual.len(), 49);
+    assert_eq!(actual.len(), 51);
     for (c, a) in catalog::ORDERED_ACTIONS
         .iter()
         .copied()

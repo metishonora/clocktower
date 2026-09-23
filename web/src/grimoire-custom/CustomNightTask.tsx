@@ -1,4 +1,5 @@
 import {CustomNightDeathSources} from './CustomNightDeathSources';
+import {selectedInformationPrompt} from '../custom/grimoire/stepInputModel';
 import {CustomMarionetteTask} from './CustomMarionetteTask';
 import {CustomBalloonistPrevious} from './CustomBalloonistPrevious';
 import {marionetteProgressNotification} from '../custom/grimoire/carouselPresentation';
@@ -52,10 +53,10 @@ export function CustomNightTask({controller}:{controller:FirstNightController}) 
   const informationLabel=influences.includes('vortox')?'거짓 정보 공개':influences.includes('poisoned')?'중독 정보 공개':influences.includes('drunk')?'취한 정보 공개':'정보 공개';
   const influence=influences.includes('vortox')?'vortox':influences.includes('poisoned')?'poisoned':influences.includes('drunk')?'drunk':'';
   const influenceBadges=<span className="snvInformationInfluenceBadges" aria-label="정보 영향">{step.simulationSource?.sourceAbilityUse.characterId==='marionette'&&<em className="snvInformationInfluenceBadge marionette">꼭두각시</em>}{influences.map(kind=><em key={kind} className={`snvInformationInfluenceBadge ${kind}`}>{influenceLabel(kind)}</em>)}</span>;
-  const number=step.informationPrompt?.numberConstraint;
+  const number=selectedInformationPrompt(step,draft.playerIds)?.numberConstraint;
   const selectionReady=!model.selection.needsPlayers||draft.zero||(draft.playerIds.length>=model.selection.minPlayers&&draft.playerIds.length<=model.selection.maxPlayers);
   const ready=selectionReady&&(model.editor.kind==='setup'?model.editor.ready:number?draft.delivery?.kind==='number':model.choices.length?!!model.choice||!!draft.delivery:true);
-  return <RoleInformationTaskView className={`bmrCurrentStep${step.character==='clockmaker'?' snvClockmakerInformationTask':''}`} ariaLabel={stepLabel(step,replay)}
+  return <RoleInformationTaskView className={`bmrCurrentStep${step.character==='clockmaker'?' snvClockmakerInformationTask':''}${step.character==='chambermaid'?' customChambermaidTask':''}`} ariaLabel={stepLabel(step,replay)}
     context={<CustomBalloonistPrevious file={file} step={step} replay={replay}/>}
     identity={<>{role&&actor&&(acquired||step.simulationSource)?<>
       <AbilityOwnerView icon={<img src={characterPresentation(actor.actualCharacter)?.image} alt=""/>} role={<span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{characterPresentation(actor.actualCharacter)?.label}</span>} player={<strong>{actor.seat}번 {actor.name}</strong>} wrap={children=><CharacterDetailButton details={detailsFor(actor.actualCharacter)} theme={detailTheme} className="snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity">{children}</CharacterDetailButton>}/>

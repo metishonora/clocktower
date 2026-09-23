@@ -1,4 +1,7 @@
 {
+  "boffin--preacher": {"reasonKo":"과학자는 전도사 능력을 줄 수 없습니다.","sourceCharacterId":"boffin"},
+  "marionette--preacher": {"reasonKo":"꼭두각시는 전도사 능력에 영향 받지 않습니다.","sourceCharacterId":"marionette"},
+  "chambermaid--mathematician": {"reasonKo":"객실 청소부는 수학자가 오늘 밤 깨어날 예정인지 알 수 있습니다.","sourceCharacterId":"chambermaid"},
   "balloonist--marionette": {"reasonKo":"꼭두각시가 자신을 열기구 조종사라고 생각한다면, 외지인이 1명 추가될 수도 있습니다.","sourceCharacterId":"marionette"},
   "boffin--drunk": {"reasonKo":"과학자는 악마에게 주정뱅이 능력을 부여할 수 없습니다.","sourceCharacterId":"boffin"},
   "marionette--mathematician": {"reasonKo":"수학자는 꼭두각시가 자신이 믿는 능력 때문에 거짓 정보를 얻거나 능력이 작동하지 않았는지 알게 됩니다.","sourceCharacterId":"marionette"},

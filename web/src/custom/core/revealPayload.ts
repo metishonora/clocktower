@@ -24,6 +24,8 @@ export function proposalRevealPayload(proposal?: Proposal): RevealPayload | unde
 export function isRevealPayload(value: unknown): value is RevealPayload {
   if (!value || typeof value !== "object") return false;
   const payload = value as Record<string, unknown>;
+  if(payload.kind==='preacherInformation')return hasExactKeys(payload,['kind','recipientPlayer'])&&isRevealPlayer(payload.recipientPlayer);
+  if(payload.kind==='chambermaidInformation')return hasExactKeys(payload,['kind','targetPlayers','value'])&&isRevealPlayers(payload.targetPlayers,2)&&Number.isSafeInteger(payload.value)&&Number(payload.value)>=0;
   if(payload.kind==='marionetteInformation')return hasExactKeys(payload,['kind','marionettePlayer','recipientPlayer'])&&isRevealPlayer(payload.recipientPlayer)&&isRevealPlayer(payload.marionettePlayer);
   if(payload.kind==='grantedAbilityInformation')return hasExactKeys(payload,['characterId','kind','recipientIsSource','recipientPlayer','sourceCharacterId'])&&typeof payload.recipientIsSource==='boolean'&&payload.sourceCharacterId==='boffin'&&typeof payload.characterId==='string'&&characterIds.has(payload.characterId)&&isRevealPlayer(payload.recipientPlayer);
   if(payload.kind==='learnedPlayer')return hasExactKeys(payload,['kind','player','sourceCharacterId'])&&payload.sourceCharacterId==='balloonist'&&isRevealPlayer(payload.player);

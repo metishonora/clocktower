@@ -42,6 +42,9 @@ pub(crate) struct CustomFactChanges {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum PlayerNotification {
+    Preacher {
+        recipient_id: String,
+    },
     Marionette {
         recipient_id: String,
         marionette_id: String,

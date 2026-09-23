@@ -369,6 +369,22 @@ pub(crate) fn event_reveal(
                     name: p.name.clone(),
                 })
             };
+            if matches!(action_ref, FirstNightActionRef::Character {character_id, ..} if character_id == "chambermaid")
+            {
+                if let crate::model::InformationResult::Number { value } =
+                    information.delivered_result
+                {
+                    return Some(RevealPayload::ChambermaidInformation {
+                        kind: "chambermaidInformation",
+                        target_players: information
+                            .target_player_ids
+                            .iter()
+                            .filter_map(|id| reveal_player(id))
+                            .collect(),
+                        value,
+                    });
+                }
+            }
             if let crate::model::InformationResult::Character {
                 character_id: revealed,
             } = &information.delivered_result
