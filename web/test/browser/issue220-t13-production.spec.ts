@@ -14,7 +14,7 @@ async function open(page:Page,name:string,width:number){
  await page.getByRole('button',{name:'마도서 이어 쓰기'}).click();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();
 }
 async function saved(page:Page){return page.evaluate(async()=>new Promise<unknown>((resolve,reject)=>{const r=indexedDB.open('clocktower');r.onerror=()=>reject(r.error);r.onsuccess=()=>{const db=r.result,q=db.transaction('game').objectStore('game').getAll();q.onsuccess=()=>{resolve(q.result);db.close();};q.onerror=()=>reject(q.error);};}));}
-for(const width of [390,1366])test(`Readable team cards retain enlarged text and external controls at ${width}`,async({page})=>{
+for(const width of [320,390,1366])test(`Readable team cards retain enlarged text and external controls at ${width}`,async({page})=>{
  await open(page,'start',width);
  await page.getByRole('button',{name:'정보 공개',exact:true}).click();
  const dialog=page.getByRole('dialog',{name:'플레이어 정보'});
@@ -34,6 +34,7 @@ for(const width of [390,1366])test(`Readable team cards retain enlarged text and
  for(let i=0;i<3;i++)await page.locator('.bmrBluffGrid button').nth(i).click();
  await page.getByRole('button',{name:'정보 공개',exact:true}).click();
  await expect(dialog).toContainText('이 직업들은 이번 게임에 없습니다.');
+ await expect(dialog.getByRole('heading',{name:'악마 정보'})).toBeInViewport();
  await expect(dialog.getByRole('button',{name:'글씨 크게'})).toBeDisabled();
  await assertLayout();await page.screenshot({path:test.info().outputPath('demon-140.png'),fullPage:true});
  await page.getByRole('button',{name:'확인했으면 눈을 감으세요'}).click();

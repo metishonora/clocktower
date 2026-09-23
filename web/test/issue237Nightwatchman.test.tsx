@@ -14,15 +14,14 @@ import type {GrimoireSetupDraft,GrimoirePresentationState} from '../src/custom/g
 import {IDBFactory} from 'fake-indexeddb';
 
 afterEach(cleanup);
-it('Nightwatchman notification uses the existing large identity reveal icon',()=>{
+it('Nightwatchman notification shows its icon and only the delivered identity card',()=>{
  render(<CustomReveal payload={{kind:'nightwatchmanInformation',recipientPlayer:{playerId:'p1',seat:1,name:'P1'},nightwatchmanPlayer:{playerId:'p2',seat:2,name:'P2'}}} onClose={()=>{}}/>);
  const dialog=screen.getByRole('dialog',{name:'플레이어 정보'});
- expect(dialog.classList.contains('snakeCharmerReveal')).toBe(true);
- const icon=dialog.querySelector('.snakeCharmerRevealIdentity img')!;
- expect(icon.getAttribute('src')).toContain('nightwatchman');
- expect(icon.classList.contains('tbRevealIcon')).toBe(false);
- expect(within(dialog).getByRole('heading',{name:'2번 P2'})).toBeDefined();
- expect(within(dialog).getByText('야경꾼입니다')).toBeDefined();
+ expect(within(dialog).getByAltText('야경꾼')).toBeDefined();
+ expect(within(dialog).getByText('2번')).toBeDefined();
+ expect(within(dialog).getByText('P2')).toBeDefined();
+ expect(within(dialog).queryByText('P1')).toBeNull();
+ expect(dialog.textContent).toContain('이 사람이 야경꾼입니다.');
 });
 const script:CustomScriptDefinition={id:'carousel-ui237',name:'Carousel',
  characterIds:['nightwatchman','zealot','artist','savant','scarletWoman','imp','vortox','soldier','mayor','virgin'],
