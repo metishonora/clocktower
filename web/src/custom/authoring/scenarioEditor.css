@@ -1883,3 +1883,14 @@
   .customScenarioSurface .issue200CharacterGrid button img { width: 52px; height: 52px; }
   .customScenarioSurface .issue200CharacterGrid button > strong { overflow: visible; white-space: normal; text-overflow: clip; word-break: keep-all; overflow-wrap: anywhere; font-size: .8rem; line-height: 1.4; text-align: center; }
 }
+
+/* Keep the filter action visible while the character results scroll. */
+.issue200CharacterCatalog:has(> .scenarioCharacterBulkActions) { grid-template-rows: auto minmax(0, 1fr); }
+.scenarioCharacterBulkActions { display: flex; justify-content: flex-end; padding: 4px 6px; border-bottom: 1px solid rgba(205, 164, 105, .12); }
+.customScenarioSurface .scenarioCharacterBulkActions button { min-height: 44px; padding: 7px 12px; border: 1px solid transparent; border-radius: 3px; background: transparent; color: #dfbd87; font-size: .78rem; font-weight: 650; }
+.scenarioCharacterBulkActions button:hover:not(:disabled) { border-color: #d3ab734d; background: #d3ab7312; color: #fff0d8; }
+.scenarioCharacterBulkActions button:focus-visible { outline: 2px solid #eac080; outline-offset: -2px; }
+@media (max-width: 720px) {
+  .scenarioCharacterBulkActions { padding: 1px 2px; }
+  .customScenarioSurface .scenarioCharacterBulkActions button { padding-inline: 8px; font-size: .76rem; }
+}

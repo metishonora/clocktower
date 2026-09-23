@@ -1,4 +1,4 @@
-import { kindOrder, kindLabels, sourceLabels, type CatalogCharacter, type SourceFilter, type KindFilter, type ScriptSource } from './characterPresentation.js';
+import { kindOrder, kindLabels, sourceLabels, type CatalogCharacter, type SourceFilter, type KindFilter } from './characterPresentation.js';
 import type { CharacterKind } from '../characterCatalog.js';
 export function CharacterPoolSheet({
   name,
@@ -14,6 +14,7 @@ export function CharacterPoolSheet({
   onSourceFilterChange,
   onQueryChange,
   onToggleCharacter,
+  onToggleVisible,
   onCloseCharacter,
   onBack,
   onContinue,
@@ -31,10 +32,12 @@ export function CharacterPoolSheet({
   onSourceFilterChange: (source: SourceFilter) => void;
   onQueryChange: (query: string) => void;
   onToggleCharacter: (characterId: string) => void;
+  onToggleVisible?: () => void;
   onCloseCharacter: () => void;
   onBack: () => void;
   onContinue: () => void;
 }) {
+  const allVisibleSelected = visibleCharacters.length > 0 && visibleCharacters.every(character => selectedIds.includes(character.id));
   return (
     <section className="issue200CharacterSheet" aria-labelledby="issue200-character-title">
       <header className="issue200CharacterHeader">
@@ -87,6 +90,11 @@ export function CharacterPoolSheet({
       </div>
 
       <div className="issue200CharacterCatalog">
+        {onToggleVisible && <div className="scenarioCharacterBulkActions">
+          <button type="button" onClick={onToggleVisible} disabled={visibleCharacters.length === 0}>
+            {allVisibleSelected ? '현재 필터 전체 해제' : '현재 필터 전체 선택'}
+          </button>
+        </div>}
         <div className="issue200CharacterGrid" aria-live="polite">
           {visibleCharacters.map((character) => {
             const selected = selectedIds.includes(character.id);

@@ -85,9 +85,15 @@ export class ScenarioEditorController {
     this.edited({ ...this.state.draft, name });
     if (!this.state.orderPending) void this.validate();
   };
-  toggleCharacter = (id: string) => {
+  toggleCharacter = (id: string) => { this.toggleCharacters([id]); };
+  toggleCharacters = (characterIds: readonly string[]) => {
+    const targets = new Set(characterIds);
+    if (targets.size === 0) return;
     const ids = this.state.draft.characterIds;
-    this.edited({ ...this.state.draft, characterIds: ids.includes(id) ? ids.filter((entry) => entry !== id) : [...ids, id] });
+    const selected = new Set(ids);
+    const remove = [...targets].every(id => selected.has(id));
+    const next = remove ? ids.filter(id => !targets.has(id)) : [...ids, ...[...targets].filter(id => !selected.has(id))];
+    this.edited({ ...this.state.draft, characterIds: next });
     void this.updateOrder(false);
   };
   moveAction = (key: string, direction: -1 | 1, night: NightOrderKind = 'first') => {
