@@ -1,5 +1,6 @@
 import type { CustomScriptDefinition } from "./core/types.js";
 import catalog from "./generated/characterCatalog.json" with {type: "json"};
+import referenceCatalog from "./generated/referenceCharacterCatalog.json" with {type: "json"};
 export type CharacterKind = "Townsfolk" | "Outsider" | "Minion" | "Demon";
 export type CustomScriptCharacter = {
   readonly id: string;
@@ -12,6 +13,14 @@ export const customScriptCharacters: readonly CustomScriptCharacter[] = Object.f
   return Object.freeze({ id: entry.id, kind: entry.kind });
 }));
 
+
+export type ScenarioCharacterKind = CharacterKind | "Traveller";
+export const referenceOnlyCharacters = Object.freeze(referenceCatalog.map(entry => {
+  if (entry.kind !== "Traveller") throw new Error("문서용 캐릭터 종류가 올바르지 않습니다.");
+  return Object.freeze({ id: entry.id, kind: "Traveller" as const });
+}));
+export const scenarioCharacters = Object.freeze([...customScriptCharacters, ...referenceOnlyCharacters]);
+const scenarioIds = new Set(scenarioCharacters.map(entry => entry.id));
 
 const customKindsById = new Map(
   customScriptCharacters.map(({ id, kind }) => [id, kind] as const),
@@ -28,7 +37,7 @@ export function customScriptCharacterKind(characterId: string): CharacterKind | 
 export function resolveCustomScriptDefinition(
   definition: CustomScriptDefinition,
 ): CustomScriptDefinition {
-  if (definition.characterIds.some((characterId) => !isCustomScriptCharacter(characterId))) {
+  if (definition.characterIds.some((characterId) => !scenarioIds.has(characterId))) {
     throw new Error("커스텀 시나리오에서 지원하지 않는 캐릭터입니다.");
   }
   return {

@@ -369,3 +369,21 @@ describe('scenario files through the production authoring controller and shared 
     expect(JSON.parse(download.mock.calls[1][0]).scenario.name).toBe('retry me');
   });
 });
+
+it('keeps reference-only Deviant through editing and file round-trip without adding night actions', async () => {
+  const { controller, download } = editor();
+  await controller.importFile(file());
+  const before = controller.getSnapshot().draft;
+  controller.toggleCharacter('deviant');
+  await settled(controller);
+  expect(controller.getSnapshot().validation).toBe('valid');
+  expect(controller.getSnapshot().draft.firstNightOrder).toEqual(before.firstNightOrder);
+  expect(controller.getSnapshot().draft.otherNightOrder).toEqual(before.otherNightOrder);
+  controller.save();
+  const fresh = editor().controller;
+  await fresh.importFile({ name: 'deviant.json', text: async () => download.mock.calls[0][0] });
+  expect(fresh.getSnapshot().validated?.definition.characterIds).toEqual([...before.characterIds, 'deviant']);
+  fresh.toggleCharacter('deviant');
+  await settled(fresh);
+  expect(fresh.getSnapshot().validated?.definition.characterIds).toEqual(before.characterIds);
+});

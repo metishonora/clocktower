@@ -1,5 +1,5 @@
-import { kindOrder, kindLabels, sourceLabels, type CatalogCharacter, type SourceFilter, type KindFilter } from './characterPresentation.js';
-import type { CharacterKind } from '../characterCatalog.js';
+import { scenarioKindOrder, kindLabels, sourceLabels, type CatalogCharacter, type SourceFilter, type KindFilter } from './characterPresentation.js';
+import type { ScenarioCharacterKind } from '../characterCatalog.js';
 export function CharacterPoolSheet({
   name,
   selectedIds,
@@ -21,14 +21,14 @@ export function CharacterPoolSheet({
 }: {
   name: string;
   selectedIds: string[];
-  counts: Record<CharacterKind, number>;
+  counts: Record<ScenarioCharacterKind, number>;
   activeKind: KindFilter;
   sourceFilter: SourceFilter;
   query: string;
   characters: CatalogCharacter[];
   focusedCharacter?: CatalogCharacter;
   onNameChange: (name: string) => void;
-  onActiveKindChange: (kind: CharacterKind) => void;
+  onActiveKindChange: (kind: ScenarioCharacterKind) => void;
   onSourceFilterChange: (source: SourceFilter) => void;
   onQueryChange: (query: string) => void;
   onToggleCharacter: (characterId: string) => void;
@@ -66,7 +66,7 @@ export function CharacterPoolSheet({
 
       <div className="issue200CharacterFilters">
         <div className="issue200CharacterKinds" role="tablist" aria-label="캐릭터 종류">
-          {kindOrder.map((kind) => (
+          {scenarioKindOrder.map((kind) => (
             <button
               key={kind}
               type="button"
@@ -132,6 +132,7 @@ export function CharacterPoolSheet({
                 <small>{focusedCharacter.englishLabel} · {kindLabels[focusedCharacter.kind]} · {sourceLabels[focusedCharacter.source]}</small>
               </header>
               <p>{focusedCharacter.ability}</p>
+              {focusedCharacter.kind === 'Traveller' && <small className="scenarioReferenceOnlyNotice">게임 배정 미지원</small>}
             </div>
             <button type="button" aria-label="직업 요약 닫기" onClick={onCloseCharacter}>×</button>
           </aside>
