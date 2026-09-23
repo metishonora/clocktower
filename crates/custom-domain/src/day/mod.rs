@@ -221,6 +221,15 @@ fn resolve(
     }
     let mut next = state.clone();
     let mut day = prior.clone();
+    if matches!(
+        input,
+        DayInput::Nominate { .. } | DayInput::Vote { .. } | DayInput::ConfirmDeath
+    ) {
+        day.registration_sources.insert(
+            event_id.into(),
+            crate::characters::registration_sources(facts),
+        );
+    }
     let mut result = DayOutcome {
         stage: day.stage,
         participants: participants(context, facts)?,
@@ -267,6 +276,7 @@ fn resolve(
                 nominee_id: nominee_id.clone(),
                 nomination_participants: result.participants.clone(),
                 vote_participants: None,
+                vote_event_id: None,
                 voter_ids: None,
                 counted_voter_ids: None,
                 ghost_vote_spent_player_ids: vec![],
@@ -327,6 +337,7 @@ fn resolve(
             nomination.voter_ids = Some(voter_ids.clone());
             nomination.counted_voter_ids = Some(result.counted_voter_ids.clone());
             nomination.vote_participants = Some(result.participants.clone());
+            nomination.vote_event_id = Some(event_id.into());
             nomination.ghost_vote_spent_player_ids = result.ghost_vote_spent_player_ids.clone();
             day.stage = DayStage::Nomination;
         }

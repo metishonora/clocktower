@@ -280,6 +280,7 @@ fn observer_markers_use_action_time_identity_and_raw_votes_then_reset_at_dawn() 
         nominator_id: "p3".into(),
         nominee_id: "p2".into(),
         nomination_participants: snapshot.clone(),
+        vote_event_id: Some("vote".into()),
         vote_participants: Some(snapshot),
         voter_ids: Some(vec!["p4".into()]),
         counted_voter_ids: Some(vec![]),

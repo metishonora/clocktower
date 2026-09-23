@@ -152,7 +152,7 @@ impl Preacher {
                 registered_as: value,
                 character_id: None,
             }];
-            if super::trouble_brewing::registered_identity(d, f, target, &js).is_ok() {
+            if super::registered_identity(d, f, target, &js).is_ok() {
                 variants.push(js);
             }
         }
@@ -178,7 +178,7 @@ impl Preacher {
                 .variants(c, &p.id)?
                 .into_iter()
                 .map(|js| {
-                    let value = super::trouble_brewing::registered_identity(d, f, &p.id, &js)?.1
+                    let value = super::registered_identity(d, f, &p.id, &js)?.1
                         == crate::model::CharacterKind::Minion;
                     Ok(TargetInformationChoice {
                         result: InformationResult::Boolean { value },
@@ -235,13 +235,8 @@ impl Preacher {
         {
             return Err(invalid());
         }
-        let minion = super::trouble_brewing::registered_identity(
-            d,
-            f,
-            &target.id,
-            &input.registration_judgments,
-        )?
-        .1 == crate::model::CharacterKind::Minion;
+        let minion = super::registered_identity(d, f, &target.id, &input.registration_judgments)?.1
+            == crate::model::CharacterKind::Minion;
         if input
             .delivered_result
             .as_ref()
@@ -1281,7 +1276,7 @@ impl Balloonist {
                 let actual = d.character_kind(&p.actual_character)?;
                 let mut variants = vec![(actual, vec![])];
                 if !impaired && !vortox {
-                    if let Some(source) = super::trouble_brewing::registration_source(f, &p.id) {
+                    if let Some(source) = super::registration_source(f, &p.id) {
                         for (kind, value) in [
                             (K::Townsfolk, R::Townsfolk),
                             (K::Outsider, R::Outsider),
@@ -1295,11 +1290,7 @@ impl Balloonist {
                                 character_id: None,
                             };
                             if kind != actual
-                                && super::trouble_brewing::registration_allowed(
-                                    &source.character_id,
-                                    &j,
-                                    d,
-                                )
+                                && super::registration_allowed(&source.character_id, &j, d)
                             {
                                 variants.push((kind, vec![j]));
                             }
@@ -1373,13 +1364,7 @@ impl Balloonist {
         {
             return Err(invalid());
         }
-        let kind = super::trouble_brewing::registered_identity(
-            d,
-            f,
-            target,
-            &input.registration_judgments,
-        )?
-        .1;
+        let kind = super::registered_identity(d, f, target, &input.registration_judgments)?.1;
         let previous = f.confirmed_actions.iter().rev().find_map(|a| {
             if same_source(&a.occurrence, o) {
                 if let CustomActionResult::BalloonistLearned {
@@ -1623,12 +1608,9 @@ fn pixie_choices(
         .collect()
 }
 fn pixie_spy(f: &CustomGameFacts, target: &str) -> bool {
-    !crate::effects::impaired(f, target)
-        && f.ability_provenance.iter().any(|r| {
-            r.ability_use.owner_player_id == target
-                && r.ability_use.character_id == "spy"
-                && crate::reducer::current_ability_instance(f, &r.ability_use)
-        })
+    super::registration_sources(f)
+        .iter()
+        .any(|source| source.owner_player_id == target && source.character_id == "spy")
 }
 fn pixie_bond<'a>(
     f: &'a CustomGameFacts,

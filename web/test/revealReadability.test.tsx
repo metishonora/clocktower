@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { CustomReveal } from '../../src/grimoire-custom/CustomReveal';
-import { CustomNotificationPrompt } from '../../src/grimoire-custom/CustomNotificationPrompt';
-import type { RevealPayload } from '../../src/custom/core/types';
+import { CustomReveal } from '../src/grimoire-custom/CustomReveal';
+import { CustomNotificationPrompt } from '../src/grimoire-custom/CustomNotificationPrompt';
+import type { RevealPayload } from '../src/custom/core/types';
 beforeEach(()=>{const values=new Map<string,string>();vi.stubGlobal('localStorage',{getItem:(key:string)=>values.get(key)??null,setItem:(key:string,value:string)=>values.set(key,value)});});
 afterEach(()=>{cleanup();document.getElementById('root')?.remove();vi.restoreAllMocks();vi.unstubAllGlobals();});
 const person={playerId:'p7',seat:7,name:'유진'};

@@ -1,3 +1,4 @@
+use super::registration_source;
 use crate::contracts::ActionCause;
 use crate::model::CharacterKind;
 pub(super) fn custom_registry_entries() -> Vec<(&'static str, CharacterKind)> {
@@ -1363,20 +1364,6 @@ fn good_kind(kind: Option<CharacterKind>) -> bool {
         Some(CharacterKind::Townsfolk | CharacterKind::Outsider)
     )
 }
-fn registration_source(facts: &CustomGameFacts, player_id: &str) -> Option<AbilityUseRef> {
-    // Both native misregistration abilities explicitly continue while dead.
-    facts
-        .ability_provenance
-        .iter()
-        .map(|p| p.ability_use.clone())
-        .find(|source| {
-            source.owner_player_id == player_id
-                && matches!(source.character_id.as_str(), "spy" | "recluse")
-                && current_ability_instance(facts, source)
-                && crate::characters::carousel::grant_enabled(facts, source)
-                && !crate::effects::ability_impaired(facts, source)
-        })
-}
 impl SnvHandler {
     fn is_information(&self) -> bool {
         matches!(
@@ -1451,7 +1438,7 @@ impl SnvHandler {
                 return Err(invalid());
             }
             let source = registration_source(facts, &j.player_id).ok_or_else(invalid)?;
-            if !super::trouble_brewing::registration_allowed(&source.character_id, j, definition) {
+            if !super::registration_allowed(&source.character_id, j, definition) {
                 return Err(invalid());
             }
             let index = facts
@@ -1666,8 +1653,10 @@ impl SnvHandler {
                 let source = if matches!(self.character(), "flowergirl" | "townCrier") {
                     historical_day_participants(self.character(), facts)
                         .into_iter()
-                        .filter(|p| p.player_id == j.player_id)
-                        .find_map(super::trouble_brewing::historical_registration_source)
+                        .filter(|(_, p)| p.player_id == j.player_id)
+                        .find_map(|(event_id, p)| {
+                            super::historical_registration_source(facts, event_id, &p.player_id)
+                        })
                 } else {
                     registration_source(facts, &j.player_id)
                 }
@@ -1910,11 +1899,7 @@ impl SnvHandler {
                                 registered_as: value,
                                 character_id: Some(id.into()),
                             };
-                            if super::trouble_brewing::registration_allowed(
-                                &source.character_id,
-                                &j,
-                                definition,
-                            ) {
+                            if super::registration_allowed(&source.character_id, &j, definition) {
                                 options.push(j);
                             }
                         }
@@ -4039,11 +4024,7 @@ fn vigor_death_retained(facts: &CustomGameFacts, death: &crate::state::NightDeat
         && is_minion(&death.player.actual_character)
 }
 fn is_minion(character: &str) -> bool {
-    custom_registry_entries()
-        .into_iter()
-        .chain(super::trouble_brewing::custom_registry_entries())
-        .chain(super::carousel::custom_registry_entries())
-        .any(|(id, kind)| id == character && kind == CharacterKind::Minion)
+    super::character_kind(character) == Some(CharacterKind::Minion)
 }
 pub(crate) fn vigor_can_act(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
     is_minion(&source.character_id)
@@ -4070,12 +4051,7 @@ fn vigor_targets(facts: &CustomGameFacts, owner: &str) -> Vec<String> {
     for direction in [1, n - 1] {
         if let Some(target) = (1..n)
             .map(|distance| players[(index + direction * distance) % n])
-            .find(|p| {
-                custom_registry_entries()
-                    .into_iter()
-                    .chain(super::trouble_brewing::custom_registry_entries())
-                    .any(|(id, kind)| id == p.actual_character && kind == CharacterKind::Townsfolk)
-            })
+            .find(|p| super::character_kind(&p.actual_character) == Some(CharacterKind::Townsfolk))
         {
             if !result.contains(&target.id) {
                 result.push(target.id.clone());
@@ -4167,7 +4143,7 @@ pub(crate) fn night_impairment_failure(
 fn historical_day_participants<'a>(
     character: &str,
     facts: &'a CustomGameFacts,
-) -> Vec<&'a crate::day::contracts::DayParticipant> {
+) -> Vec<(&'a str, &'a crate::day::contracts::DayParticipant)> {
     let Some(day) = &facts.day else {
         return vec![];
     };
@@ -4175,19 +4151,26 @@ fn historical_day_participants<'a>(
         .iter()
         .flat_map(|n| {
             if character == "flowergirl" {
-                n.vote_participants
-                    .iter()
-                    .flatten()
-                    .filter(|p| {
-                        n.voter_ids
-                            .as_ref()
-                            .is_some_and(|ids| ids.contains(&p.player_id))
+                n.vote_event_id
+                    .as_deref()
+                    .into_iter()
+                    .flat_map(|event_id| {
+                        n.vote_participants
+                            .iter()
+                            .flatten()
+                            .filter(|p| {
+                                n.voter_ids
+                                    .as_ref()
+                                    .is_some_and(|ids| ids.contains(&p.player_id))
+                            })
+                            .map(move |p| (event_id, p))
                     })
                     .collect::<Vec<_>>()
             } else {
                 n.nomination_participants
                     .iter()
                     .filter(|p| p.player_id == n.nominator_id)
+                    .map(|p| (n.event_id.as_str(), p))
                     .collect()
             }
         })
@@ -4213,11 +4196,12 @@ fn historical_day_truth(
             )
             || !participants
                 .iter()
-                .filter(|p| p.player_id == j.player_id)
-                .any(|p| {
-                    super::trouble_brewing::historical_registration_source(p).is_some_and(|s| {
-                        super::trouble_brewing::registration_allowed(&s.character_id, j, definition)
-                    })
+                .filter(|(_, p)| p.player_id == j.player_id)
+                .any(|(event_id, p)| {
+                    super::historical_registration_source(facts, event_id, &p.player_id)
+                        .is_some_and(|s| {
+                            super::registration_allowed(&s.character_id, j, definition)
+                        })
                 })
         {
             return Err(invalid());
@@ -4228,14 +4212,15 @@ fn historical_day_truth(
     } else {
         CharacterKind::Minion
     };
-    let found = participants.into_iter().any(|p| {
+    let found = participants.into_iter().any(|(event_id, p)| {
         let kind = judgments
             .iter()
             .find(|j| {
                 j.player_id == p.player_id
-                    && super::trouble_brewing::historical_registration_source(p).is_some_and(|s| {
-                        super::trouble_brewing::registration_allowed(&s.character_id, j, definition)
-                    })
+                    && super::historical_registration_source(facts, event_id, &p.player_id)
+                        .is_some_and(|s| {
+                            super::registration_allowed(&s.character_id, j, definition)
+                        })
             })
             .map(|j| match j.registered_as {
                 RegistrationValue::Townsfolk => CharacterKind::Townsfolk,
@@ -4255,8 +4240,9 @@ fn historical_day_variants(
 ) -> Vec<Vec<RegistrationJudgment>> {
     let mut variants = vec![vec![]];
     let mut seen = std::collections::HashSet::new();
-    for p in historical_day_participants(character, facts) {
-        let Some(source) = super::trouble_brewing::historical_registration_source(p) else {
+    for (event_id, p) in historical_day_participants(character, facts) {
+        let Some(source) = super::historical_registration_source(facts, event_id, &p.player_id)
+        else {
             continue;
         };
         if !seen.insert(p.player_id.clone()) {
@@ -4275,7 +4261,7 @@ fn historical_day_variants(
                 registered_as: value,
                 character_id: None,
             };
-            if super::trouble_brewing::registration_allowed(&source.character_id, &j, definition) {
+            if super::registration_allowed(&source.character_id, &j, definition) {
                 for v in &original {
                     let mut v = v.clone();
                     v.push(j.clone());

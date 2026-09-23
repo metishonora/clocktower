@@ -4,6 +4,10 @@ pub(crate) mod registry;
 pub(crate) mod sects_and_violets;
 pub(crate) mod trouble_brewing;
 pub(crate) use registry::*;
+pub(crate) use trouble_brewing::{
+    historical_registration_source, registered_identity, registration_allowed, registration_source,
+    registration_sources,
+};
 
 pub(crate) fn night_death_rules() -> Vec<crate::night_deaths::SourceRule> {
     #[cfg(feature = "custom-runtime-fixtures")]
