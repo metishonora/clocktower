@@ -492,7 +492,10 @@ pub(crate) fn event_reveal(
                 custom_information_reveal(
                     action_ref,
                     &information.delivered_result,
-                    information.target_player_ids.first().and_then(|id| reveal_player(id)),
+                    information
+                        .target_player_ids
+                        .first()
+                        .and_then(|id| reveal_player(id)),
                 )
             }
         }

@@ -98,7 +98,7 @@ pub(crate) fn impairment_candidates(
 use crate::{
     characters::ResolvedScriptContext,
     contracts::*,
-    effects::{effective, impaired},
+    effects::effective,
     error::{CoreError, ErrorKind},
     event::{CustomActionEventDraft, CustomFactChanges},
     first_night::*,
@@ -114,19 +114,24 @@ fn reference(character: &str, id: &str) -> FirstNightActionRef {
         action_id: id.into(),
     }
 }
-pub(crate) fn registration_source(facts: &CustomGameFacts, id: &str) -> Option<AbilityUseRef> {
+/// Spy and Recluse registration survives death, but never unavailable or impaired abilities.
+pub(crate) fn registration_sources(facts: &CustomGameFacts) -> Vec<AbilityUseRef> {
     facts
         .ability_provenance
         .iter()
-        .map(|p| p.ability_use.clone())
-        .find(|s| {
-            s.owner_player_id == id
-                && matches!(s.character_id.as_str(), "spy" | "recluse")
-                && crate::reducer::current_ability_instance(facts, s)
-                && crate::characters::carousel::grant_enabled(facts, s)
-                && !crate::effects::ability_impaired(facts, s)
-                && !crate::characters::carousel::preacher_suppressed(facts, s)
+        .map(|p| &p.ability_use)
+        .filter(|source| {
+            matches!(source.character_id.as_str(), "spy" | "recluse")
+                && crate::effects::available(facts, source)
+                && !crate::effects::ability_impaired(facts, source)
         })
+        .cloned()
+        .collect()
+}
+pub(crate) fn registration_source(facts: &CustomGameFacts, id: &str) -> Option<AbilityUseRef> {
+    registration_sources(facts)
+        .into_iter()
+        .find(|source| source.owner_player_id == id)
 }
 fn same_source(a: &ActionOccurrence, b: &ActionOccurrence) -> bool {
     a.ability_use == b.ability_use && a.simulation_source == b.simulation_source
@@ -904,7 +909,11 @@ impl TbHandler {
         if self.character() == "undertaker" {
             let actual = self.truth(definition, facts, o, &[], &[])?;
             let death = undertaker_execution(facts).ok_or_else(invalid)?;
-            let source = historical_registration_source(&death.participant);
+            let source = historical_registration_source(
+                facts,
+                &death.event_id,
+                &death.participant.player_id,
+            );
             let mut choices = vec![];
             for id in definition.character_ids() {
                 let result = InformationResult::Character {
@@ -1237,9 +1246,10 @@ impl TbHandler {
                         j.player_id != p.player_id
                             || j.scope.is_some()
                             || j.character_id.is_none()
-                            || !historical_registration_source(p).is_some_and(|source| {
-                                registration_allowed(&source.character_id, j, definition)
-                            })
+                            || !historical_registration_source(facts, &death.event_id, &p.player_id)
+                                .is_some_and(|source| {
+                                    registration_allowed(&source.character_id, j, definition)
+                                })
                     })
                 {
                     return Err(invalid());
@@ -2144,8 +2154,9 @@ fn information_causes(
         });
         for j in judgments {
             let source = if character == "undertaker" {
-                undertaker_execution(facts)
-                    .and_then(|d| historical_registration_source(&d.participant))
+                undertaker_execution(facts).and_then(|d| {
+                    historical_registration_source(facts, &d.event_id, &d.participant.player_id)
+                })
             } else {
                 registration_source(facts, &j.player_id)
             }
@@ -2922,15 +2933,19 @@ fn monk_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
         .collect()
 }
 
+/// Event-time availability is reconstructed on replay, never inferred from current ownership.
 pub(crate) fn historical_registration_source(
-    p: &crate::day::contracts::DayParticipant,
+    facts: &CustomGameFacts,
+    event_id: &str,
+    player_id: &str,
 ) -> Option<AbilityUseRef> {
-    if !p.impairments.is_empty() {
-        return None;
-    }
-    p.abilities
+    facts
+        .day
         .iter()
-        .find(|s| matches!(s.character_id.as_str(), "spy" | "recluse"))
+        .chain(facts.past_days.iter())
+        .find_map(|day| day.registration_sources.get(event_id))?
+        .iter()
+        .find(|source| source.owner_player_id == player_id)
         .cloned()
 }
 
@@ -3057,18 +3072,12 @@ fn fang_gu_scarlet_jinx(c: &crate::jinxes::SuccessionContext<'_>) -> bool {
 }
 fn recluse_sage_jinx(c: &crate::jinxes::RegistrationContext<'_>) -> Option<RegistrationJudgment> {
     if !matches!(&c.observer.action_ref, FirstNightActionRef::Character { character_id, .. } if character_id == "sage")
-        || impaired(c.facts, c.target_id)
     {
         return None;
     }
-    c.facts
-        .ability_provenance
+    registration_sources(c.facts)
         .iter()
-        .any(|r| {
-            r.ability_use.owner_player_id == c.target_id
-                && r.ability_use.character_id == "recluse"
-                && crate::reducer::current_ability_instance(c.facts, &r.ability_use)
-        })
+        .any(|source| source.owner_player_id == c.target_id && source.character_id == "recluse")
         .then(|| RegistrationJudgment {
             player_id: c.target_id.into(),
             registered_as: RegistrationValue::Demon,

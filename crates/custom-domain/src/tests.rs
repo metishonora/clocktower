@@ -14,6 +14,8 @@ mod issue206_custom_state_contracts;
 mod issue206_night_scheduler_contracts;
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue251_characters;
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue258_rule_boundaries;
 
 mod issue207_contracts;
 mod issue207_rule_state;
