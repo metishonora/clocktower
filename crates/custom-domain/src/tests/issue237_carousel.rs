@@ -15,7 +15,7 @@ fn carousel_game(roster: &[&str]) -> Value {
         "nightwatchman",
     )
 }
-fn configured_game(roster: &[&str], boffin_ability: Option<&str>, shown: &str) -> Value {
+pub(super) fn configured_game(roster: &[&str], boffin_ability: Option<&str>, shown: &str) -> Value {
     let mut pool = vec![
         "nightwatchman",
         "zealot",

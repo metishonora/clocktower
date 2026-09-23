@@ -12,6 +12,8 @@ mod issue206_custom_event_contracts;
 mod issue206_custom_replay_scenarios;
 mod issue206_custom_state_contracts;
 mod issue206_night_scheduler_contracts;
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue251_characters;
 
 mod issue207_contracts;
 mod issue207_rule_state;

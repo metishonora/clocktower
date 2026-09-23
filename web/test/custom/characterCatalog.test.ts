@@ -16,23 +16,24 @@ const SYSTEM_ONLY_FIRST_NIGHT_ORDER = [
   { kind: "system" as const, actionId: "dawn" as const },
 ];
 
-test("builds the exact unique TB and S&V custom allowlist with canonical kinds", () => {
-  equal(customScriptCharacters.length, 53);
-  equal(new Set(customScriptCharacters.map(({ id }) => id)).size, 53);
+test("builds the exact supported custom allowlist with canonical kinds", () => {
+  equal(customScriptCharacters.length, 55);
+  equal(new Set(customScriptCharacters.map(({ id }) => id)).size, 55);
   deepEqual(
     customScriptCharacters.map(({ id }) => id),
-    [...baseline.map(({ id }) => id), 'zealot', 'nightwatchman', 'pixie', 'balloonist', 'boffin', 'marionette'],
+    [...baseline.map(({ id }) => id), 'preacher', 'zealot', 'nightwatchman', 'pixie', 'balloonist', 'boffin', 'marionette', 'chambermaid'],
   );
   equal(customScriptCharacterKind("imp"), "Demon");
   equal(customScriptCharacterKind("clockmaker"), "Townsfolk");
   equal(customScriptCharacterKind("zealot"), "Outsider");
 });
 
-test("keeps non-canonical and BMR IDs outside the custom allowlist", () => {
+test("keeps non-canonical and unsupported BMR IDs outside the custom allowlist", () => {
+  equal(isCustomScriptCharacter('chambermaid'), true);
   equal(isCustomScriptCharacter("imp"), true);
   equal(isCustomScriptCharacter("Imp"), false);
   equal(isCustomScriptCharacter("futureCharacter"), false);
-  for (const id of ["grandmother", "sailor", "chambermaid", "exorcist", "innkeeper", "gambler", "gossip", "courtier", "professor", "minstrel", "teaLady", "pacifist", "fool", "tinker", "moonchild", "goon", "lunatic", "godfather", "devilsAdvocate", "assassin", "mastermind", "zombuul", "pukka", "shabaloth", "po"]) {
+  for (const id of ["grandmother", "sailor", "exorcist", "innkeeper", "gambler", "gossip", "courtier", "professor", "minstrel", "teaLady", "pacifist", "fool", "tinker", "moonchild", "goon", "lunatic", "godfather", "devilsAdvocate", "assassin", "mastermind", "zombuul", "pukka", "shabaloth", "po"]) {
     equal(isCustomScriptCharacter(id), false, id);
   }
 });

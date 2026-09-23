@@ -344,6 +344,7 @@ pub(crate) enum AbnormalAbilityOutcome {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum AbnormalAbilityEffect {
+    PreacherSuppression,
     NightwatchmanNotification,
     PoisonerPoison,
     ButlerMaster,
@@ -375,10 +376,29 @@ pub(crate) struct BooleanInformationChoice {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct TargetInformationCheck {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) number_constraint: Option<NumberInformationConstraint>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) wake_audit: Vec<WakeAuditRecord>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) fixed_character_id: Option<String>,
     pub(crate) target_player_ids: Vec<String>,
     pub(crate) computed_result: InformationResult,
     pub(crate) choices: Vec<TargetInformationChoice>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct WakeAuditRecord {
+    pub(crate) player_id: String,
+    pub(crate) woke: bool,
+    pub(crate) evidence: Vec<WakeEvidence>,
+}
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct WakeEvidence {
+    pub(crate) character_id: String,
+    pub(crate) event_id: Option<String>,
+    pub(crate) forecast: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

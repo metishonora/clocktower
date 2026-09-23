@@ -11,8 +11,9 @@ pub(crate) const SYSTEM_ACTIONS: [SystemFirstNightActionId; 4] = [
 // currently supported TB/S&V/Carousel action catalog. This is deliberately not a merge of script-local
 // ranks. The ordered snapshot is used only when authoring a draft omits its order; the same
 // catalog supplies the Character action set used to validate completed definitions.
-pub(crate) const ORDERED_ACTIONS: [(&str, &str); 21] = [
+pub(crate) const ORDERED_ACTIONS: [(&str, &str); 23] = [
     ("philosopher", "chooseAbility"),
+    ("preacher", "choosePlayer"),
     ("poisoner", "choosePoisonTarget"),
     ("snakeCharmer", "choosePlayer"),
     ("evilTwin", "learnTwin"),
@@ -32,6 +33,7 @@ pub(crate) const ORDERED_ACTIONS: [(&str, &str); 21] = [
     ("balloonist", "learnPlayer"),
     ("nightwatchman", "choosePlayer"),
     ("spy", "inspectGrimoire"),
+    ("chambermaid", "learnCount"),
     ("mathematician", "learnCount"),
 ];
 
@@ -98,8 +100,9 @@ pub(crate) fn production_actions() -> Vec<(FirstNightActionRef, bool)> {
 // 3d6d930a9e600321f93b2567a2e88948a675bc1e, otherNight. D3 excludes
 // Scarlet Woman, Sweetheart, Sage and Ravenkeeper (event-triggered actions).
 // Barber retains its conditional nighttime choice, separate from its death trigger.
-pub(crate) const OTHER_ORDERED_ACTIONS: [(&str, &str); 27] = [
+pub(crate) const OTHER_ORDERED_ACTIONS: [(&str, &str); 29] = [
     ("philosopher", "chooseAbility"),
+    ("preacher", "choosePlayer"),
     ("poisoner", "choosePoisonTarget"),
     ("snakeCharmer", "choosePlayer"),
     ("monk", "protectPlayer"),
@@ -125,5 +128,6 @@ pub(crate) const OTHER_ORDERED_ACTIONS: [(&str, &str); 27] = [
     ("nightwatchman", "choosePlayer"),
     ("butler", "chooseMaster"),
     ("spy", "inspectGrimoire"),
+    ("chambermaid", "learnCount"),
     ("mathematician", "learnCount"),
 ];

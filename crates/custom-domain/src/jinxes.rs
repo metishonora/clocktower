@@ -48,6 +48,8 @@ pub(crate) struct SuccessionContext<'a> {
 /// A future consumer adds a typed seam here and owns when it calls that seam.
 #[derive(Clone, Copy)]
 pub(crate) enum Rule {
+    EffectImmunity(fn(&str, &str) -> bool),
+    ForecastWake(fn(&str, &str) -> bool),
     ShownSetupAbility(fn(&str, &str) -> Option<&'static str>),
     ForbidGrantedAbility(fn(&str, &str) -> bool),
     Registration(fn(&RegistrationContext<'_>) -> Option<RegistrationJudgment>),
@@ -70,6 +72,46 @@ fn pair_key(a: &str, b: &str) -> String {
     ids.join("--")
 }
 impl JinxRegistry {
+    pub(crate) fn immune_to(&self, source: &str, target: &str) -> bool {
+        self.entries
+            .values()
+            .flat_map(|(_, r)| &r.rules)
+            .any(|r| matches!(r,Rule::EffectImmunity(run) if run(source,target)))
+    }
+    pub(crate) fn forecasts_wake(&self, observer: &str, target: &str) -> bool {
+        self.entries
+            .values()
+            .flat_map(|(_, r)| &r.rules)
+            .any(|r| matches!(r,Rule::ForecastWake(run) if run(observer,target)))
+    }
+    fn add_product_rule(
+        &mut self,
+        registration: RegisteredJinx,
+        reason: &str,
+    ) -> Result<(), ErrorKind> {
+        let id = pair_key(registration.characters[0], registration.characters[1]);
+        if self.entries.contains_key(&id)
+            || registration.id != id
+            || registration.rules.is_empty()
+            || registration.evidence.is_empty()
+        {
+            return Err(ErrorKind::JinxRegistrationInvalid);
+        }
+        self.entries.insert(
+            id.clone(),
+            (
+                JinxMetadata {
+                    id,
+                    character_ids: registration.characters.map(str::to_owned),
+                    reason: reason.into(),
+                    source_url: "https://github.com/metishonora/clocktower/issues/251",
+                    source_revision: "issue-251",
+                },
+                registration,
+            ),
+        );
+        Ok(())
+    }
     pub(crate) fn shown_setup_abilities(&self, actual: &str, shown: &str) -> Vec<&'static str> {
         self.entries
             .values()
@@ -150,6 +192,8 @@ impl JinxRegistry {
             let mut kinds = BTreeSet::new();
             for rule in &registration.rules {
                 let kind = match rule {
+                    Rule::EffectImmunity(_) => 5,
+                    Rule::ForecastWake(_) => 6,
                     Rule::ShownSetupAbility(_) => 4,
                     Rule::ForbidGrantedAbility(_) => 3,
                     Rule::Registration(_) => 0,
@@ -212,6 +256,7 @@ pub(crate) fn character_registrations() -> Vec<RegisteredJinx> {
         .into_iter()
         .chain(crate::characters::sects_and_violets::jinx_registrations())
         .chain(crate::characters::carousel::jinx_registrations())
+        .chain(crate::characters::bad_moon_rising::jinx_registrations())
         .collect()
 }
 pub(crate) fn production() -> Result<&'static JinxRegistry, CoreError> {
@@ -225,7 +270,12 @@ pub(crate) fn production() -> Result<&'static JinxRegistry, CoreError> {
                 .iter()
                 .map(|c| c.id)
                 .collect::<Vec<_>>();
-            JinxRegistry::new(&source, &supported, character_registrations())
+            let mut registry = JinxRegistry::new(&source, &supported, character_registrations())?;
+            for (registration, reason) in crate::characters::carousel::product_jinx_registrations()
+            {
+                registry.add_product_rule(registration, reason)?;
+            }
+            Ok(registry)
         })
         .as_ref()
         .map_err(|e| e.into_error())

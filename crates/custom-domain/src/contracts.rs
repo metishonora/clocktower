@@ -390,6 +390,17 @@ pub(crate) enum RevealPayload {
         #[serde(rename = "characterId")]
         character_id: String,
     },
+    PreacherInformation {
+        kind: &'static str,
+        #[serde(rename = "recipientPlayer")]
+        recipient_player: RevealPlayer,
+    },
+    ChambermaidInformation {
+        kind: &'static str,
+        #[serde(rename = "targetPlayers")]
+        target_players: Vec<RevealPlayer>,
+        value: u64,
+    },
     NightwatchmanInformation {
         kind: &'static str,
         #[serde(rename = "recipientPlayer")]
@@ -559,6 +570,10 @@ pub(crate) struct GameEvent {
     deny_unknown_fields
 )]
 pub(crate) enum CustomActionResult {
+    PreacherSelected {
+        target_player_id: String,
+        effective: bool,
+    },
     MarionetteShown {
         character_id: String,
     },
@@ -963,6 +978,12 @@ pub(crate) struct PhaseStepEventPayload {
 }
 
 impl FirstNightActionRef {
+    pub(crate) fn character(character_id: &str, action_id: &str) -> Self {
+        Self::Character {
+            character_id: character_id.into(),
+            action_id: action_id.into(),
+        }
+    }
     pub(crate) fn system(action_id: &str) -> Self {
         let action_id = match action_id {
             "dusk" => SystemFirstNightActionId::Dusk,

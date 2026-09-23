@@ -143,6 +143,8 @@ fn t13_registered_action_scope_matches_the_complete_night_contracts() {
         "pixie.learnTownsfolk",
         "pixie.assessMadness",
         "balloonist.learnPlayer",
+        "preacher.choosePlayer",
+        "chambermaid.learnCount",
         "boffin.grantAbility",
         "marionette.assignShownCharacter",
         "monk.protectPlayer",

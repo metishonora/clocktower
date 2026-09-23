@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 5,
+  "game": {
+    "id": "issue251-chambermaid",
+    "name": "객실 청소부 · 정상",
+    "script": {
+      "type": "custom",
+      "definition": {
+        "id": "issue251-chambermaid",
+        "name": "객실 청소부 · 정상",
+        "characterIds": [
+          "preacher",
+          "chambermaid",
+          "mathematician",
+          "nightwatchman",
+          "artist",
+          "savant",
+          "poisoner",
+          "imp",
+          "vortox",
+          "soldier",
+          "mayor",
+          "virgin"
+        ],
+        "firstNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "character",
+            "characterId": "preacher",
+            "actionId": "choosePlayer"
+          },
+          {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "nightwatchman",
+            "actionId": "choosePlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "chambermaid",
+            "actionId": "learnCount"
+          },
+          {
+            "kind": "character",
+            "characterId": "mathematician",
+            "actionId": "learnCount"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ],
+        "otherNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "character",
+            "characterId": "preacher",
+            "actionId": "choosePlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "imp",
+            "actionId": "attackPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "vortox",
+            "actionId": "attackPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "nightwatchman",
+            "actionId": "choosePlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "chambermaid",
+            "actionId": "learnCount"
+          },
+          {
+            "kind": "character",
+            "characterId": "mathematician",
+            "actionId": "learnCount"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ]
+      }
+    },
+    "createdAt": "2026-09-23T00:00:00Z",
+    "updatedAt": "2026-09-23T00:00:00Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "seat": 1,
+              "name": "민지",
+              "actualCharacter": "nightwatchman",
+              "shownCharacter": "nightwatchman"
+            },
+            {
+              "id": "p2",
+              "seat": 2,
+              "name": "태오",
+              "actualCharacter": "chambermaid",
+              "shownCharacter": "chambermaid"
+            },
+            {
+              "id": "p3",
+              "seat": 3,
+              "name": "서윤",
+              "actualCharacter": "mathematician",
+              "shownCharacter": "mathematician"
+            },
+            {
+              "id": "p4",
+              "seat": 4,
+              "name": "도현",
+              "actualCharacter": "artist",
+              "shownCharacter": "artist"
+            },
+            {
+              "id": "p5",
+              "seat": 5,
+              "name": "지우",
+              "actualCharacter": "savant",
+              "shownCharacter": "savant"
+            },
+            {
+              "id": "p6",
+              "seat": 6,
+              "name": "하린",
+              "actualCharacter": "poisoner",
+              "shownCharacter": "poisoner"
+            },
+            {
+              "id": "p7",
+              "seat": 7,
+              "name": "서준",
+              "actualCharacter": "imp",
+              "shownCharacter": "imp"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 7명",
+        "createdAt": "2026-09-23T00:00:00Z"
+      },
+      {
+        "id": "phase-step-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:minionInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:minionInfo",
+        "createdAt": "2026-09-23T00:00:00Z"
+      },
+      {
+        "id": "phase-step-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          "input": {
+            "characterIds": [
+              "soldier",
+              "mayor",
+              "virgin"
+            ]
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:demonInfo",
+        "createdAt": "2026-09-23T00:00:00Z"
+      },
+      {
+        "id": "phase-step-4",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:poisoner:choosePoisonTarget:owner2:p6:instance8:setup:p6",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p6",
+            "characterId": "poisoner",
+            "abilityInstanceId": "setup:p6"
+          },
+          "input": {
+            "playerIds": [
+              "p5"
+            ]
+          },
+          "result": {
+            "kind": "poisoner",
+            "targetPlayerId": "p5",
+            "day": 1,
+            "effective": true
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:poisoner:choosePoisonTarget:owner2:p6:instance8:setup:p6",
+        "createdAt": "2026-09-23T00:00:00Z"
+      },
+      {
+        "id": "phase-step-5",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:nightwatchman:choosePlayer:owner2:p1:instance8:setup:p1",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "nightwatchman",
+            "actionId": "choosePlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p1",
+            "characterId": "nightwatchman",
+            "abilityInstanceId": "setup:p1"
+          },
+          "input": null,
+          "result": {
+            "kind": "noEffect"
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:nightwatchman:choosePlayer:owner2:p1:instance8:setup:p1",
+        "createdAt": "2026-09-23T00:00:00Z"
+      }
+    ]
+  }
+}

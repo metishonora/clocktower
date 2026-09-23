@@ -121,7 +121,16 @@ Custom Mathematician audit consumes character-owned malfunction evidence and cau
 actual delivered information but never requires or emits a replacement computed answer; ordinary
 character information calculations retain their own computed values.
 
-Production registers 21 ordered TB/SnV/Carousel character actions and ten additional preparation or optional actions; fixture builds separately register only system
+Preacher suppression is source-bound and separate from impairment: action scheduling and
+ongoing effects consult the same availability boundary without creating false malfunction
+evidence. Permanent source/target identity changes expire bindings; temporary source impairment
+does not erase them. Chambermaid lives in `characters/bad_moon_rising.rs` and derives wake evidence
+from confirmed own-ability actions, with the Mathematician forecast supplied by its Jinx.
+The UI receives read-only per-target evidence and Core-owned numeric delivery constraints.
+Product-specific Jinx registrations retain their issue provenance internally and share the
+ordinary Jinx presentation; Boffin-origin acquisition restrictions follow nested grant provenance.
+
+Production registers 23 ordered TB/SnV/Carousel/BMR character actions and ten additional preparation or optional actions; fixture builds separately register only system
 and test handlers. `scripts/check-custom-boundaries.mjs` rejects imports across the boundary,
 including indirect Cargo/TypeScript and source-include dependencies. Run its negative tests with
 `node --test scripts/check-custom-boundaries.test.mjs`.

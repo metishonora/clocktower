@@ -801,6 +801,14 @@ impl ActionRegistry {
             return Ok(None);
         }
         let semantic = occurrence.clone().in_night(1);
+        if context.rule_service.facts().is_some_and(|f| {
+            occurrence
+                .ability_use
+                .as_ref()
+                .is_some_and(|s| crate::effects::suppressed(f, s))
+        }) {
+            return Ok(None);
+        }
         let step = entry
             .handler
             .project_occurrence(&entry.spec, context, &semantic)?
@@ -972,6 +980,13 @@ impl ActionRegistry {
             .handler
             .project(&entry.spec, context)?
             .into_iter()
+            .filter(|s| {
+                !context.rule_service.facts().is_some_and(|f| {
+                    s.ability_use
+                        .as_ref()
+                        .is_some_and(|a| crate::effects::suppressed(f, a))
+                })
+            })
             .map(|s| context.stamp(s))
             .collect::<Result<Vec<_>, _>>()?;
         for step in &steps {
@@ -1064,6 +1079,7 @@ pub(crate) fn action_registry() -> Result<ActionRegistry, CoreError> {
         entries.extend(crate::characters::sects_and_violets::registrations());
         entries.extend(crate::characters::trouble_brewing::registrations());
         entries.extend(crate::characters::carousel::registrations());
+        entries.extend(crate::characters::bad_moon_rising::registrations());
     }
     #[cfg(feature = "custom-runtime-fixtures")]
     entries.extend(super::fixtures::registrations());

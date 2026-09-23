@@ -578,7 +578,9 @@ impl SnvHandler {
             input = crate::input::required_characters(
                 1,
                 1,
-                Some(custom_ability_acquisition_character_ids(definition)),
+                Some(super::carousel::acquisition_choices(
+                    definition, facts, occurrence,
+                )),
                 false,
             );
             input.optional = true;
@@ -840,7 +842,8 @@ impl SnvHandler {
                             character_ids: Some(choices.clone()),
                             ..Default::default()
                         })
-                    || !custom_ability_acquisition_character_ids(definition).contains(&choices[0])
+                    || !super::carousel::acquisition_choices(definition, facts, occurrence)
+                        .contains(&choices[0])
                 {
                     return Err(invalid());
                 }
@@ -2035,6 +2038,8 @@ impl SnvHandler {
                     None
                 };
                 prompt.target_checks.push(TargetInformationCheck {
+                    number_constraint: None,
+                    wake_audit: vec![],
                     fixed_character_id,
                     target_player_ids: targets,
                     computed_result: baseline.ok_or_else(invalid)?,
@@ -2100,6 +2105,7 @@ fn mathematician_audit(
             }
             MalfunctionOutcome::EffectFailure { effect } => AbnormalAbilityOutcome::EffectFailure {
                 effect: match effect {
+                    FailedEffect::PreacherSuppression => AbnormalAbilityEffect::PreacherSuppression,
                     FailedEffect::NightwatchmanNotification => {
                         AbnormalAbilityEffect::NightwatchmanNotification
                     }
@@ -2163,7 +2169,7 @@ fn mathematician_audit(
     Ok(MathematicianAudit { records })
 }
 
-fn impairment_details(facts: &CustomGameFacts, actor: &str) -> Vec<DeliveryReason> {
+pub(super) fn impairment_details(facts: &CustomGameFacts, actor: &str) -> Vec<DeliveryReason> {
     facts
         .resolved_impairments
         .iter()
@@ -3293,6 +3299,8 @@ impl SnvNightHandler {
                 target_checks: computed
                     .map(|computed_result| {
                         vec![TargetInformationCheck {
+                            number_constraint: None,
+                            wake_audit: vec![],
                             fixed_character_id: None,
                             target_player_ids: vec![],
                             computed_result,
@@ -4338,4 +4346,17 @@ fn arbitrary_death_sources(facts: &CustomGameFacts) -> Vec<&crate::state::Confir
                 )
         })
         .collect()
+}
+pub(super) fn wakes_actor(action: &crate::contracts::FirstNightActionRef) -> bool {
+    matches!(action, crate::contracts::FirstNightActionRef::Character {character_id, action_id}
+        if matches!((character_id.as_str(),action_id.as_str()),
+            ("philosopher", "chooseAbility") | ("snakeCharmer", "choosePlayer") |
+            ("evilTwin", "learnTwin") | ("witch", "chooseCursedPlayer") |
+            ("cerenovus", "assignMadness") | ("clockmaker", "learnSteps") |
+            ("dreamer", "learnCharacters") | ("seamstress", "compareAlignments") |
+            ("pitHag", "changeCharacter") | ("fangGu", "attackPlayer") |
+            ("noDashii", "attackPlayer") | ("vortox", "attackPlayer") |
+            ("vigormortis", "attackPlayer") | ("flowergirl", "learnDemonVoted") |
+            ("townCrier", "learnMinionNominated") | ("oracle", "learnDeadEvilCount") |
+            ("juggler", "learnJuggles") | ("sage", "learnDemon") | ("mathematician", "learnCount")))
 }

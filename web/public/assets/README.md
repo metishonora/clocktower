@@ -14,6 +14,11 @@ Carousel character portraits use the same official source:
 (Balloonist, Nightwatchman, Pixie, Zealot), and `<character>_e.webp`
 (Boffin, Marionette).
 
+Preacher and Chambermaid portraits were copied from the reviewed #251 prototype,
+using official `botc-release` revision `f10cd02e3401af227ce406287eaae7bb99a06a42`:
+`resources/characters/carousel/preacher_g.webp` and
+`resources/characters/bmr/chambermaid_g.webp`.
+
 Their inclusion does not imply endorsement by The Pandemonium Institute. The in-app notice links to
 the official Community Content policy. The Clocktower app icon under `icons/` is original to this
 project and is not an official Blood on the Clocktower asset.

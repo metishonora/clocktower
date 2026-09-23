@@ -126,6 +126,7 @@ pub(crate) fn custom_script_catalog() -> Vec<CharacterRegistryEntry> {
         .into_iter()
         .chain(sects_and_violets::custom_registry_entries())
         .chain(carousel::custom_registry_entries())
+        .chain(super::bad_moon_rising::custom_registry_entries())
         .map(|(id, kind)| CharacterRegistryEntry { id, kind })
         .collect()
 }

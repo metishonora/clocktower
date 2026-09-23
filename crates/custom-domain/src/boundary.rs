@@ -141,6 +141,7 @@ fn validate_custom_action_result_json(value: &Value) -> Result<(), CoreError> {
             | "cerenovus"
             | "seamstressDeferred"
             | "nightwatchmanUsed"
+            | "preacherSelected"
             | "pixieLearned"
             | "balloonistLearned"
             | "boffinGranted"

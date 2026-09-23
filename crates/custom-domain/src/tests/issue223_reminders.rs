@@ -203,6 +203,7 @@ fn philosopher_identity_marker_requires_a_live_grant_without_an_original_charact
 fn every_supported_character_has_an_audited_reminder_policy() {
     // Explicit exclusions: a catalog addition must be reviewed instead of silently lacking tokens.
     let no_automatic_token = [
+        "chambermaid",
         "zealot",
         "chef",
         "empath",
@@ -245,7 +246,7 @@ fn every_supported_character_has_an_audited_reminder_policy() {
     }
     assert_eq!(
         handlers.len() + no_automatic_token.len() + subsequent_night_only.len(),
-        53
+        55
     );
 }
 

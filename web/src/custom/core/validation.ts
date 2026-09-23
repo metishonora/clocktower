@@ -420,6 +420,9 @@ function isInformationPrompt(value: unknown, inputKind: unknown, hasPreparationF
       && value.numberChoices.length === 0
       && value.numberConstraint === undefined
       && (value.booleanChoices?.length ?? 0) === 0
+      && value.targetChecks.every(check=>check.numberConstraint===undefined||
+        ((impaired||vortoxActive)&&check.computedResult.kind==='number'&&check.numberConstraint.min===0&&check.numberConstraint.max===Number.MAX_SAFE_INTEGER&&
+        (vortoxActive?check.numberConstraint.excludedValues.length===1&&check.numberConstraint.excludedValues[0]===check.computedResult.value:check.numberConstraint.excludedValues.length===0)))
       && (!vortoxActive || value.targetChecks.every((check) =>
         isRecord(check)
         && Array.isArray(check.choices)
@@ -514,7 +517,7 @@ function isMathematicianAuditOutcome(value: unknown): boolean {
       "poisonerPoison", "butlerMaster", "mutantExecution", "philosopherAcquisition", "witchCurse", "cerenovusMadness", "evilTwinRelationship",
       "snakeCharmerSwap", "witchDeath", "sweetheartDrunkenness", "demonDeath",
       "pitHagCharacterChange", "noDashiiPoison", "vigormortisOngoingEffect",
-      "vortoxFalseInformation", "vortoxExecution", "nightwatchmanNotification",
+      "vortoxFalseInformation", "vortoxExecution", "nightwatchmanNotification", "preacherSuppression",
     ].includes(String(value.effect));
 }
 
@@ -813,13 +816,15 @@ function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
 function isTargetCheck(value: unknown): boolean {
   return (
     isRecord(value) &&
-    hasExactKeys(value, ["targetPlayerIds", "computedResult", "choices", ...(value.fixedCharacterId === undefined ? [] : ["fixedCharacterId"])]) &&
+    hasExactKeys(value, ["targetPlayerIds", "computedResult", "choices", ...(value.fixedCharacterId === undefined ? [] : ["fixedCharacterId"]), ...(value.numberConstraint===undefined?[]:['numberConstraint']), ...(value.wakeAudit===undefined?[]:['wakeAudit'])]) &&
+    (value.numberConstraint===undefined||isNumberConstraint(value.numberConstraint)) &&
+    (value.wakeAudit===undefined||Array.isArray(value.wakeAudit)&&value.wakeAudit.every(isWakeAudit)) &&
     (value.fixedCharacterId === undefined || isKnownCharacter(value.fixedCharacterId)) &&
     Array.isArray(value.targetPlayerIds) &&
     value.targetPlayerIds.every(isString) &&
     isInformationResult(value.computedResult) &&
     Array.isArray(value.choices) &&
-    value.choices.length > 0 &&
+    (value.numberConstraint===undefined?value.choices.length>0:value.choices.length===0) &&
     value.choices.every((choice) =>
       isRecord(choice) &&
       hasExactKeys(choice, ["result", "isComputed", "registrationJudgments"]) &&
@@ -829,6 +834,9 @@ function isTargetCheck(value: unknown): boolean {
       choice.registrationJudgments.every(isRegistrationJudgment)
     )
   );
+}
+function isWakeAudit(value:unknown):boolean {
+ return isRecord(value)&&hasExactKeys(value,['playerId','woke','evidence'])&&nonempty(value.playerId)&&typeof value.woke==='boolean'&&Array.isArray(value.evidence)&&value.woke===(value.evidence.length>0)&&value.evidence.every(e=>isRecord(e)&&hasExactKeys(e,['characterId','eventId','forecast'])&&isKnownCharacter(e.characterId)&&typeof e.forecast==='boolean'&&(e.forecast?e.eventId===null:nonempty(e.eventId)));
 }
 function isTargetAssignment(value: unknown): boolean {
   return isRecord(value) && hasExactKeys(value,["sourceEventId","abilityUse","targetPlayerId","day","initiallyEffective","effective"]) && isUseFact(value) && nonempty(value.targetPlayerId) && Number.isInteger(value.day) && Number(value.day)>0 && typeof value.initiallyEffective === "boolean" && typeof value.effective === "boolean";
@@ -1019,7 +1027,7 @@ function isPendingIdentityReveal(value: unknown): boolean {
     typeof value.sourceEventId === "string" &&
     Number.isInteger(value.sequence) &&
     (value.sequence as number) >= 0 &&
-    (isCharacterChangeRevealPayload(value.payload) || isMadnessAssignmentRevealPayload(value.payload) || isEvilTwinPairRevealPayload(value.payload) || isNightwatchmanRevealPayload(value.payload) || (isRecord(value.payload)&&['grantedAbilityInformation','marionetteInformation'].includes(String(value.payload.kind))&&isRevealPayload(value.payload)));
+    (isCharacterChangeRevealPayload(value.payload) || isMadnessAssignmentRevealPayload(value.payload) || isEvilTwinPairRevealPayload(value.payload) || isNightwatchmanRevealPayload(value.payload) || (isRecord(value.payload)&&['grantedAbilityInformation','marionetteInformation','preacherInformation'].includes(String(value.payload.kind))&&isRevealPayload(value.payload)));
 }
 
 
