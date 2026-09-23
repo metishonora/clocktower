@@ -90,8 +90,18 @@ is emitted from custom-owned Rust data, including the custom TB/SnV metadata it 
 
 Custom SnV rules, information candidates, active effects and causal twin repairs are owned by
 `crates/custom-domain/src/characters/sects_and_violets.rs`. Custom TB registration semantics stay
-in that crate's `characters/trouble_brewing.rs`. `information.rs` validates common input/result
-shapes; it does not import official rule implementations. The scheduler owns progress and stable
+in that crate's `characters/trouble_brewing.rs`. Spy/Recluse registration sources and allowed
+judgments are exposed through the narrow `characters` facade for TB, SnV, Carousel and Jinx
+consumers. Eligibility uses source availability and ability-scoped impairment; it does not require
+a living owner. Candidate projection, command validation and replay share this policy.
+Day progress captures eligible registration sources at nomination, vote and death event prefixes.
+These replay-only records preserve historical availability independently of later suppression,
+recovery, identity changes or impairment. Serialized participant abilities still describe ownership;
+GameFile and confirmed event formats do not include the derived registration records.
+Cross-script character-kind queries use the unified custom catalog (or resolved script context),
+including Vigormortis neighbor and Minion checks; script-local tables only own their own metadata.
+`information.rs` validates common input/result shapes; it does not import official rule
+implementations. The scheduler owns progress and stable
 occurrence identity, while handlers own eligibility and typed facts. A simulation refers to a real failed Philosopher choice, Drunk or Marionette identity, or acquired guidance; it cannot acquire a fictional ability instance. Pixie-derived simulated guidance keeps the original real root and the confirmed bond/death provenance.
 
 Carousel rules live in `characters/carousel.rs`. Boffin and Pixie reuse source-bound

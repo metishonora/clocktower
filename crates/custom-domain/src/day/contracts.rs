@@ -110,6 +110,8 @@ pub(crate) struct NominationRecord {
     pub(crate) nominee_id: String,
     pub(crate) nomination_participants: Vec<DayParticipant>,
     pub(crate) vote_participants: Option<Vec<DayParticipant>>,
+    #[serde(skip)]
+    pub(crate) vote_event_id: Option<String>,
     pub(crate) voter_ids: Option<Vec<String>>,
     pub(crate) counted_voter_ids: Option<Vec<String>>,
     pub(crate) ghost_vote_spent_player_ids: Vec<String>,
@@ -130,6 +132,8 @@ pub(crate) struct DayHistoryEntry {
 }
 #[derive(Debug, Clone)]
 pub(crate) struct DayProgress {
+    /// Registration sources at nomination, vote, and death prefixes; never serialized.
+    pub(crate) registration_sources: std::collections::BTreeMap<String, Vec<AbilityUseRef>>,
     pub(crate) day: u32,
     pub(crate) stage: DayStage,
     pub(crate) nominations: Vec<NominationRecord>,
@@ -145,6 +149,7 @@ pub(crate) struct DayProgress {
 impl DayProgress {
     pub(crate) fn new(day: u32) -> Self {
         Self {
+            registration_sources: Default::default(),
             day,
             stage: DayStage::Announcement,
             nominations: vec![],
