@@ -1,0 +1,57 @@
+Baseline: 741c36922a293f35410cd5b67c1129560e8fe9ce
+Diagnostic expectations assert the intended rules. Failures reproduce existing defects.
+
+running 12 tests
+test tests::effect_lifetime_audit::audit_control_philosopher_source_change_expires_grant_and_drunk ... ok
+
+thread 'tests::effect_lifetime_audit::audit_sweetheart_effect_pauses_when_dead_source_is_poisoned_bounded' panicked at crates/custom-domain/src/tests/effect_lifetime_audit.rs:338:5:
+BUG: Sweetheart drunk does not suspend when the dead source is poisoned
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test tests::effect_lifetime_audit::audit_sweetheart_effect_pauses_when_dead_source_is_poisoned_bounded ... FAILED
+
+thread 'tests::effect_lifetime_audit::audit_butler_reminder_expires_when_source_changes' panicked at crates/custom-domain/src/tests/effect_lifetime_audit.rs:378:5:
+BUG: replaced Butler still projects the former master marker
+test tests::effect_lifetime_audit::audit_butler_reminder_expires_when_source_changes ... FAILED
+
+thread 'tests::effect_lifetime_audit::audit_reported_snake_poison_ends_when_pit_hag_replaces_new_snake' panicked at crates/custom-domain/src/tests/effect_lifetime_audit.rs:66:5:
+BUG: new Vortox still has the former Snake Charmer's poison
+test tests::effect_lifetime_audit::audit_reported_snake_poison_ends_when_pit_hag_replaces_new_snake ... FAILED
+
+thread 'tests::effect_lifetime_audit::audit_cerenovus_reminder_expires_when_source_changes' panicked at crates/custom-domain/src/tests/effect_lifetime_audit.rs:307:5:
+BUG: removed cerenovus ability still projects an active-looking mad marker: [Object {"characterId": String("flowergirl"), "description": String("오늘 악마가 처형 투표에 참여하지 않았습니다."), "label": String("악마 투표 안 함"), "playerId": String("p9"), "sourceEventId": String("phase-step-13"), "tokenId": String("demonDidNotVote")}, Object {"characterId": String("townCrier"), "description": String("오늘 하수인이 처형 지목에 나서지 않았습니다."), "label": String("하수인 지목 안 함"), "playerId": String("p10"), "sourceEventId": String("phase-step-13"), "tokenId": String("minionDidNotNominate")}, Object {"characterId": String("cerenovus"), "description": String("mad"), "label": String("mad"), "playerId": String("p2"), "sourceEventId": String("phase-step-12"), "tokenId": String("mad")}]
+test tests::effect_lifetime_audit::audit_cerenovus_reminder_expires_when_source_changes ... FAILED
+
+thread 'tests::effect_lifetime_audit::audit_snake_poison_ends_after_barber_swap' panicked at crates/custom-domain/src/tests/effect_lifetime_audit.rs:108:5:
+BUG: old Snake Charmer stays poisoned after Barber replacement
+test tests::effect_lifetime_audit::audit_snake_poison_ends_after_barber_swap ... FAILED
+
+thread 'tests::effect_lifetime_audit::audit_day_sweetheart_effect_ends_when_dead_source_changes' panicked at crates/custom-domain/src/tests/effect_lifetime_audit.rs:149:5:
+BUG: day-death Sweetheart effect survives source replacement
+test tests::effect_lifetime_audit::audit_day_sweetheart_effect_ends_when_dead_source_changes ... FAILED
+
+thread 'tests::effect_lifetime_audit::audit_witch_reminder_expires_when_source_changes' panicked at crates/custom-domain/src/tests/effect_lifetime_audit.rs:307:5:
+BUG: removed witch ability still projects an active-looking cursed marker: [Object {"characterId": String("flowergirl"), "description": String("오늘 악마가 처형 투표에 참여하지 않았습니다."), "label": String("악마 투표 안 함"), "playerId": String("p9"), "sourceEventId": String("phase-step-13"), "tokenId": String("demonDidNotVote")}, Object {"characterId": String("townCrier"), "description": String("오늘 하수인이 처형 지목에 나서지 않았습니다."), "label": String("하수인 지목 안 함"), "playerId": String("p10"), "sourceEventId": String("phase-step-13"), "tokenId": String("minionDidNotNominate")}, Object {"characterId": String("witch"), "description": String("cursed"), "label": String("cursed"), "playerId": String("p2"), "sourceEventId": String("phase-step-12"), "tokenId": String("cursed")}]
+test tests::effect_lifetime_audit::audit_witch_reminder_expires_when_source_changes ... FAILED
+test tests::effect_lifetime_audit::audit_control_sweetheart_effect_survives_recipient_change ... ok
+
+thread 'tests::effect_lifetime_audit::audit_night_sweetheart_effect_ends_when_dead_source_changes' panicked at crates/custom-domain/src/tests/effect_lifetime_audit.rs:118:5:
+BUG: dead Sweetheart changed to Saint still drunks the victim
+test tests::effect_lifetime_audit::audit_night_sweetheart_effect_ends_when_dead_source_changes ... FAILED
+test tests::effect_lifetime_audit::audit_control_poisoner_source_change_expires_poison_but_recipient_change_does_not ... ok
+test tests::effect_lifetime_audit::audit_control_witch_and_cerenovus_source_change_expires_assignment ... ok
+
+failures:
+
+failures:
+    tests::effect_lifetime_audit::audit_butler_reminder_expires_when_source_changes
+    tests::effect_lifetime_audit::audit_cerenovus_reminder_expires_when_source_changes
+    tests::effect_lifetime_audit::audit_day_sweetheart_effect_ends_when_dead_source_changes
+    tests::effect_lifetime_audit::audit_night_sweetheart_effect_ends_when_dead_source_changes
+    tests::effect_lifetime_audit::audit_reported_snake_poison_ends_when_pit_hag_replaces_new_snake
+    tests::effect_lifetime_audit::audit_snake_poison_ends_after_barber_swap
+    tests::effect_lifetime_audit::audit_sweetheart_effect_pauses_when_dead_source_is_poisoned_bounded
+    tests::effect_lifetime_audit::audit_witch_reminder_expires_when_source_changes
+
+test result: FAILED. 4 passed; 8 failed; 0 ignored; 0 measured; 281 filtered out; finished in 0.74s
+
+error: test failed, to rerun pass `-p clocktower-custom-domain --lib`

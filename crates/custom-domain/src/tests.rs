@@ -120,3 +120,6 @@ mod issue237_carousel;
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod vortox_pit_hag;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue269_effect_lifetime;

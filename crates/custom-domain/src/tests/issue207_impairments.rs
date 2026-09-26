@@ -12,7 +12,7 @@ use crate::{
     first_night::{ActionContext, ActionInput},
     model::{AbilityGrant, AbilityInstanceId, AbilityOrigin, AbilityUseRef, StepInputFields},
     rules::CustomRuleService,
-    state::{AbilityProvenance, CustomGameFacts, DurableImpairment},
+    state::{AbilityProvenance, CustomGameFacts},
 };
 pub(super) fn facts(roster: &[&str]) -> (ResolvedScriptContext, CustomGameFacts) {
     let mut pool = roster.iter().map(|id| id.to_string()).collect::<Vec<_>>();
@@ -55,24 +55,18 @@ pub(super) fn source(facts: &CustomGameFacts, index: usize) -> AbilityUseRef {
 }
 #[test]
 fn no_dashii_skips_other_types_but_keeps_dead_townsfolk_and_other_poison() {
-    let (context, mut state) = facts(&[
-        "philosopher",
-        "mutant",
-        "noDashii",
-        "scarletWoman",
-        "artist",
-    ]);
+    let (context, mut state) = facts(&["philosopher", "mutant", "noDashii", "poisoner", "artist"]);
     state.players[0].alive = false;
-    state.durable_impairments.push(DurableImpairment {
-        source_ability_use: source(&state, 0),
-        impairment: ActiveImpairment {
-            kind: ImpairmentKind::Poisoned,
-            player_id: "p5".into(),
-            source_event_id: "swap".into(),
-            source_character_id: "snakeCharmer".into(),
-            expires: ImpairmentExpiry::Never,
-        },
-    });
+    state
+        .poisoner_choices
+        .push(crate::contracts::TargetAssignment {
+            source_event_id: "poison-choice".into(),
+            ability_use: source(&state, 3),
+            target_player_id: "p5".into(),
+            day: 1,
+            initially_effective: true,
+            effective: true,
+        });
     resolve_effects(&context, &mut state).unwrap();
     assert!(state
         .active_impairments
@@ -89,7 +83,7 @@ fn no_dashii_skips_other_types_but_keeps_dead_townsfolk_and_other_poison() {
     state.players[2].alive = false;
     resolve_effects(&context, &mut state).unwrap();
     assert_eq!(state.active_impairments.len(), 1);
-    assert_eq!(state.active_impairments[0].source_event_id, "swap");
+    assert_eq!(state.active_impairments[0].source_event_id, "poison-choice");
 }
 #[test]
 fn acquired_grant_survives_impairment_but_source_replacement_removes_ownership_only() {

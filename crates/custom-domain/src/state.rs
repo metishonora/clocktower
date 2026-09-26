@@ -50,6 +50,7 @@ pub(crate) struct CustomGameFacts {
     pub(crate) pending_identity_reveals: Vec<crate::contracts::PendingIdentityReveal>,
     pub(crate) vortox_sources: Vec<AbilityUseRef>,
     pub(crate) resolved_impairments: Vec<DurableImpairment>,
+    pub(crate) evaluated_effects: Vec<crate::effects::EvaluatedEffect>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -110,6 +111,8 @@ impl CustomGameFacts {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DurableImpairment {
+    pub(crate) self_interaction: crate::effects::SelfInteraction,
+    pub(crate) rule: crate::effects::EffectRule,
     pub(crate) impairment: ActiveImpairment,
     pub(crate) source_ability_use: AbilityUseRef,
 }

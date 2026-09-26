@@ -1,0 +1,10 @@
+Baseline: 741c36922a293f35410cd5b67c1129560e8fe9ce
+No production source changes. Existing test suites exclude the diagnostic modules.
+
+Custom
+cargo test -p clocktower-custom-domain --lib -- --skip effect_lifetime_audit
+test result: ok. 281 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 24.02s
+
+Official
+cargo test -p clocktower-domain --lib -- --skip effect_lifetime_
+test result: ok. 381 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 3.73s
