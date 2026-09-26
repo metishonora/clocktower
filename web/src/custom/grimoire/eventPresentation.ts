@@ -24,5 +24,7 @@ export function eventPresentation(file:GameFile,event:GameEvent):string {
  const input=payload.input;
  const targets=input&&'playerIds' in input?input.playerIds?.map(person).filter(Boolean).join(' · '):undefined;
  const characters=input&&'characterIds' in input?input.characterIds:input&&'characterId' in input&&input.characterId?[input.characterId]:[];
- return [person(owner),role(ref.characterId),action,targets,characters.map(role).join(' · ')].filter(Boolean).join(' · ');
+ const result=event.type==='customActionConfirmed'?event.payload.result:undefined;
+ const outcome=result?.kind==='pitHagChange'&&!result.changed?'변경 없음':undefined;
+ return [person(owner),role(ref.characterId),action,targets,characters.map(role).join(' · '),outcome].filter(Boolean).join(' · ');
 }

@@ -22,7 +22,7 @@ export function actionResultRows(result:CustomActionResult,person:(id:string)=>s
  case 'nightAttack':return [{label:'공격 대상',value:person(result.targetPlayerId)},{label:'결과',value:result.killedPlayerId?`${person(result.killedPlayerId)} 사망`:pendingNightDeath?'사망 결정 대기':'사망 없음'}];
  case 'witch':return [{label:'저주 대상',value:person(result.targetPlayerId)}];
  case 'snakeCharmer':return [{label:'선택 대상',value:person(result.targetPlayerId)},{label:'결과',value:'교환 없음'}];
- case 'pitHagChange':return [{label:'변경 대상',value:person(result.targetPlayerId)},{label:'직업',value:role(result.characterId)}];
+ case 'pitHagChange':return [{label:'변경 대상',value:person(result.targetPlayerId)},{label:result.changed?'직업':'선택 직업',value:role(result.characterId)},...(!result.changed?[{label:'결과',value:'변경 없음'}]:[])];
  case 'barberSwap':return [{label:'교환 대상',value:result.playerIds.map(person).join(' · ')}];
  default:return [];
  }

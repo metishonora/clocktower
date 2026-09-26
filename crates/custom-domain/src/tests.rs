@@ -117,3 +117,6 @@ mod issue232_regressions;
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue237_carousel;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod vortox_pit_hag;
