@@ -1,3 +1,4 @@
+use crate::effects::{EffectCandidate, EffectKind, EffectRule, EffectWindow};
 use crate::model::CharacterKind;
 pub(super) fn custom_registry_entries() -> Vec<(&'static str, CharacterKind)> {
     vec![
@@ -76,9 +77,14 @@ pub(crate) fn impairment_candidates(
     facts
         .poisoner_choices
         .iter()
-        .filter(|choice| choice.initially_effective && day_effect_in_lifetime(facts, choice.day))
         .map(|choice| crate::effects::ImpairmentEffect {
             effect: crate::state::DurableImpairment {
+                self_interaction: crate::effects::SelfInteraction::IgnoreOwnContribution,
+                rule: EffectRule::ability(
+                    &choice.ability_use,
+                    EffectWindow::ThroughDay(choice.day),
+                    choice.initially_effective,
+                ),
                 source_ability_use: choice.ability_use.clone(),
                 impairment: crate::contracts::ActiveImpairment {
                     kind: crate::contracts::ImpairmentKind::Poisoned,
@@ -88,8 +94,6 @@ pub(crate) fn impairment_candidates(
                     expires: crate::contracts::ImpairmentExpiry::WhileSourceAbilityActive,
                 },
             },
-            requires_source: true,
-            ignore_self: choice.target_player_id == choice.ability_use.owner_player_id,
             demon_harm: false,
         })
         .collect()
@@ -2169,6 +2173,38 @@ fn information_causes(
     Ok((reasons, causes))
 }
 
+fn protection_rule(p: &TargetAssignment) -> EffectRule {
+    EffectRule::ability(
+        &p.ability_use,
+        EffectWindow::Night(u32::from(p.day)),
+        p.initially_effective,
+    )
+}
+pub(crate) fn effect_candidates(f: &CustomGameFacts) -> Vec<EffectCandidate> {
+    f.master_choices
+        .iter()
+        .map(|r| EffectCandidate {
+            kind: EffectKind::Master,
+            origin: r.ability_use.clone(),
+            event_id: r.source_event_id.clone(),
+            target: r.target_player_id.clone(),
+            rule: EffectRule::ability(
+                &r.ability_use,
+                EffectWindow::ThroughDay(r.day),
+                r.initially_effective,
+            ),
+            ended: false,
+        })
+        .chain(f.monk_protections.iter().map(|r| EffectCandidate {
+            kind: EffectKind::Protection,
+            origin: r.ability_use.clone(),
+            event_id: r.source_event_id.clone(),
+            target: r.target_player_id.clone(),
+            rule: protection_rule(r),
+            ended: false,
+        }))
+        .collect()
+}
 pub(crate) fn refresh_assignments(facts: &mut CustomGameFacts) {
     let poison = facts
         .poisoner_choices
@@ -2184,9 +2220,14 @@ pub(crate) fn refresh_assignments(facts: &mut CustomGameFacts) {
         .master_choices
         .iter()
         .map(|c| {
-            c.initially_effective
-                && effective(facts, &c.ability_use)
-                && day_effect_in_lifetime(facts, c.day)
+            crate::effects::status(
+                facts,
+                EffectKind::Master,
+                &c.source_event_id,
+                &c.ability_use,
+                &c.target_player_id,
+            )
+            .active()
         })
         .collect::<Vec<_>>();
     for (c, active) in facts.poisoner_choices.iter_mut().zip(poison) {
@@ -2554,16 +2595,6 @@ pub(crate) fn death_succession(
     Ok(())
 }
 
-fn day_effect_in_lifetime(facts: &CustomGameFacts, day: u16) -> bool {
-    facts.day.as_ref().is_none_or(|d| {
-        if d.stage == crate::day::contracts::DayStage::Night {
-            u32::from(day) > d.day
-        } else {
-            u32::from(day) == d.day
-        }
-    })
-}
-
 pub(crate) fn day_is_once(character: &str) -> bool {
     character == "slayer"
 }
@@ -2737,14 +2768,7 @@ fn drunk_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
         .unwrap_or_default()
 }
 fn butler_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
-    c.facts
-        .master_choices
-        .iter()
-        .filter(|choice| {
-            c.matches_ability(&choice.ability_use) && day_effect_in_lifetime(c.facts, choice.day)
-        })
-        .map(|choice| c.token(&choice.target_player_id, "master", &choice.source_event_id))
-        .collect()
+    c.effects(EffectKind::Master, "master")
 }
 fn undertaker_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
     if !c.living() {
@@ -2793,9 +2817,14 @@ pub(crate) fn demon_attack_target(
         demon_protected(facts, id)
             || facts.monk_protections.iter().any(|p| {
                 p.target_player_id == id
-                    && u32::from(p.day) == facts.night_number()
-                    && p.initially_effective
-                    && effective(facts, &p.ability_use)
+                    && crate::effects::status(
+                        facts,
+                        EffectKind::Protection,
+                        &p.source_event_id,
+                        &p.ability_use,
+                        &p.target_player_id,
+                    )
+                    .active()
             })
     };
     if !effective(facts, source)
@@ -2913,24 +2942,7 @@ fn death_information_facts<'a>(
 }
 
 fn monk_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
-    if c.facts
-        .day
-        .as_ref()
-        .is_some_and(|d| d.stage != crate::day::contracts::DayStage::Night)
-    {
-        return vec![];
-    }
-    c.facts
-        .monk_protections
-        .iter()
-        .filter(|p| c.matches_ability(&p.ability_use) && u32::from(p.day) == c.facts.night_number())
-        .map(|p| {
-            let mut token = c.token(&p.target_player_id, "safe", &p.source_event_id);
-            token.inactive_reason = (!p.initially_effective || !effective(c.facts, &p.ability_use))
-                .then(|| "능력 비활성".into());
-            token
-        })
-        .collect()
+    c.effects(EffectKind::Protection, "safe")
 }
 
 /// Event-time availability is reconstructed on replay, never inferred from current ownership.

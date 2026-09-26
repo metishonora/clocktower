@@ -67,22 +67,28 @@ impl ReminderContext<'_> {
             inactive_reason: None,
         }
     }
-    pub(crate) fn impairments(&self) -> Vec<AutomaticReminder> {
+    pub(crate) fn effects(
+        &self,
+        kind: crate::effects::EffectKind,
+        token: &str,
+    ) -> Vec<AutomaticReminder> {
         self.facts
-            .resolved_impairments
+            .evaluated_effects
             .iter()
-            .filter(|e| self.matches_ability(&e.source_ability_use))
-            .map(|e| {
-                self.token(
-                    &e.impairment.player_id,
-                    if e.impairment.kind == crate::contracts::ImpairmentKind::Poisoned {
-                        "poisoned"
-                    } else {
-                        "drunk"
-                    },
-                    &e.impairment.source_event_id,
-                )
+            .filter(|e| {
+                e.kind() == kind && self.matches_ability(e.origin()) && e.status().visible()
             })
+            .map(|e| {
+                let mut r = self.token(e.target(), token, e.event_id());
+                r.inactive_reason = e.status().inactive_reason();
+                r
+            })
+            .collect()
+    }
+    pub(crate) fn impairments(&self) -> Vec<AutomaticReminder> {
+        self.effects(crate::effects::EffectKind::Poison, "poisoned")
+            .into_iter()
+            .chain(self.effects(crate::effects::EffectKind::Drunk, "drunk"))
             .collect()
     }
     pub(crate) fn spent(&self) -> Vec<AutomaticReminder> {

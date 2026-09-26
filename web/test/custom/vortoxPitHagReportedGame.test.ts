@@ -19,34 +19,23 @@ async function controller(file=original){
  return new FirstNightController(session.value,realWasmCore());
 }
 
-it('replays every saved boundary and preserves the reported poison, deaths and information',async()=>{
- for(let count=1;count<=original.game.events.length;count++)await replayOrThrow(prefix(count));
+it('ends Snake Charmer poison and identifies the first incompatible historical event',async()=>{
+ for(let count=1;count<=28;count++)await replayOrThrow(prefix(count));
  const changed=await replayOrThrow(prefix(25));
  expect(changed.players.find(p=>p.id==='player-1')).toMatchObject({actualCharacter:'vortox',alignment:'good',alive:true});
- expect(changed.ruleState.activeImpairments).toContainEqual(expect.objectContaining({playerId:'player-1',sourceCharacterId:'snakeCharmer',kind:'poisoned',expires:'never'}));
- expect((await replayOrThrow(prefix(28))).players.find(p=>p.id==='player-1')?.alive).toBe(true);
- expect((await replayOrThrow(prefix(42))).players.find(p=>p.id==='player-1')?.alive).toBe(true);
- const deaths=await replayOrThrow(prefix(62));
- for(const id of ['player-1','player-3','player-5'])expect(deaths.players.find(p=>p.id===id)?.alive).toBe(false);
- for(const count of [30,44]){
-  const e=original.game.events[count-1];
-  if(e.type!=='customActionConfirmed')throw Error('expected night information');
-  expect(e.payload.result).toMatchObject({kind:'informationDelivered',information:{actor:{characterId:'townCrier'},computedResult:{kind:'boolean',value:false},deliveredResult:{kind:'boolean',value:false}}});
- }
- for(const [count,value] of [[31,1],[45,1],[64,3]]){
-  const e=original.game.events[count-1];
-  if(e.type!=='customActionConfirmed')throw Error('expected Oracle information');
-  expect(e.payload.result).toMatchObject({information:{computedResult:{kind:'number',value},deliveredResult:{kind:'number',value}}});
- }
- const poisoned=await replayOrThrow(prefix(58));
- expect((poisoned.ruleState.activeImpairments??[]).filter(i=>i.sourceCharacterId==='noDashii').map(i=>i.playerId)).toEqual(['player-5','player-8']);
- expect((poisoned.ruleState.activeImpairments??[]).some(i=>i.sourceCharacterId==='philosopher')).toBe(false);
- const recovered=await replayOrThrow(prefix(77));
- expect((recovered.ruleState.activeImpairments??[]).some(i=>i.sourceCharacterId==='noDashii')).toBe(false);
- expect(recovered.ruleState.activeImpairments).toContainEqual(expect.objectContaining({sourceCharacterId:'philosopher',playerId:'player-9',kind:'drunk'}));
+ expect((changed.ruleState.activeImpairments??[]).some(e=>e.playerId==='player-1' && e.sourceCharacterId==='snakeCharmer')).toBe(false);
+ expect((changed.ruleState.automaticReminders??[]).some(e=>e.playerId==='player-1' && e.characterId==='snakeCharmer' && e.tokenId==='poisoned')).toBe(false);
+ const result=await realWasmCore().replay(prefix(29));
+ expect(result).toMatchObject({ok:false,error:{code:'INVALID_DELIVERED_INFORMATION'}});
+ expect(original.game.events).toHaveLength(92);
+ const saved=structuredClone(original);
+ const storage=new IndexedDbCustomWebSessionStorageDriver<GrimoireSetupDraft,GrimoirePresentationState>(original.game.script.definition.id,new IDBFactory());
+ const session=await CustomCanonicalSession.fromFile(original,{storage,core:realWasmCore(),setupDraft:{playerCount:13,selectedIds:[],players:[]},presentation:{activeTab:'play'} as GrimoirePresentationState});
+ expect(session.ok).toBe(false);
+ expect(original).toEqual(saved);
 });
 
-it.each([27,61])('kills the poisoned Vortox by arbitrary death at saved boundary %i, with restore and Undo',async(count)=>{
+it.each([27])('kills the healthy Vortox by arbitrary death at saved boundary %i, with restore and Undo',async(count)=>{
  const c=await controller(prefix(count));
  try{
   c.finishHandoff();expect(c.step?.actionRef?.actionId).toBe('resolveNightDeaths');
@@ -64,22 +53,25 @@ it.each([27,61])('kills the poisoned Vortox by arbitrary death at saved boundary
  }finally{c.dispose();}
 });
 
-it.each([29,43])('prepares Town Crier information without active Vortox inversion at boundary %i',async(count)=>{
- const c=await controller(prefix(count));
+it('forces false Town Crier information after continuing from the last compatible boundary',async()=>{
+ const file=prefix(28);
+ const state=await replayOrThrow(file);
+ const dream=await realWasmCore().propose(file,{type:'confirmStep',payload:{stepId:state.currentStep!.id,input:{playerIds:['player-2']},deliveredResult:{kind:'characterPair',characterIds:['mathematician','cerenovus']}}});
+ if(!dream.ok)throw Error(dream.error.code);
+ file.game.events.push(dream.value.event);
+ const c=await controller(file);
  try{
   expect(c.step?.actionRef).toMatchObject({characterId:'townCrier',actionId:'learnMinionNominated'});
   await c.prepareCurrent();expect(c.getSnapshot().error).toBeUndefined();
-  expect(c.getSnapshot().activeReveal?.payload).toMatchObject({kind:'booleanInformation',characterId:'townCrier',value:false});
+  expect(c.getSnapshot().activeReveal?.payload).toMatchObject({kind:'booleanInformation',characterId:'townCrier',value:true});
  }finally{c.dispose();}
 });
 
-it('marks the failed Pit-Hag change in the event log and restored result',async()=>{
+it('preserves the failed Pit-Hag result in the historical event log',async()=>{
  const file=prefix(40),event=file.game.events.at(-1)!;
  expect(eventPresentation(file,event)).toContain('변경 없음');
  expect(eventPresentation(file,file.game.events[24])).not.toContain('변경 없음');
- const c=await controller(file);
- try{
-  expect(c.getSnapshot().replay.players.find(p=>p.id==='player-4')?.actualCharacter).toBe('oracle');
-  expect(c.getSnapshot().handoff?.result).toMatchObject({kind:'pitHagChange',changed:false,characterId:'cerenovus'});
- }finally{c.dispose();}
+ // Presentation can inspect the original record independently of replay validity.
+ expect(event.type).toBe('customActionConfirmed');
+ if(event.type==='customActionConfirmed')expect(event.payload.result).toMatchObject({kind:'pitHagChange',changed:false,characterId:'cerenovus'});
 });

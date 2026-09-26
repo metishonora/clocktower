@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+mod effect_lifetime;
 mod step_key;
 use step_key::{PhaseKey as SnvPhaseKey, SemanticStep as SnvSemanticStep, StepKey as SnvStepKey};
 
@@ -981,6 +982,17 @@ fn madness_assignments(
     }
     let mut cerenovus = latest_cerenovus
         .into_values()
+        .filter(|(_, payload)| {
+            current_step.is_none_or(|step| {
+                effect_lifetime::within_assignment_window(&payload.step_id, &step.id)
+            })
+        })
+        .filter(|(event, payload)| {
+            players.iter().any(|p| {
+                p.id == payload.source_player_id
+                    && effect_lifetime::owned_at_assignment(p, event, events)
+            })
+        })
         .map(|(event, payload)| {
             (
                 event.id.clone(),
@@ -3999,31 +4011,6 @@ fn unannounced_night_resurrection_player_ids(events: &[GameEvent]) -> Vec<String
     resurrections
 }
 
-fn active_snake_charmer_impairments(events: &[GameEvent]) -> Vec<ActiveImpairment> {
-    events
-        .iter()
-        .filter_map(|event| match &event.kind {
-            GameEventKind::SnakeCharmerActionResolved { payload } => match &payload.outcome {
-                SnakeCharmerActionOutcome::Swap { impairment, .. } => Some(impairment.clone()),
-                SnakeCharmerActionOutcome::NoSwap { .. } => None,
-            },
-            _ => None,
-        })
-        .collect()
-}
-
-fn base_snv_impairments(events: &[GameEvent]) -> Vec<ActiveImpairment> {
-    let mut impairments = active_snake_charmer_impairments(events);
-    impairments.extend(events.iter().filter_map(|event| match &event.kind {
-        GameEventKind::SweetheartConsequenceResolved { payload } => match &payload.outcome {
-            SweetheartConsequenceOutcome::DrunkApplied { impairment } => Some(impairment.clone()),
-            SweetheartConsequenceOutcome::NoEffect { .. } => None,
-        },
-        _ => None,
-    }));
-    impairments
-}
-
 fn philosopher_actor(player: &Player) -> AbilityUseRef {
     AbilityUseRef {
         owner_player_id: player.id.clone(),
@@ -4336,6 +4323,7 @@ fn player_owns_snake_charmer_step(
 }
 
 struct SnvAbilityState {
+    effects_consistent: bool,
     active_impairments: Vec<ActiveImpairment>,
     retained_minion_player_ids: HashSet<String>,
     pending_vigormortis_poison_choices: Vec<PendingVigormortisPoisonChoice>,
@@ -4346,6 +4334,63 @@ impl SnvAbilityState {
     fn build(players: &[Player], events: &[GameEvent]) -> Self {
         #[cfg(test)]
         ABILITY_STATE_BUILD_COUNT.with(|count| count.set(count.get() + 1));
+        let candidates = effect_lifetime::candidates(events);
+        let mut base = Vec::new();
+        let mut seen = Vec::new();
+        loop {
+            let mut state = Self::build_with_base(players, events, base.clone());
+            let statuses = candidates
+                .iter()
+                .map(|c| c.status(players, events, &state.active_impairments))
+                .collect::<Vec<_>>();
+            let next = candidates
+                .iter()
+                .zip(&statuses)
+                .filter(|(_, s)| **s == effect_lifetime::Status::Active)
+                .map(|(c, _)| c.impairment.clone())
+                .collect::<Vec<_>>();
+            if next == base {
+                for (candidate, status) in candidates.iter().zip(statuses) {
+                    if status == effect_lifetime::Status::Suspended {
+                        state.inactive_reminders.push(AutomaticReminder {
+                            player_id: candidate.impairment.player_id.clone(),
+                            character_id: candidate.impairment.source_character_id.clone(),
+                            token_id: match candidate.impairment.kind {
+                                ImpairmentKind::Poisoned => "poisoned",
+                                ImpairmentKind::Drunk => "drunk",
+                            }
+                            .into(),
+                            label: match candidate.impairment.kind {
+                                ImpairmentKind::Poisoned => "중독",
+                                ImpairmentKind::Drunk => "취함",
+                            }
+                            .into(),
+                            description: "원천 능력이 취하거나 중독되어 현재 효력이 없습니다."
+                                .into(),
+                            count: None,
+                            source_event_id: Some(candidate.impairment.source_event_id.clone()),
+                            inactive_reason: Some("원천 능력 취함·중독".into()),
+                        });
+                    }
+                }
+                return state;
+            }
+            if seen.contains(&next) {
+                // Do not publish one arbitrary phase of an oscillating dependency.
+                // Canonical replay rejects this state at its normal validation boundary.
+                state.effects_consistent = false;
+                return state;
+            }
+            seen.push(base);
+            base = next;
+        }
+    }
+
+    fn build_with_base(
+        players: &[Player],
+        events: &[GameEvent],
+        base_impairments: Vec<ActiveImpairment>,
+    ) -> Self {
         let mut event_positions = HashMap::with_capacity(events.len());
         let mut latest_vigormortis_targets = HashMap::<&str, String>::new();
         for (index, event) in events.iter().enumerate() {
@@ -4357,7 +4402,6 @@ impl SnvAbilityState {
                 );
             }
         }
-        let base_impairments = base_snv_impairments(events);
         let mut active_impairments = base_impairments.clone();
         let mut retained_minion_player_ids = HashSet::new();
         let mut pending_vigormortis_poison_choices = Vec::new();
@@ -4574,6 +4618,7 @@ impl SnvAbilityState {
         ));
 
         Self {
+            effects_consistent: true,
             active_impairments,
             retained_minion_player_ids,
             pending_vigormortis_poison_choices,
@@ -5759,6 +5804,9 @@ fn replay_phase_steps(
     audit_index: &MathematicianAuditIndex,
 ) -> Option<(Phase, Vec<PhaseStep>, Option<PhaseStep>)> {
     let ability_state = SnvAbilityState::build(players, events);
+    if !ability_state.effects_consistent {
+        return None;
+    }
     let (phase, steps, mut current) =
         current_phase_steps(players, events, next_event_count, statuses, &ability_state)?;
     if let Some(step) = current
@@ -6977,6 +7025,9 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         None
     };
     let ability_state = SnvAbilityState::build(&players, active_events);
+    if !ability_state.effects_consistent {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    }
     let active_witch_curse = active_witch_curse(
         phase,
         current_step.as_ref(),

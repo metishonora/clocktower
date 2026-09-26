@@ -47,3 +47,7 @@ mod suggestion_scenarios;
 mod support;
 mod trouble_brewing_scenarios;
 mod win_game_scenarios;
+
+mod issue269_effect_lifetime_cerenovus;
+mod issue269_effect_lifetime_snake;
+mod issue269_effect_lifetime_sweetheart;

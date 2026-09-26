@@ -66,8 +66,9 @@ separately, without manufacturing an actual ability instance.
 Handlers own token kind, target, evidence event and lifetime. Context queries distinguish current
 instances, living owners, matching action occurrences and actual versus simulated sources; no
 universal effectiveness gate is applied. Undertaker requires a living current ability/guidance
-source, while Barber's pending death handoff and durable poison retain their historical source
-through death or identity change. Resolved effect and spent-use formatting are reusable context
+source, while Barber's pending death handoff retains its historical source. Persistent effect
+markers retain historical attribution but require a currently valid maintenance binding.
+Resolved effect and spent-use formatting are reusable context
 helpers explicitly selected by character registrations. The common dispatcher contains no
 character-name branches and never infers ability ownership from a token or target's character.
 
@@ -123,6 +124,40 @@ use the ability owner's actual team; simulated information uses its real root so
 when deciding whether Vortox applies.
 
 Custom `effects.rs` resolves character-owned effect candidates against a common fact view.
+
+Persistent contributions carry an `EffectRule` with a mandatory binding, a time window, and
+whether the original attempt succeeded. `EffectBinding` distinguishes an ordinary ability,
+an ability that works after death, and the resulting identity of a transformation. `NoDeadline`
+only removes the clock deadline; it never bypasses ownership, availability or impairment checks.
+The historical `source_ability_use` remains the event's cause. Snake Charmer poison is maintained
+by the exact resulting identity (also when an acquired Snake Charmer produces a Philosopher),
+while Sweetheart drunkenness is maintained by its exact ability with an explicit death exception.
+Self-inflicted impairment is a character-declared `SelfInteraction`, not an implicit exemption
+for all durable records. A recipient's identity change does not erase externally maintained effects.
+
+`effects/lifetime.rs` evaluates active, suspended, ended and never-applied states with reasons.
+The existing impairment fixed-point solver evaluates these rules, retains independent overlapping
+contributions, and rejects oscillating dependencies. Curse, madness, master, protection and twin
+candidates use the same rule evaluator; their rule consumers and automatic reminders use its
+results. Ended markers disappear; suspended and never-applied markers use `inactiveReason`.
+Character modules still own target selection, day/night windows, replacement rules and grants.
+Historical causes, deaths, identity changes, delivered reveals and spent uses are not deleted.
+Undo and replay derive validity from the selected prefix; no effect status is serialized.
+
+Official SnV keeps a separate `characters/sects_and_violets/effect_lifetime.rs` implementation.
+It reconstructs Snake Charmer and Sweetheart bindings from canonical events and evaluates their
+dependencies around the existing SnV ability-state calculation. Inconsistent cycles fail replay.
+Legacy Cerenovus events have no ability-instance field; their acquisition event boundary excludes
+assignments made before the current identity. Its explicit window includes the following day and
+night, but not another day; a newer assignment supersedes the previous one. This does not migrate official TB/BMR, grants or the entire rules engine onto the custom evaluator.
+
+The saved `expires: never` DTO is unchanged and does not imply an unconditional effect. Existing
+files still cross strict event validation. An old result that depended on the fixed bug may fail
+replay; import does not rewrite previously delivered information or saved deaths. The reported
+Vortox game first conflicts at event 29 (Dreamer information), after 28 valid events. Historical
+recovery/versioning remains separate from this rule correction. See
+[the effect lifetime audit](docs/testing/effect-lifetime-audit.md).
+
 `simulation.rs` derives guidance and its usage from real sources and confirmed choices.
 The scheduler owns required preparation and optional candidates separately from ordered progress.
 Preparation records link each delivery to the chosen version; optional events cannot consume ordinary progress.

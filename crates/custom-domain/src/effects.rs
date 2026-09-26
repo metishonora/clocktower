@@ -1,5 +1,6 @@
-//! Common, deterministic effect evaluation. Character modules provide candidate rules;
-//! this module evaluates source dependencies against one snapshot per iteration.
+mod lifetime;
+pub(crate) use lifetime::*;
+// Character modules provide candidates; one evaluator resolves their dependencies.
 use crate::{
     characters::ResolvedScriptContext,
     contracts::*,
@@ -11,8 +12,6 @@ use crate::{
 #[derive(Clone)]
 pub(crate) struct ImpairmentEffect {
     pub(crate) effect: DurableImpairment,
-    pub(crate) requires_source: bool,
-    pub(crate) ignore_self: bool,
     pub(crate) demon_harm: bool,
 }
 pub(crate) fn impaired(facts: &CustomGameFacts, player: &str) -> bool {
@@ -128,8 +127,6 @@ pub(crate) fn resolve_effects(
         .cloned()
         .map(|effect| ImpairmentEffect {
             effect,
-            requires_source: false,
-            ignore_self: false,
             demon_harm: false,
         })
         .collect::<Vec<_>>();
@@ -154,14 +151,12 @@ pub(crate) fn resolve_effects(
                 .iter()
                 .filter(|candidate| {
                     let mut source_view = view.clone();
-                    if candidate.ignore_self {
+                    if candidate.effect.self_interaction == SelfInteraction::IgnoreOwnContribution {
                         source_view
                             .active_impairments
                             .retain(|e| e != &candidate.effect.impairment);
                     }
-                    if candidate.requires_source
-                        && !effective(&source_view, &candidate.effect.source_ability_use)
-                    {
+                    if !evaluate_rule(&source_view, &candidate.effect.rule).active() {
                         return false;
                     }
                     if candidate.demon_harm {
@@ -200,6 +195,40 @@ pub(crate) fn resolve_effects(
         }
     }
     facts.resolved_impairments = active;
+    facts.evaluated_effects = candidates
+        .iter()
+        .map(|c| {
+            let mut view = facts.clone();
+            if c.effect.self_interaction == SelfInteraction::IgnoreOwnContribution {
+                view.active_impairments
+                    .retain(|e| e != &c.effect.impairment);
+            }
+            let mut status = evaluate_rule(&view, &c.effect.rule);
+            if status.active() && !facts.resolved_impairments.contains(&c.effect) {
+                status = EffectStatus::Suspended(SuspendReason::Protected);
+            }
+            lifetime::evaluated(
+                EffectCandidate {
+                    kind: match c.effect.impairment.kind {
+                        ImpairmentKind::Poisoned => EffectKind::Poison,
+                        ImpairmentKind::Drunk => EffectKind::Drunk,
+                    },
+                    origin: c.effect.source_ability_use.clone(),
+                    event_id: c.effect.impairment.source_event_id.clone(),
+                    target: c.effect.impairment.player_id.clone(),
+                    rule: c.effect.rule.clone(),
+                    ended: false,
+                },
+                status,
+            )
+        })
+        .collect();
+    let assignments = crate::characters::sects_and_violets::effect_candidates(facts)
+        .into_iter()
+        .chain(crate::characters::trouble_brewing::effect_candidates(facts))
+        .map(|c| evaluate(facts, c))
+        .collect::<Vec<_>>();
+    facts.evaluated_effects.extend(assignments);
     crate::characters::sects_and_violets::refresh_assignments(facts)?;
     crate::characters::trouble_brewing::refresh_assignments(facts);
     Ok(())

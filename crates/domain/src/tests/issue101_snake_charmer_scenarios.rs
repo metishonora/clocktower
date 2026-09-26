@@ -263,7 +263,7 @@ fn official_no_swap_and_vigormortis_swap_are_atomic_replayable_events() {
 }
 
 #[test]
-fn a_poisoned_character_changed_to_minion_still_counts_for_vigormortis() {
+fn former_snake_loses_poison_and_new_minion_still_counts_for_vigormortis() {
     let mut events = vec![standard_setup()];
     let first_snake = advance_to_snake_charmer(&mut events, false);
     append(
@@ -331,7 +331,7 @@ fn a_poisoned_character_changed_to_minion_still_counts_for_vigormortis() {
     let impairments = after["value"]["ruleState"]["activeImpairments"]
         .as_array()
         .unwrap();
-    assert!(impairments.iter().any(|impairment| {
+    assert!(!impairments.iter().any(|impairment| {
         impairment["playerId"] == "player-7" && impairment["sourceCharacterId"] == "snakeCharmer"
     }));
     assert!(impairments.iter().any(|impairment| {

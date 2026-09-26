@@ -124,6 +124,12 @@ fn dead_barber_keeps_death_bound_token_until_handoff_is_resolved() {
 fn durable_poison_uses_historical_source_and_same_projection_for_spy_and_board() {
     let (context, mut f) = facts(&["snakeCharmer", "soldier"]);
     f.durable_impairments.push(DurableImpairment {
+        self_interaction: crate::effects::SelfInteraction::IgnoreOwnContribution,
+        rule: crate::effects::EffectRule {
+            binding: crate::effects::EffectBinding::ResultingIdentity(source(&f, 1)),
+            window: crate::effects::EffectWindow::NoDeadline,
+            established: true,
+        },
         source_ability_use: source(&f, 0),
         impairment: ActiveImpairment {
             kind: ImpairmentKind::Poisoned,
@@ -147,7 +153,7 @@ fn durable_poison_uses_historical_source_and_same_projection_for_spy_and_board()
 }
 #[test]
 fn cerenovus_token_lifetime_is_independent_of_target_death_and_expires_at_night() {
-    let (_, mut f) = facts(&["cerenovus", "soldier"]);
+    let (context, mut f) = facts(&["cerenovus", "soldier"]);
     executed(&mut f);
     f.madness_assignments
         .push(crate::contracts::MadnessAssignment {
@@ -160,9 +166,11 @@ fn cerenovus_token_lifetime_is_independent_of_target_death_and_expires_at_night(
             effective: true,
         });
     f.players[1].alive = false;
+    crate::effects::resolve_effects(&context, &mut f).unwrap();
     assert_eq!(project(&f)[0].token_id, "mad");
     assert_eq!(undertaker_count(&f), 0);
     f.day.as_mut().unwrap().stage = DayStage::Night;
+    crate::effects::resolve_effects(&context, &mut f).unwrap();
     assert!(project(&f).is_empty());
 }
 #[test]
