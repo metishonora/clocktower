@@ -1,7 +1,7 @@
 import {directNightAction,nightInformation,nightAttack} from './nightContracts';
 import type {ActionAdapter} from './registry';
 export const sectsAndVioletsActions={
- 'pitHag.changeCharacter': {...directNightAction,resultReview:'changedIdentity',inputView:'madness',acceptedInputs:['characterTransformation'],selectionLabel:'배역 변경 대상 선택'},
+ 'pitHag.changeCharacter': {...directNightAction,resultReview:'selection',inputView:'madness',acceptedInputs:['characterTransformation'],selectionLabel:'배역 변경 대상 선택'},
  'pitHag.chooseDeaths': {...directNightAction,selectionLabel:'사망 대상 선택'},
  'fangGu.attackPlayer': {...nightAttack,selectionLabel:'공격 대상 선택'},
  'noDashii.attackPlayer': {...nightAttack,selectionLabel:'공격 대상 선택'},

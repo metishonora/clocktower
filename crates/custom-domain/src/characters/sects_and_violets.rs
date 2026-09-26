@@ -3129,7 +3129,12 @@ impl SnvNightHandler {
         facts
             .night_deaths
             .iter()
-            .find(|d| d.event_id == *death_event_id)
+            // One arbitrary-death event may contain several players. Match the
+            // ability owner as well as the event before reading their snapshot.
+            .find(|d| {
+                d.event_id == *death_event_id
+                    && Some(d.player.id.as_str()) == o.actor_player_id()
+            })
             .is_some_and(|d| {
                 o.ability_use
                     .as_ref()
