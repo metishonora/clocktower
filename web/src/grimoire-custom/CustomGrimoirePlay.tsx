@@ -10,7 +10,7 @@ import {CustomDayTask} from './CustomDayTask';
 import {LiveUndoDialog} from '../features/event-log/LiveUndoDialog';
 import {GameConfirmationDialog} from '../shared-ui/GameConfirmationDialog';
 import {actionAdapter} from '../custom/grimoire/actions/registry';
-import {eventPresentation} from '../custom/grimoire/eventPresentation';
+import {eventHistory} from '../custom/grimoire/eventPresentation';
 import {MadnessActionView} from '../shared-ui/MadnessActionView';
 import {characterPresentation} from '../custom/authoring/characterPresentation';
 import { CustomRoleSetup } from './CustomRoleSetup';
@@ -21,7 +21,7 @@ import { CustomPhaseOrder } from './CustomPhaseOrder';
 import { CustomNightTask } from './CustomNightTask';
 import { useCustomUtilities, type CustomUtilityActions } from './CustomUtilities';
 import { CustomGrimoireBoard } from './CustomGrimoireBoard';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ProductionApplicationShell } from '../shared-ui/ProductionApplicationShell';
 import { PlayPresentation } from '../shared-ui/PlayPresentation';
 import { latestCanonicalUndoUnit } from '../custom/core/canonicalUndo';
@@ -32,15 +32,16 @@ import './customGrimoirePlay.css';
 export function CustomGrimoirePlay({ controller, onNewGame, onNewScenario, onSavedGames, onImport, onRestart }: { controller: FirstNightController; onRestart?: () => void } & CustomUtilityActions) {
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const { replay, file } = state;
+  const history=useMemo(()=>eventHistory(file,replay),[file,replay]);
   const runtime=usePhaseRuntime({activePhase:replay.gameEnd?undefined:{key:replay.phase,label:phaseLabel(replay)},gameSessionRevision:0,clock:browserRuntimeClock});
   const undoUnit = latestCanonicalUndoUnit(file,replay);
   const undoEvent = file.game.events.find(event=>event.type!=='setupConfirmed'&&event.payload.stepId===undoUnit?.summaryStepId);
   const summaryEvent=undoEvent??file.game.events.find(event=>event.id===undoUnit?.eventIds[0]);
-  const undoSummary = summaryEvent ? eventPresentation(file,summaryEvent) : undefined;
+  const undoSummary = summaryEvent ? history.find(row=>row.id===summaryEvent.id)?.summary : undefined;
   const [undoRequest,setUndoRequest]=useState<{file:typeof file;events:{id:string;summary:string}[]}>();
   const undo = () => {
     if (!undoUnit || state.busy || state.public || state.saveStatus!=='saved') return;
-    setUndoRequest({file,events:file.game.events.filter(event=>undoUnit.eventIds.includes(event.id)).map(event=>({id:event.id,summary:eventPresentation(file,event)}))});
+    setUndoRequest({file,events:file.game.events.filter(event=>undoUnit.eventIds.includes(event.id)).map(event=>({id:event.id,summary:history.find(row=>row.id===event.id)?.summary??event.summary}))});
   };
   const confirmUndo=()=>{
     const request=undoRequest,current=controller.getSnapshot();
@@ -66,7 +67,7 @@ export function CustomGrimoirePlay({ controller, onNewGame, onNewScenario, onSav
     else if(wasSelecting.current){setTab(handoffDestination.current==='board'?'seating':'play');}
     wasSelecting.current=active;
   },[state.selecting,state.selectionRevision,state.handoff?.stage,state.dayHandoff,dayResolution?.id,progressNotification]);
-  const utilities = useCustomUtilities({definition:file.game.script.definition,file,busy:state.busy || state.public || state.saveStatus!=='saved',onNewGame,onNewScenario,onSavedGames,onImport,history:<CustomEventLog file={file}/>});
+  const utilities = useCustomUtilities({definition:file.game.script.definition,file,busy:state.busy || state.public || state.saveStatus!=='saved',onNewGame,onNewScenario,onSavedGames,onImport,history:<CustomEventLog file={file} rows={history}/>});
   useEffect(()=>{
     setDayConsequenceSelection(undefined);
     if(pendingDayResolution?.kind==='consequence'){utilities.close();setTab('play');}
@@ -90,7 +91,7 @@ export function CustomGrimoirePlay({ controller, onNewGame, onNewScenario, onSav
     {Array.from(new Set([...replay.warnings,...(state.proposal?.warnings ?? [])].map(w=>w.messageKo))).map(message=><p key={message} className="customPlayWarning" role="status">{message}</p>)}
     {tab==='roles'&&state.setupDistributionError&&<div className="customPlayError" role="alert">{state.setupDistributionError}<button type="button" onClick={()=>void controller.retrySetupDistribution()}>구성 다시 확인</button></div>}
     {state.error && <p className="customPlayError" role="alert">{state.error}</p>}
-    {utilities.storageOpen ? null : tab==='roles' ? <CustomRoleSetup theme={replay.phase==='day'?'day':'night'} definition={file.game.script.definition} draft={originalDraft} rosterConfirmed distribution={state.setupDistribution} adjustment={state.setupDistribution?.adjustment} distributionPending={state.setupDistributionPending} onPlayerCount={noop} onDemon={noop} canSelect={()=>false} onToggle={noop} onConfirm={()=>setTab('seating')}/> : tab==='seating' ? dayResolution?<CustomDayResolutionBoard key={dayResolution.id} controller={controller} resolution={dayResolution} onCancel={()=>setDayConsequenceSelection(undefined)}/>:state.dayHandoff?<CustomDayBoard controller={controller}/>:<CustomGrimoireBoard onRestart={onRestart?()=>setReturnOpen(true):undefined} runtime={runtime} controller={controller} onSelectionDone={()=>setTab('play')} file={file} replay={replay} onProgress={()=>setTab('play')}/> : replay.gameEnd?<EndedGameView winningTeam={replay.gameEnd.winningAlignment} reason={endReason(replay.gameEnd.reason)} onGrimoire={()=>setTab('seating')}/>:<PlayPresentation ariaLabel={`${phaseLabel(replay)} 진행`} className={`snvManualSurface bmrPlaySurface snvFirstNightSurface snvTabPanel ${replay.phase==='day'?'snvDaySurface':'snvNightSurface'}`} headerClassName="snvFirstNightHeader" primaryClassName="snvFirstNightPrimary bmrPlayPrimary" phaseHeader={<><button type="button" aria-label="마도서로 이동" disabled={progressNotification} onClick={()=>setTab('seating')}>← 마도서</button><div className="snvProgressPhaseHeader"><h2>{replay.gameEnd ? '게임 종료' : phaseLabel(replay)}</h2><time aria-label="경과 시간">{runtime}</time></div></>} currentTask={replay.phase==='day'&&replay.day?<CustomDayTask key={replay.day.stepId} controller={controller} onChooseConsequence={()=>setDayConsequenceSelection(pendingDayResolution?.id)}/>:<CustomNightTask key={step?.id ?? replay.phase} controller={controller}/>} auxiliary={null} phaseOrder={replay.phase==='day'&&replay.day?<CustomDayPhaseOrder controller={controller}/>:<CustomPhaseOrder controller={controller}/>} />}
+    {utilities.storageOpen ? null : tab==='roles' ? <CustomRoleSetup theme={replay.phase==='day'?'day':'night'} definition={file.game.script.definition} draft={originalDraft} rosterConfirmed distribution={state.setupDistribution} adjustment={state.setupDistribution?.adjustment} distributionPending={state.setupDistributionPending} onPlayerCount={noop} onDemon={noop} canSelect={()=>false} onToggle={noop} onConfirm={()=>setTab('seating')}/> : tab==='seating' ? dayResolution?<CustomDayResolutionBoard key={dayResolution.id} controller={controller} resolution={dayResolution} onCancel={()=>setDayConsequenceSelection(undefined)}/>:state.dayHandoff?<CustomDayBoard controller={controller}/>:<CustomGrimoireBoard history={history} onRestart={onRestart?()=>setReturnOpen(true):undefined} runtime={runtime} controller={controller} onSelectionDone={()=>setTab('play')} file={file} replay={replay} onProgress={()=>setTab('play')}/> : replay.gameEnd?<EndedGameView winningTeam={replay.gameEnd.winningAlignment} reason={endReason(replay.gameEnd.reason)} onGrimoire={()=>setTab('seating')}/>:<PlayPresentation ariaLabel={`${phaseLabel(replay)} 진행`} className={`snvManualSurface bmrPlaySurface snvFirstNightSurface snvTabPanel ${replay.phase==='day'?'snvDaySurface':'snvNightSurface'}`} headerClassName="snvFirstNightHeader" primaryClassName="snvFirstNightPrimary bmrPlayPrimary" phaseHeader={<><button type="button" aria-label="마도서로 이동" disabled={progressNotification} onClick={()=>setTab('seating')}>← 마도서</button><div className="snvProgressPhaseHeader"><h2>{replay.gameEnd ? '게임 종료' : phaseLabel(replay)}</h2><time aria-label="경과 시간">{runtime}</time></div></>} currentTask={replay.phase==='day'&&replay.day?<CustomDayTask key={replay.day.stepId} controller={controller} onChooseConsequence={()=>setDayConsequenceSelection(pendingDayResolution?.id)}/>:<CustomNightTask key={step?.id ?? replay.phase} controller={controller}/>} auxiliary={null} phaseOrder={replay.phase==='day'&&replay.day?<CustomDayPhaseOrder controller={controller}/>:<CustomPhaseOrder controller={controller}/>} />}
     {replay.phase==='day'&&replay.day&&!utilities.storageOpen&&tab!=='roles'&&!state.dayHandoff&&!state.handoff&&!state.public&&!replay.gameEnd&&!replay.day.pendingGameEnd&&!replay.day.pendingDeath&&!replay.day.consequences.some(c=>!c.resolved&&c.source.characterId!=='barber')&&!state.dayNotifications?.length&&<CustomDayAbilities day={replay.day} players={replay.players} controller={controller} busy={state.busy||state.saveStatus!=='saved'}/>}
     <MadnessActionView players={replay.players} assignments={controller.steps.filter(s=>s.actionCause?.kind==='optional'&&s.madness&&s.playerId).map(s=>{const role=characterPresentation(s.character!)!;return {assignmentId:s.id,sourcePlayerId:s.playerId!,targetPlayerId:s.playerId!,sourceCharacterId:s.character as 'mutant'|'pixie',requiredCharacterId:s.madness!.characterId,requiredCharacterLabel:s.madness!.characterId?characterPresentation(s.madness!.characterId)?.label:undefined,status:s.madness!.check==='violation'?'violated' as const:s.madness!.check==='clear'?'clear' as const:'unchecked' as const,sourceEffective:s.madness!.sourceEffective,canCheck:s.madness!.canCheck,canExecute:s.madness!.canExecute,sourceLabel:role.label,iconSrc:role.image,ability:role.ability};})}
       groupActive={!utilities.storageOpen} phaseLabel={phaseLabel(replay)} theme={replay.phase==='day'?'day':'night'} precedingActionCount={0} busy={state.busy||state.public||!!state.handoff||!!replay.gameEnd} executionDescription="처형을 확정하면 현재 진행이 중단됩니다."

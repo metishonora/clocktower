@@ -1321,3 +1321,21 @@ retain these IDs across save/import and game creation, but resolved runtime cont
 exclude them: they cannot be assigned, acquired, transformed into, or scheduled for
 night actions. The setup distribution and playable character catalog remain unchanged.
 This authoring support does not enable Traveller gameplay or a manual fallback.
+
+
+### Custom action history (#273)
+
+Custom replay exposes `eventHistory`, a read-only context aligned with canonical event IDs.
+It is captured only after each event validates, using that event's before/after state: cycle,
+acting identity, identity transitions, system-information snapshot and recipients, daytime
+nomination/execution/death/consequence context, and attack-time deferred-death status.
+The disposable replay-prefix cache carries this context alongside the validated state; truncation
+or a changed prefix rebuilds both. Neither GameFile v5 nor confirmed summaries are rewritten.
+
+TypeScript formats typed saved inputs/results plus this context into one history presentation.
+The full log, player inspector and Undo summaries share it. Player history is indexed by stable
+player IDs, including actors, recipients and referenced targets, not by current character.
+Information delivery uses recorded delivered values; computed values and recorded reasons appear
+separately. Preparation, delivery, execution and death remain distinct confirmations. Historical
+attack wording is never rewritten using today's pending-death projection. History is private
+Storyteller presentation and is never added to player-facing Reveal payloads.

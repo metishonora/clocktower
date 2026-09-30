@@ -294,7 +294,7 @@ export type StepExecution = {id:string;rootStepId:string;displayStepId:string;pr
 export type ActionExecution = {id:string;rootStepId:string;displayStepId:string;stepIds:string[];eventIds:string[];status:'pending'|'active'|'complete'|'interrupted'};
 export type LatestUndoUnit = {id:string;executionId:string;eventIds:string[];summaryStepId:string};
 export type NightDeathsView = {status:'pending'|'resolved';sources:{eventId:string;abilityUse:AbilityUseRef}[];pendingAttackEventIds:string[]};
-export type ReplayState = {nightDeaths?:NightDeathsView;nightNumber: number;day?:DayView;actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 5; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
+export type ReplayState = {eventHistory?:EventHistoryContext[];nightDeaths?:NightDeathsView;nightNumber: number;day?:DayView;actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 5; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
 
 
 export type PendingIdentityReveal = {
@@ -828,3 +828,16 @@ export type MadnessAssignment = WitchCurse & { characterId: string };
 
 export type TargetAssignment = { sourceEventId: string; abilityUse: AbilityUseRef; targetPlayerId: string; day: number; initiallyEffective: boolean; effective: boolean };
 export type PreparationRecord = { sourceEventId: string; actionRef: FirstNightActionRef; abilityUse?: AbilityUseRef; simulationSource?: PhilosopherSimulationSource; result: CustomActionResult; registrationJudgments: RegistrationJudgment[] };
+
+/** Event-time, read-only context from validated replay; never part of GameFile. */
+export type EventHistoryContext = {
+  eventId:string; phase:Phase; cycle:number; actorCharacterId:string|null;
+  identityChanges:{playerId:string;before:IdentityState;after:IdentityState}[];
+  systemReveal:RevealPayload|null; pendingNightDeath:boolean;
+  recipientPlayerIds:string[]; gameEnd:CustomGameEnd|null;
+  nomination:{nominatorId:string;nomineeId:string}|null;
+  executionPlayerId:string|null;
+  death:import('./dayTypes').PendingDayDeath|null;
+  consequence:import('./dayTypes').DayConsequence|null;
+  madness:import('./dayTypes').DayMadness|null;
+};

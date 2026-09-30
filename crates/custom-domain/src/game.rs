@@ -26,6 +26,7 @@ use super::{
 // truth: compare their complete serialized contents and the exact script before reusing facts.
 // A changed/truncated prefix falls back to the full fold; an appended event is always validated.
 struct ValidatedReplayPrefix {
+    event_history: Vec<crate::history::EventHistoryContext>,
     schema_version: u32,
     script: ScriptReference,
     events: Vec<String>,
@@ -41,6 +42,7 @@ pub(crate) fn clear_replay_prefix_for_tests() {
 }
 
 struct ReplayComponents {
+    event_history: Vec<crate::history::EventHistoryContext>,
     action_executions: Vec<crate::first_night::execution::ActionExecution>,
     latest_undo_unit: Option<crate::first_night::execution::LatestUndoUnit>,
     available_actions: Vec<PhaseStep>,
@@ -70,6 +72,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let script = game_file.script.clone();
     if game_file.game.events.is_empty() {
         return Ok(ReplayState {
+            event_history: vec![],
             night_deaths: None,
             night_number: 0,
             day: None,
@@ -93,6 +96,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     }
     let components = replay_components(&game_file)?;
     Ok(ReplayState {
+        event_history: components.event_history,
         night_deaths: if components.phase == Phase::Night {
             let ScriptReference::Custom { definition } = &game_file.script;
             crate::night_deaths::view(
@@ -388,9 +392,13 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
                     && prefix.script == game_file.script
                     && event_keys.starts_with(&prefix.events)
             })
-            .map(|prefix| (prefix.events.len(), prefix.state.clone()))
+            .map(|prefix| (
+                prefix.events.len(),
+                prefix.state.clone(),
+                prefix.event_history.clone(),
+            ))
     });
-    let (replayed_count, mut state) = if let Some(cached) = cached {
+    let (replayed_count, mut state, mut event_history) = if let Some(cached) = cached {
         cached
     } else {
         let mut facts = CustomGameFacts::from_players(players);
@@ -410,7 +418,10 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         let activation = activation_rule();
         let scheduler = NightScheduler::new(&plan, &registry, activation.as_ref());
         let progress = scheduler.initial_progress(&initial_context)?;
-        (1, CustomGameState::with_first_night(facts, progress))
+        let state = CustomGameState::with_first_night(facts, progress);
+        let first_context =
+            crate::history::context(first, &CustomGameState::default(), &state, false);
+        (1, state, vec![first_context])
     };
     let registry = action_registry()?;
     let activation = activation_rule();
@@ -429,7 +440,7 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         } else {
             &other_plan
         };
-        state = apply_event(
+        let next = apply_event(
             &context,
             event_plan,
             &registry,
@@ -439,6 +450,10 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
             event_index,
             true,
         )?;
+        event_history.push(crate::history::context(
+            event, &state, &next, definition.night_order_version == Some(2),
+        ));
+        state = next;
     }
 
     let phase = state.phase;
@@ -515,6 +530,7 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
     state.phase = phase;
     REPLAY_PREFIX.with(|cached| {
         *cached.borrow_mut() = Some(ValidatedReplayPrefix {
+            event_history: event_history.clone(),
             schema_version: game_file.schema_version,
             script: game_file.script.clone(),
             events: event_keys,
@@ -522,6 +538,7 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         })
     });
     Ok(ReplayComponents {
+        event_history,
         action_executions,
         latest_undo_unit,
         available_actions,

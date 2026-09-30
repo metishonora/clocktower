@@ -60,3 +60,7 @@ export function isDayView(v:unknown,check:Validators):v is DayView {
     (e===null||(obj(e)&&keys(e,['eventId','playerId','deathEventId','died'])&&id(e.eventId)&&optionalId(e.playerId)&&optionalId(e.deathEventId)&&bool(e.died)))&&
     Array.isArray(v.nominations)&&v.nominations.every(n=>obj(n)&&keys(n,['eventId','nominatorId','nomineeId','nominationParticipants','voteParticipants','voterIds','countedVoterIds','ghostVoteSpentPlayerIds'])&&id(n.eventId)&&id(n.nominatorId)&&id(n.nomineeId)&&participants(n.nominationParticipants,check)&&(n.voteParticipants===null||participants(n.voteParticipants,check))&&(n.voterIds===null||ids(n.voterIds))&&(n.countedVoterIds===null||ids(n.countedVoterIds))&&ids(n.ghostVoteSpentPlayerIds));
 }
+
+export function isDayHistoryContext(v:Record<string,unknown>,c:Validators):boolean {
+ return (v.death===null||pendingDeath(v.death,c)) && (v.consequence===null||consequence(v.consequence,c)) && (v.madness===null||madness(v.madness,c));
+}

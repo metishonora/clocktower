@@ -189,7 +189,7 @@ export function PlayerTokenDetailDialog({
       }
       if (event.key !== "Tab") return;
       const focusable = Array.from(
-        dialogRef.current?.querySelectorAll<HTMLElement>("button:not(:disabled), a[href]") ?? [],
+        dialogRef.current?.querySelectorAll<HTMLElement>("button:not(:disabled), a[href], summary, [tabindex=\"0\"]") ?? [],
       );
       const first = focusable[0];
       const last = focusable.at(-1);

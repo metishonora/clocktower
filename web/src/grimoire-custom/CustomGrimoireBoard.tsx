@@ -1,3 +1,5 @@
+import {CustomPlayerHistory} from './CustomEventLog';
+import {eventHistory,type EventHistoryRow} from '../custom/grimoire/eventPresentation';
 import {CustomNotificationPrompt} from './CustomNotificationPrompt';
 import {CustomBalloonistPrevious} from './CustomBalloonistPrevious';
 import {actionAdapter} from '../custom/grimoire/actions/registry';
@@ -24,7 +26,7 @@ import { PlayerTokenCountBadge, PlayerTokenDetailDialog } from '../features/grim
 import type { GameFile, ReplayState } from '../custom/core/types';
 import { characterPresentation, kindLabels } from '../custom/authoring/characterPresentation';
 
-export function CustomGrimoireBoard({ file, replay, onProgress, controller, onSelectionDone, runtime, onRestart }: { runtime?:string; file: GameFile; replay: ReplayState; onProgress: () => void; onRestart?: () => void; controller:FirstNightController; onSelectionDone:()=>void }) {
+export function CustomGrimoireBoard({ history, file, replay, onProgress, controller, onSelectionDone, runtime, onRestart }: { history?:EventHistoryRow[]; runtime?:string; file: GameFile; replay: ReplayState; onProgress: () => void; onRestart?: () => void; controller:FirstNightController; onSelectionDone:()=>void }) {
   const [seat,setSeat] = useState<number>();
   const player = replay.players.find(p => p.seat === seat);
   const playerReminders=replay.ruleState.automaticReminders?.filter(t=>t.playerId===player?.id)??[];
@@ -69,7 +71,7 @@ export function CustomGrimoireBoard({ file, replay, onProgress, controller, onSe
       <article><span>실제 직업</span><div><img src={role.image} alt=""/><strong>{role.label}</strong></div></article>
       <article><span>보여준 직업</span><div><img src={shown.image} alt=""/><strong>{shown.label}</strong></div></article>
     </section>}
-    details={<>{replay.ruleState.abilityGrants?.filter(g=>g.ownerPlayerId===player.id&&!playerReminders.some(t=>t.characterId==='boffin'&&t.tokenId==='grantedAbility'&&t.label===g.characterId)).map(g=><p key={g.abilityInstanceId}>획득 능력 · {characterPresentation(g.characterId)?.label ?? g.characterId}</p>)}</>}
+    details={<>{replay.ruleState.abilityGrants?.filter(g=>g.ownerPlayerId===player.id&&!playerReminders.some(t=>t.characterId==='boffin'&&t.tokenId==='grantedAbility'&&t.label===g.characterId)).map(g=><p key={g.abilityInstanceId}>획득 능력 · {characterPresentation(g.characterId)?.label ?? g.characterId}</p>)}<CustomPlayerHistory key={player.id} rows={history??eventHistory(file,replay)} playerId={player.id}/></>}
   />}</>;
 }
 

@@ -261,6 +261,7 @@ pub(crate) struct SetupDistributionResult {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ReplayState {
+    pub(crate) event_history: Vec<crate::history::EventHistoryContext>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) night_deaths: Option<crate::night_deaths::NightDeathsView>,
     pub(crate) night_number: u32,
