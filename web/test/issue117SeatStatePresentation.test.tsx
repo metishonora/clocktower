@@ -89,11 +89,18 @@ test("shows ghost-vote availability only while voting and preserves dead-seat se
     dayState,
     handoff: { kind: "vote", complete: false },
     voterIds: ["player-2"],
+    nomineeId: "player-2",
   });
 
   const deadVoter = screen.getByRole("button", { name: /2번 좌석.*사망.*투표.*투표 가능/ });
   expect(deadVoter.getAttribute("aria-pressed")).toBe("true");
   expect(deadVoter.hasAttribute("disabled")).toBe(false);
+  expect(within(deadVoter).getByText("피지목자")).toBeTruthy();
+  expect(within(deadVoter).getByText("✓ 투표")).toBeTruthy();
+  const center=screen.getByRole("group",{name:"현재 투표 집계"});
+  expect(within(center).getByText("2번 플레이어 2")).toBeTruthy();
+  expect(center.textContent).toContain("현재1표");
+  expect(center.textContent).toContain("처형 기준4표");
 
   const spentGhost = screen.getByRole("button", { name: /3번 좌석.*사망.*투표 불가/ });
   expect(spentGhost.hasAttribute("disabled")).toBe(true);

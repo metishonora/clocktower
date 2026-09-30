@@ -21,9 +21,18 @@ it('official grimoire flow: day phase list, seat nomination, seat votes, result 
  expect(screen.queryByRole('combobox')).toBeNull();await click('← 지명하기');
  await seat(1);await seat(2);expect(screen.getByLabelText('Player 1 → Player 2 지명')).toBeTruthy();
  await click('1번 → 2번 지명 확정');await screen.findByRole('heading',{name:'투표'});
+ const center=screen.getByRole('group',{name:'현재 투표 집계'});
+ expect(within(center).getByText('2번 Player 2')).toBeTruthy();
+ expect(center.textContent).toContain('처형 기준4표');
  for(const i of [1,2,3,4])await seat(i);
+ expect(center.textContent).toContain('현재4표');
+ const nominee=screen.getByRole('button',{name:/^2번 좌석.*피지목자/});
+ expect(within(nominee).getByText('✓ 투표')).toBeTruthy();
+ expect(within(nominee).getByText('피지목자')).toBeTruthy();
  await click('4표로 투표 확정');await screen.findByRole('heading',{name:'투표 결과'});
  expect(play.getSnapshot().replay.day!.nominations[0].countedVoterIds).toHaveLength(4);
+ expect(center.textContent).toContain('확정4표');
+ expect(center.textContent).toContain('처형 기준4표');
  await click('투표 완료 →');await screen.findByRole('list',{name:'낮 순서'});
  await click('지명 종료');expect(screen.queryByRole('button',{name:'처형 확정'})).toBeNull();expect(screen.queryByRole('button',{name:'처형 없음'})).toBeNull();await click('확정');await screen.findByRole('button',{name:'다음 밤으로'});
  expect(screen.queryByRole('dialog',{name:'처형 사망 확인'})).toBeNull();
@@ -57,8 +66,13 @@ it('ghost vote is selected on a dead seat and cannot be reused on the next nomin
  render(<Play play={play}/>);await click('← 지명하기');await seat(1);await seat(2);await click('1번 → 2번 지명 확정');
  await screen.findByRole('heading',{name:'투표'});
  const ghost=screen.getByRole('button',{name:/^7번 좌석,.*유령표 사용 가능/});expect(ghost.querySelector('.snvGhostVoteIcon')).not.toBeNull();await seat(7);await click('1표로 투표 확정');await click('투표 완료 →');
- await click('← 지명하기');await seat(3);await seat(5);await click('3번 → 5번 지명 확정');
- const spent=await screen.findByRole('button',{name:/^7번 좌석,.*유령표 사용함/});expect((spent as HTMLButtonElement).disabled).toBe(true);expect(spent.className).toContain('snvGhostVoteSpent');app.dispose();
+ await click('← 지명하기');await seat(3);await seat(7);await click('3번 → 7번 지명 확정');
+ const spent=await screen.findByRole('button',{name:/^7번 좌석,.*유령표 사용함/});expect((spent as HTMLButtonElement).disabled).toBe(true);expect(spent.className).toContain('snvGhostVoteSpent');
+ expect(within(spent).getByText('피지목자')).toBeTruthy();
+ const center=screen.getByRole('group',{name:'현재 투표 집계'});
+ expect(within(center).getByText('7번 Player 7')).toBeTruthy();
+ expect(center.textContent).toContain('후보 기준3표');
+ app.dispose();
 });
 
 it('free actions use the floating dock on progress and board, and close before voting',async()=>{

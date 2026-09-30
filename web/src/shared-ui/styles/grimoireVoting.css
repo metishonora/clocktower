@@ -1,0 +1,55 @@
+/* Vote-only presentation shared by the official and custom grimoire screens. */
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned {
+  transform:translate(-50%,-50%);transition:border-color .15s ease,background-color .15s ease;
+}
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat {
+  --kind-accent:#6a6d73;background:#e7e9ec;border-color:#858b93;box-shadow:0 2px 5px #27313b12;filter:none;opacity:1;color:#303740;
+}
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat :is(.snvSeatNumber,.snvSeatPlayerName,small) {
+  color:#303740;filter:none;opacity:1;
+}
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvGhostVoteSpent { background:#e1e2e4;border-color:#adb0b5;box-shadow:none; }
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvGhostVoteSpent > * { filter:none;opacity:1; }
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvGhostVoteSpent .snvDeathSeatIcon { opacity:.7; }
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.issue116VoterSeat {
+  background:#fff0bd;border-color:#a66612;box-shadow:0 0 0 2px #b97c24;filter:none;opacity:1;transform:translate(-50%,-50%);
+}
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.issue116VoterSeat :is(.snvSeatNumber,.snvSeatPlayerName,small) { color:#573609; }
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.customForcedVoteSeat { background:#ffe5e9;border-color:#a43248;box-shadow:0 0 0 2px #a43248; }
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.customForcedVoteSeat :is(.snvSeatNumber,.snvSeatPlayerName,small) { color:#841b30; }
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned .snvGhostVoteIcon { fill:#f8f9fa;stroke:#454c55;filter:none; }
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.issue116VoterSeat .snvGhostVoteIcon { fill:#fff7dd;stroke:#654518; }
+.grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.grimoireVoteNomineeSeat { overflow:visible;z-index:5; }
+.grimoireVoting .snvGrimoireDraft .grimoireVoteNomineeBadge {
+  position:absolute;z-index:6;left:50%;top:-14px;transform:translateX(-50%);padding:3px 9px;border:1px solid #fff4f7;border-radius:7px;background:#8c2850;color:#fff;font:750 11px/1.3 system-ui,sans-serif;white-space:nowrap;box-shadow:0 1px 3px #451a3520;
+}
+.grimoireVoting .rectangularGrimoireCenter.grimoireVoteCenter {
+  width:min(238px,43%);aspect-ratio:auto;border:1px solid #a77a8333;border-radius:20px;padding:20px 16px;background:#fffaf5;box-shadow:0 4px 16px #59372e0a;gap:16px;pointer-events:none;
+}
+.grimoireVoteNomineeIdentity { display:grid;justify-items:center;gap:5px;min-width:0;overflow-wrap:anywhere; }
+.grimoireVoting .grimoireVoteNomineeIdentity > span { color:#8c2850;font-size:12px;font-weight:750; }
+.grimoireVoting .grimoireVoteNomineeIdentity > strong { color:#3b2026;font:750 18px/1.4 system-ui,sans-serif; }
+.grimoireVoteCount { display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;width:100%; }
+.grimoireVoteCount > div { display:grid;justify-items:center;gap:8px; }
+.grimoireVoting .grimoireVoteCount > div > span { color:#694f52;font-size:12px;white-space:nowrap; }
+.grimoireVoting .grimoireVoteCount strong { color:#3b2026;font:750 36px/1 system-ui,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap; }
+.grimoireVoteCount strong small { font-size:14px;margin-left:3px; }
+.grimoireVoting .grimoireVoteCount > span { margin-top:22px;font-size:22px;color:#b09a97;font-weight:400; }
+@media(max-width:760px) {
+ .grimoireVoting .rectangularGrimoireCenter.grimoireVoteCenter { width:min(42%,calc(72% - 100px));padding:16px 6px;border-radius:16px;gap:14px; }
+ .grimoireVoting .grimoireVoteNomineeIdentity > strong { font-size:16px; }
+ .grimoireVoteCount { gap:5px; }
+ .grimoireVoting .grimoireVoteCount strong { font-size:28px; }
+ .grimoireVoting .grimoireVoteCount > div > span { font-size:10px; }
+ .grimoireVoteCount strong small { font-size:11px;margin-left:1px; }
+ .grimoireVoting .snvGrimoireDraft .grimoireVoteNomineeBadge { top:-12px;font-size:10px;padding:2px 7px; }
+}
+
+@media(max-width:375px) {
+ .grimoireVoteCount { gap:4px; }
+ .grimoireVoting .grimoireVoteCount strong { font-size:24px; }
+}
+
+@media(prefers-reduced-motion:reduce) {
+ .grimoireVoting.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned { transition:none; }
+}
