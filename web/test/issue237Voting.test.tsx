@@ -1,5 +1,5 @@
 import {afterEach, expect, it} from 'vitest';
-import {cleanup, fireEvent, render, screen} from '@testing-library/react';
+import {cleanup, fireEvent, render, screen, within} from '@testing-library/react';
 import {CustomDayBoard} from '../src/grimoire-custom/CustomDayBoard';
 import {FirstNightController, type GrimoireSession} from '../src/custom/grimoire/firstNightController';
 import {daytime, dayInput, toNominations} from './custom/issue223Support';
@@ -9,13 +9,14 @@ afterEach(cleanup);
 
 // Supply a Core projection to the real production controller and board. Character
 // eligibility is deliberately not calculated in this UI contract test.
-async function board(forcedVoterIds: string[]) {
+async function board(forcedVoterIds: string[], voteDependencies: {voterId:string;requiredVoterId:string}[] = []) {
   const {app, play} = await daytime();
   await toNominations(play);
   await dayInput(play, {kind:'nominate', nominatorId:'p1', nomineeId:'p2', spyAsTownsfolk:false});
   const file = play.getSnapshot().file;
   const replay = structuredClone(play.getSnapshot().replay);
   replay.day!.forcedVoterIds = forcedVoterIds;
+  replay.day!.voteDependencies = voteDependencies;
   const session = {snapshot:{canonical:file}, replay} as GrimoireSession;
   const controller = new FirstNightController(session, realWasmCore());
   controller.beginDayHandoff();
@@ -31,6 +32,7 @@ it('preselects forced votes, prevents toggling and preserves them on reset', asy
   expect(forced.getAttribute('aria-pressed')).toBe('true');
   expect(forced.classList.contains('customForcedVoteSeat')).toBe(true);
   expect(screen.getByRole('button', {name:'1표로 투표 확정'})).toBeDefined();
+  expect(screen.getByRole('group', {name:'현재 투표 집계'}).textContent).toContain('현재1표');
   controller.selectDayPlayer('p1');
   expect(controller.getSnapshot().dayHandoff!.voterIds).toEqual(['p1']);
   fireEvent.click(screen.getByRole('button', {name:/2번 좌석/}));
@@ -38,6 +40,7 @@ it('preselects forced votes, prevents toggling and preserves them on reset', asy
   fireEvent.click(screen.getByRole('button', {name:'투표 초기화 X'}));
   expect(controller.getSnapshot().dayHandoff!.voterIds).toEqual(['p1']);
   expect(screen.getByRole('button', {name:'1표로 투표 확정'})).toBeDefined();
+  expect(screen.getByRole('group', {name:'현재 투표 집계'}).textContent).toContain('현재1표');
   controller.dispose();
 });
 
@@ -51,5 +54,24 @@ it('uses normal voting when the Core releases the obligation', async () => {
   expect(controller.getSnapshot().dayHandoff!.voterIds).toEqual(['p1']);
   fireEvent.click(screen.getByRole('button', {name:'투표 초기화 X'}));
   expect(controller.getSnapshot().dayHandoff!.voterIds).toEqual([]);
+  controller.dispose();
+});
+
+it('shares the dependency-aware count between center, panel and confirmation', async () => {
+  const controller = await board([], [{voterId:'p2',requiredVoterId:'p1'}]);
+  render(<CustomDayBoard controller={controller}/>);
+  const center=screen.getByRole('group',{name:'현재 투표 집계'});
+  const nominee=screen.getByRole('button',{name:/2번 좌석.*피지목자/});
+  fireEvent.click(nominee);
+  expect(nominee.getAttribute('aria-pressed')).toBe('true');
+  expect(within(nominee).getByText('피지목자')).toBeTruthy();
+  expect(center.textContent).toContain('현재0표');
+  expect(screen.getByRole('button',{name:'0표로 투표 확정'})).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:/1번 좌석/}));
+  expect(center.textContent).toContain('현재2표');
+  expect(screen.getByRole('button',{name:'2표로 투표 확정'})).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:'투표 초기화 X'}));
+  expect(center.textContent).toContain('현재0표');
+  expect(within(nominee).getByText('피지목자')).toBeTruthy();
   controller.dispose();
 });

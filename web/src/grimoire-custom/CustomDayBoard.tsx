@@ -1,3 +1,4 @@
+import {GrimoireVoteSummary, VoteNomineeBadge} from '../shared-ui/GrimoireVotePresentation';
 import {customSeatCharacter} from './customPlayerPresentation';
 import {useSyncExternalStore, type CSSProperties} from 'react';
 import type {FirstNightController} from '../custom/grimoire/firstNightController';
@@ -26,11 +27,14 @@ export function CustomDayBoard({controller}:{controller:FirstNightController}) {
   const ready=voting||!!(h.nominatorId&&h.nomineeId);
   const nominator=players.find(p=>p.id===h.nominatorId),nominee=players.find(p=>p.id===h.nomineeId);
   const confirmLabel=voting?`${count}표로 투표 확정`:!nominator?'지명자를 선택하세요':!nominee?'피지명자를 선택하세요':`${nominator.seat}번 → ${nominee.seat}번 지명 확정`;
-  return <GrimoirePresentation ariaLabel="마도서" className={`snvSeatingSurface bmrGrimoireSurface issue116GrimoireSurface confirmed issue116HandoffActive ${voting?'issue116VoteMode':'issue116NominationMode'}`} workspaceClassName="snvSeatingWorkspace bmrGrimoireWorkspace stable" style={style}
+  return <GrimoirePresentation ariaLabel="마도서" className={`snvSeatingSurface bmrGrimoireSurface issue116GrimoireSurface confirmed issue116HandoffActive ${voting?'issue116VoteMode grimoireVoting':'issue116NominationMode'}`} workspaceClassName="snvSeatingWorkspace bmrGrimoireWorkspace stable" style={style}
     toolbar={<GrimoireToolbar showCurrentActor={false}>{!h.complete&&<button type="button" disabled={busy} onClick={()=>void controller.cancelDayHandoff()}>{voting&&controller.canCancelDayVote?'투표 취소 →':'돌아가기 →'}</button>}</GrimoireToolbar>}
     board={<RectangularGrimoireBoard ariaLabel={`${players.length}자리 마도서`} className="snvGrimoireDraft bmrGrimoireBoard" style={style}
+      centerClassName="grimoireVoteCenter" centerAriaLabel={voting?'현재 투표 집계':undefined}
+      center={voting?<GrimoireVoteSummary nominee={nominee} count={count} threshold={targetVotes} thresholdLabel={previousVotes.length?'후보 기준':'처형 기준'} completed={h.complete}/>:undefined}
       seats={players.map((p,i)=>{
         const role=customSeatCharacter(p);
+        const voteNominee=voting&&h.nomineeId===p.id;
         const self=!voting&&h.nominatorId===p.id&&h.nomineeId===p.id;
         const selected=voting?h.voterIds.includes(p.id):h.nominatorId===p.id||h.nomineeId===p.id;
         const forced=voting&&!h.complete&&day.forcedVoterIds.includes(p.id);
@@ -39,10 +43,10 @@ export function CustomDayBoard({controller}:{controller:FirstNightController}) {
         const eligible=voting?day.eligibleVoterIds.includes(p.id):(h.nominatorId?day.eligibleNomineeIds:day.eligibleNominatorIds).includes(p.id);
         const ghost=voting&&!p.alive&&!p.ghostVoteUsed,spent=voting&&!p.alive&&p.ghostVoteUsed;
         return {id:p.id,position:desktop[i],mobilePosition:mobile[i],pressed:selected,disabled:busy||h.complete||!eligible||forced,
-          ariaLabel:`${p.seat}번 좌석, ${p.name}, ${role?.label}, ${p.alive?'생존':p.ghostVoteUsed?'사망 · 유령표 사용함':'사망 · 유령표 사용 가능'}${selectionLabel?`, ${selectionLabel}`:''}`,
-          className:`assigned alignment-${p.alignment} kind-${characterPresentation(p.actualCharacter)?.kind.toLowerCase()}${!p.alive?' snvDeadSeat':''}${ghost?' snvGhostVoteAvailable':''}${spent?' snvGhostVoteSpent':''}${selected?' issue116SelectedSeat snvSeatStateSelected':''}${selected&&!p.alive?' snvSeatStateStrong':''}${selectionClass}${forced?' customForcedVoteSeat':''}${!eligible?' issue116IneligibleSeat':''}`,
+          ariaLabel:`${p.seat}번 좌석, ${p.name}, ${role?.label}, ${p.alive?'생존':p.ghostVoteUsed?'사망 · 유령표 사용함':'사망 · 유령표 사용 가능'}${selectionLabel?`, ${selectionLabel}`:''}${voteNominee?', 피지목자':''}`,
+          className:`assigned alignment-${p.alignment} kind-${characterPresentation(p.actualCharacter)?.kind.toLowerCase()}${!p.alive?' snvDeadSeat':''}${ghost?' snvGhostVoteAvailable':''}${spent?' snvGhostVoteSpent':''}${selected?' issue116SelectedSeat snvSeatStateSelected':''}${selected&&!p.alive?' snvSeatStateStrong':''}${selectionClass}${forced?' customForcedVoteSeat':''}${voteNominee?' grimoireVoteNomineeSeat':''}${!eligible?' issue116IneligibleSeat':''}`,
           onSelect:()=>controller.selectDayPlayer(p.id),
-          content:<GrimoireSeatContent seat={p.seat} name={p.name} alive={p.alive} ghostVoteUsed={p.ghostVoteUsed} icon={<img src={role?.image} alt=""/>} label={selectionLabel??role?.label??''}/>};
+          content:<><GrimoireSeatContent seat={p.seat} name={p.name} alive={p.alive} ghostVoteUsed={p.ghostVoteUsed} icon={<img src={role?.image} alt=""/>} label={voting&&selected&&!forced?'✓ 투표':selectionLabel??role?.label??''}/>{voteNominee&&<VoteNomineeBadge/>}</>};
       })}
       overlay={!voting&&nominator&&nominee?<NominationArrow nominatorIndex={players.indexOf(nominator)} nomineeIndex={players.indexOf(nominee)} desktopPositions={desktop} mobilePositions={mobile} label={`${nominator.name} → ${nominee.name} 지명`} markerPrefix="customDayNomination"/>:undefined}/>} 
     inspector={<GrimoireSelectionPanel title={h.complete?'투표 결과':voting?'투표':'지명'} completed={h.complete}

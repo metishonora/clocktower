@@ -1,3 +1,5 @@
+import {GrimoireVoteSummary, VoteNomineeBadge} from './shared-ui/GrimoireVotePresentation';
+import {GrimoireSeatContent} from './shared-ui/GrimoireSeatContent';
 import {GrimoireHandoffView} from './shared-ui/GrimoireHandoffView';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { ConfirmedDayActionRecord, DayState, PhaseOverviewItem, PhaseStep, Player, ReplayState } from "./core/types";
@@ -26,7 +28,6 @@ import {
 } from "./features/pitHag/PitHagSelectionPanel";
 import { NightResultsAnnouncement } from "./features/phase-control/NightResultsAnnouncement";
 import { PlayerImpairmentBadges } from "./features/phase-control/ImpairmentBadges";
-import { FuneralIcon, GhostVoteIcon } from "./features/grimoire/SeatStateIcons";
 import { NominationArrow } from "./shared-ui/NominationArrow";
 import { GrimoireToolbar } from "./shared-ui/GrimoireToolbar";
 import { collapseNominationVotingSteps } from "./features/phase-control/phaseInput";
@@ -417,7 +418,7 @@ export function SectsAndVioletsLiveGrimoire({
   const isFirstVote = (dayState?.nominations.length ?? 0) === 0;
   const modeClass = handoff?.kind === "nomination"
     ? " issue116NominationMode"
-    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" || handoff?.kind === "vigormortisPoison" || handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "pitHagDeaths" || handoff?.kind === "cerenovus" || handoff?.kind === "evilTwin" || handoff?.kind === "witch" || handoff?.kind === "dreamer" || handoff?.kind === "seamstress" || isDeathConsequenceHandoff(handoff) ? " issue116AttackMode" : "";
+    : handoff?.kind === "vote" ? " issue116VoteMode grimoireVoting" : handoff?.kind === "demon" || handoff?.kind === "vigormortisPoison" || handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "pitHagDeaths" || handoff?.kind === "cerenovus" || handoff?.kind === "evilTwin" || handoff?.kind === "witch" || handoff?.kind === "dreamer" || handoff?.kind === "seamstress" || isDeathConsequenceHandoff(handoff) ? " issue116AttackMode" : "";
   const nominator = playerById(players, nominatorId);
   const nominee = playerById(players, nomineeId);
   const target = playerById(players, targetId);
@@ -491,6 +492,7 @@ export function SectsAndVioletsLiveGrimoire({
                 : handoff?.kind === "barber" && handoff.selectionStage === "chooser" ? player.id === chooserId
                 : handoff?.kind === "pitHagDeaths" || multipleTargetCount > 0 ? targetIds.includes(player.id)
                   : attackTarget || poisonTarget || player.id === targetId;
+            const voteNominee = handoff?.kind === "vote" && player.id === nomineeId;
             const selfNominee = handoff?.kind === "nomination"
               && player.id === nominatorId && player.id === nomineeId;
             const selectionRole = handoff?.kind === "nomination"
@@ -544,6 +546,7 @@ export function SectsAndVioletsLiveGrimoire({
               player.alive ? "생존" : "사망",
               actor ? "현재 행동자" : undefined,
               selectionRole,
+              voteNominee ? "피지목자" : undefined,
               deadActionLabel ?? (ineligible ? "선택 불가" : undefined),
             ].filter(Boolean).join(", ");
             return (
@@ -554,7 +557,7 @@ export function SectsAndVioletsLiveGrimoire({
                     else seatRefs.current.delete(player.id);
                   }}
                   type="button"
-                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " issue116SelectedSeat snvSeatStateSelected" : ""}${strongSelection ? " snvSeatStateStrong" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${settledOther ? " snvSettledOtherSeat" : ""}`}
+                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " issue116SelectedSeat snvSeatStateSelected" : ""}${strongSelection ? " snvSeatStateStrong" : ""}${selectionClass}${voteNominee ? " grimoireVoteNomineeSeat" : ""}${ineligible ? " issue116IneligibleSeat" : ""}${settledOther ? " snvSettledOtherSeat" : ""}`}
                   aria-label={`${player.seat}번 좌석, ${player.name}, ${player.characterName}, ${seatStateLabels}`}
                   aria-pressed={handoff ? selected : undefined}
                   disabled={Boolean(handoff && (handoff.complete || ineligible || selectionLocked || spentGhostCannotVote || operationBusy))}
@@ -563,21 +566,14 @@ export function SectsAndVioletsLiveGrimoire({
                     "--seat-y": `${desktopPositions[index].y}%`,
                     "--mobile-seat-x": `${mobilePositions[index].x}%`,
                     "--mobile-seat-y": `${mobilePositions[index].y}%`,
-                    filter: showSpentGhostVoteState ? "grayscale(1)" : undefined,
                   } as CSSProperties}
                   onClick={() => handoff ? onSeatClick(player.id) : setDetailsPlayerId(player.id)}
                 >
-                  <span className="snvSeatNumber">{player.seat}</span>
-                  {showGhostVoteIndicator ? <GhostVoteIcon /> : asset ? (
-                    <img
-                      src={asset.src}
-                      alt=""
-                      style={showSpentGhostVoteState ? { filter: "grayscale(1) blur(.45px)", opacity: .42 } : undefined}
-                    />
-                  ) : null}
-                  {!player.alive ? <FuneralIcon /> : null}
-                  <span className="snvSeatPlayerName">{player.name}</span>
-                  <small>{selectionRole ?? player.characterName}</small>
+                  <GrimoireSeatContent seat={player.seat} name={player.name} alive={player.alive}
+                    ghostVoteUsed={handoff?.kind === "vote" ? player.ghostVoteUsed : undefined}
+                    icon={asset ? <img src={asset.src} alt=""/> : null}
+                    label={handoff?.kind === "vote" && selected ? "✓ 투표" : selectionRole ?? player.characterName}/>
+                  {voteNominee && <VoteNomineeBadge/>}
                 </button>
                 {!centerPrompt ? (
                   <PlayerTokenCountBadge
@@ -602,6 +598,10 @@ export function SectsAndVioletsLiveGrimoire({
           {centerPrompt ? (
             <div className={`snvGrimoireCenter live issue116PhaseClock snakeCharmerPromptCenter${centerPromptClassName ? ` ${centerPromptClassName}` : ""}`}>
               {centerPrompt}
+            </div>
+          ) : handoff?.kind === "vote" ? (
+            <div className="rectangularGrimoireCenter grimoireVoteCenter" role="group" aria-label="현재 투표 집계">
+              <GrimoireVoteSummary nominee={nominee} count={voterIds.length} threshold={targetVotes} thresholdLabel={isFirstVote ? "처형 기준" : "후보 기준"} completed={handoff.complete}/>
             </div>
           ) : !handoff || handoff.kind === "demon" || handoff.kind === "vigormortisPoison" || handoff.kind === "snakeCharmer" || handoff.kind === "pitHag" || handoff.kind === "pitHagDeaths" || handoff.kind === "cerenovus" || handoff.kind === "evilTwin" || handoff.kind === "witch" || isDeathConsequenceHandoff(handoff) || informationTargetCount > 0 ? (
             <div className="snvGrimoireCenter live issue116PhaseClock" role="group" aria-label="현재 단계">

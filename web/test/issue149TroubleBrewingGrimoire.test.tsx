@@ -437,6 +437,19 @@ test("opens an active nomination vote directly in the S&V vote grimoire", async 
   const panel = within(surface).getByRole("complementary", { name: "현재 마도서 작업" });
   expect(within(panel).getByText("처형 기준 2표")).toBeTruthy();
   expect(within(panel).getByRole("button", { name: "0표로 투표 확정" })).toBeTruthy();
+  const center = within(surface).getByRole("group", {name:"현재 투표 집계"});
+  expect(within(center).getByText("4번 Dae")).toBeTruthy();
+  expect(within(center).getByText("처형 기준")).toBeTruthy();
+  const nominee = within(surface).getByRole("button", {name:/4번 좌석.*피지목자/});
+  await userEvent.setup().click(nominee);
+  expect(nominee.getAttribute("aria-pressed")).toBe("true");
+  expect(within(nominee).getByText("피지목자")).toBeTruthy();
+  expect(within(nominee).getByText("✓ 투표")).toBeTruthy();
+  expect(within(center).getByText("1", {exact:false}).textContent).toBe("1표");
+  expect(within(panel).getByRole("button", {name:"1표로 투표 확정"})).toBeTruthy();
+  await userEvent.setup().click(within(panel).getByRole("button", {name:"투표 초기화 X"}));
+  expect(within(center).getByText("0", {exact:false}).textContent).toBe("0표");
+  expect(within(nominee).getByText("피지목자")).toBeTruthy();
 });
 
 test("starts a fresh game after one S&V-style confirmation and clears the selected roles", async () => {
