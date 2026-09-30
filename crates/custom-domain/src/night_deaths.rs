@@ -101,7 +101,7 @@ pub(crate) struct SourceView {
 pub(crate) struct NightDeathsView {
     status: &'static str,
     sources: Vec<SourceView>,
-    pending_attack_event_ids: Vec<String>,
+    pub(crate) pending_attack_event_ids: Vec<String>,
 }
 pub(crate) fn view(facts: &CustomGameFacts, enabled: bool) -> Option<NightDeathsView> {
     if !enabled {

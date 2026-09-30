@@ -1,0 +1,16 @@
+.customEventHistory { min-width:0; color:inherit; }
+.customEventHistory > header { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.customEventHistory > header h2,.customEventHistory > header h3 { margin:0; font-size:1rem; }
+.customEventHistory > header span { font-size:.8rem; opacity:.8; }
+.customHistoryScroll { max-height:65vh; overflow:auto; overscroll-behavior:contain; padding:0 4px; }
+.customHistoryGroup + .customHistoryGroup { margin-top:22px; }
+.customHistoryGroup h4 { margin:0 0 8px; font-size:.8rem; opacity:.8; }
+.customHistoryGroup ol { list-style:none; padding:0; margin:0; }
+.customHistoryGroup li { padding:12px 0; border-top:1px solid color-mix(in srgb,currentColor 20%,transparent); }
+.customHistoryGroup p { margin:0; font-size:.85rem; line-height:1.65; overflow-wrap:anywhere; white-space:pre-wrap; }
+.customHistoryGroup details { margin-top:6px; }
+.customHistoryGroup summary { display:list-item; cursor:pointer; padding:10px 0; min-height:44px; box-sizing:border-box; font-size:.78rem; }
+.customHistoryGroup details > div { padding:8px 12px; border-left:2px solid color-mix(in srgb,currentColor 25%,transparent); }
+.customHistoryGroup details p + p { margin-top:8px; }
+.customPlayerHistory > button { min-height:44px; width:100%; padding:10px 12px; margin-top:12px; color:inherit; background:transparent; border:1px solid color-mix(in srgb,currentColor 30%,transparent); border-radius:8px; cursor:pointer; font:inherit; font-size:.8rem; }
+.customEventHistory :is(button,summary,.customHistoryScroll):focus-visible { outline:2px solid currentColor; outline-offset:3px; }

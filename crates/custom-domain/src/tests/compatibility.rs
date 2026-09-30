@@ -12,7 +12,15 @@ fn production_prefixes_and_proposals_preserve_frozen_baseline() {
         let replay: Value =
             serde_json::from_str(&replay_json(&prefix["game"].to_string())).unwrap();
         assert_eq!(replay["ok"], true, "prefix {index}: {replay}");
+        // #273 adds read-only event-time context without changing saved events or proposals.
+        let history = replay["value"]["eventHistory"].as_array().unwrap();
+        assert_eq!(history.len(), prefix["game"]["game"]["events"].as_array().unwrap().len());
+        for (row, event) in history.iter().zip(prefix["game"]["game"]["events"].as_array().unwrap()) {
+            assert_eq!(row["eventId"], event["id"]);
+            assert_eq!(row["phase"], event["phase"]);
+        }
         let mut legacy = replay["value"].clone();
+        legacy.as_object_mut().unwrap().remove("eventHistory");
         legacy.as_object_mut().unwrap().remove("actionExecutions");
         legacy.as_object_mut().unwrap().remove("latestUndoUnit");
         // #223 adds a separately tested daytime projection; every legacy field stays frozen.

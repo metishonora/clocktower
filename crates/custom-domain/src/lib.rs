@@ -5,6 +5,7 @@ mod error;
 mod event;
 mod first_night;
 mod game;
+mod history;
 mod identity;
 mod information;
 mod input;

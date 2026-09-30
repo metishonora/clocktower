@@ -1,5 +1,5 @@
 import { automaticReminderPairs } from "./automaticReminderTokens.js";
-import {isDayConfirmed,isDayView} from './dayValidation.js';
+import {isDayConfirmed,isDayView,isDayHistoryContext} from './dayValidation.js';
 import { isActionCause, isGuidanceCause, isCustomGameEnd } from "./customActionResultValidationBase.js";
 import type { Phase, PhaseStep, CoreResult, GameEvent, ReplayState, Proposal, SetupDistributionResult, FirstNightOrderPlan, CustomFirstNightPlanResult, SetupDistribution, FirstNightActionRef, PhaseStepInput, AbilityUseRef, AbilityOrigin, InformationPrompt, ConfirmedInformation, InformationResult, DeliveryReason, ActiveImpairment, NumberChoice, RegistrationJudgment } from "./types.js";
 import { customScriptCharacters } from "../characterCatalog.js";
@@ -173,9 +173,22 @@ function isNightDeathsView(value:unknown):boolean {
   &&new Set(value.pendingAttackEventIds).size===value.pendingAttackEventIds.length
   &&(value.status!=='resolved'||value.pendingAttackEventIds.length===0);
 }
+function isEventHistoryContext(v:unknown):boolean {
+  if(!isRecord(v))return false;
+  return typeof v.eventId==='string' && v.eventId.length>0 && isPhase(v.phase) && Number.isSafeInteger(v.cycle) && Number(v.cycle)>=0
+    && (v.actorCharacterId===null||typeof v.actorCharacterId==='string')
+    && Array.isArray(v.identityChanges) && v.identityChanges.every(c=>isRecord(c)&&typeof c.playerId==='string'&&isIdentityState(c.before)&&isIdentityState(c.after))
+    && Array.isArray(v.recipientPlayerIds) && v.recipientPlayerIds.every(id=>typeof id==='string') && (v.gameEnd===null||isCustomGameEnd(v.gameEnd))
+    && (v.systemReveal===null||isRevealPayload(v.systemReveal)) && typeof v.pendingNightDeath==='boolean'
+    && (v.nomination===null||(isRecord(v.nomination)&&typeof v.nomination.nominatorId==='string'&&typeof v.nomination.nomineeId==='string'))
+    && (v.executionPlayerId===null||typeof v.executionPlayerId==='string')
+    && isDayHistoryContext(v,dayValidators);
+}
+
 export function parseReplayState(value: unknown): ReplayState {
   if(isRecord(value) && value.day!==undefined && !isDayView(value.day,dayValidators))throw invalidCoreResponse();
   if (!isRecord(value) || (value.nightDeaths !== undefined && !isNightDeathsView(value.nightDeaths)) || !Number.isInteger(value.nightNumber) || Number(value.nightNumber)<0 || !Array.isArray(value.actionExecutions) || !value.actionExecutions.every(isActionExecution) || !isLatestUndoUnit(value.latestUndoUnit) || !optionalList(value.madnessAssignments, v => isAssignment(v, true)) || value.schemaVersion !== 5 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null && !isCustomGameEnd(value.gameEnd)) || !optionalList(value.availableActions, isPhaseStep)) throw invalidCoreResponse();
+  if(value.eventHistory!==undefined && (!Array.isArray(value.eventHistory)||value.eventHistory.length!==value.eventCount||!value.eventHistory.every(isEventHistoryContext)||new Set(value.eventHistory.map(e=>e.eventId)).size!==value.eventHistory.length))throw invalidCoreResponse();
   return value as ReplayState;
 }
 function isReplayScriptIdentity(value: Record<string, unknown>): boolean { return value.scriptId === undefined && isCustomReplayScriptReference(value.script); }
