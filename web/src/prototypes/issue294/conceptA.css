@@ -1,0 +1,107 @@
+.ca {
+  --paper: #f4f1ec;
+  --card: #fffdf9;
+  --ink: #1d1a16;
+  --mute: #7d756b;
+  --line: #e2dcd2;
+  --blood: #8e2b25;
+  --blood-soft: #f6e7e3;
+  --mine: #2b2620;
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--paper); color: var(--ink);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+:where(.ca) button { font: inherit; color: inherit; }
+
+.ca-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 8px; padding-top: max(12px, env(safe-area-inset-top)); }
+.rv-phone .ca-head { padding-top: 40px; }
+.ca-phase { display: flex; align-items: baseline; gap: 8px; }
+.ca-day { font: 700 19px/1.2 "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; letter-spacing: -.01em; }
+.ca-step { font-size: 13px; color: var(--mute); }
+.ca-role { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); font-size: 13px; font-weight: 600; cursor: pointer; }
+.ca-role img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: #e9e3d8; }
+
+.ca-seats { list-style: none; margin: 0; padding: 2px 12px 10px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; border-bottom: 1px solid var(--line); }
+.ca-seats li { display: grid; justify-items: center; gap: 3px; min-width: 0; }
+.ca-avatar { --c: #555; position: relative; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--c); color: #fff; font-size: 14px; font-weight: 600; flex: none; }
+.ca-avatar.sm { width: 30px; height: 30px; font-size: 13px; }
+.ca-seat-name { font-size: 11px; color: var(--mute); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-seats li.me .ca-avatar { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+.ca-seats li.me .ca-seat-name { color: var(--ink); font-weight: 600; }
+.ca-seats li.dead .ca-avatar { background: transparent; color: var(--mute); border: 1.5px dashed #b9b0a3; }
+.ca-seats li.dead .ca-seat-name { text-decoration: line-through; text-decoration-color: #b9b0a3; }
+.ca-ghost { position: absolute; right: -2px; bottom: -2px; width: 11px; height: 11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper); }
+.ca-seats li.nominee .ca-avatar { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--blood); }
+.ca-seats li.nominee .ca-seat-name { color: var(--blood); font-weight: 700; }
+
+.ca-tabs { display: flex; gap: 4px; padding: 8px 12px 0; }
+.ca-tabs button { all: unset; cursor: pointer; padding: 6px 10px 8px; font-size: 14px; color: var(--mute); border-bottom: 2px solid transparent; display: inline-flex; align-items: center; gap: 6px; }
+.ca-tabs button[aria-pressed="true"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+.ca-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: var(--blood); color: #fff; font-size: 11px; font-weight: 700; font-style: normal; }
+
+.ca-list-wrap { position: relative; flex: 1; min-height: 0; border-top: 1px solid var(--line); }
+.ca-list { position: absolute; inset: 0; overflow-y: auto; padding: 12px 12px 8px; overscroll-behavior: contain; }
+.ca-empty { text-align: center; color: var(--mute); font-size: 13px; margin-top: 40px; }
+
+.ca-announce { display: flex; align-items: center; gap: 10px; margin: 14px 4px; color: var(--mute); font: 600 13px/1.4 "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; text-align: center; }
+.ca-announce::before, .ca-announce::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.ca-announce span { max-width: 78%; }
+.ca-announce.death { color: var(--ink); }
+.ca-announce.nomination { color: var(--blood); }
+.ca-announce.nomination::before, .ca-announce.nomination::after { background: #e3c3bd; }
+
+.ca-msg { display: flex; align-items: flex-end; gap: 8px; margin-top: 10px; }
+.ca-msg.grouped { margin-top: 3px; }
+.ca-msg.mine { flex-direction: row-reverse; }
+.ca-bubble-col { display: grid; gap: 3px; max-width: 74%; }
+.ca-name { font-size: 12px; color: var(--mute); padding-left: 2px; }
+.ca-name em { font-style: normal; }
+.ca-bubble { padding: 8px 12px; border-radius: 16px 16px 16px 6px; background: var(--card); border: 1px solid var(--line); white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+.ca-msg.grouped .ca-bubble { border-radius: 6px 16px 16px 6px; }
+.ca-msg.mine .ca-bubble { background: var(--mine); color: #f7f3ec; border-color: var(--mine); border-radius: 16px 16px 6px 16px; }
+.ca-msg.ghost .ca-bubble { background: transparent; border-style: dashed; color: #4d463e; }
+.ca-msg time { font-size: 10.5px; color: #a79e92; padding-bottom: 2px; flex: none; }
+
+.ca-toast { position: absolute; z-index: 3; top: 10px; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; padding: 5px 6px 5px 5px; border: 0; border-radius: 999px; background: var(--ink); color: #f7f3ec; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 20px rgba(29,26,22,.25); animation: ca-drop .25s ease-out; white-space: nowrap; }
+.ca-toast-go { padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,.14); }
+.ca-fresh { position: absolute; z-index: 2; bottom: 10px; left: 50%; transform: translateX(-50%); padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px rgba(29,26,22,.12); }
+
+.ca-dock { flex: none; margin: 0 10px 8px; border-radius: 14px; background: var(--blood); color: #fff; overflow: hidden; animation: ca-rise .3s cubic-bezier(.2,.8,.2,1); box-shadow: 0 8px 24px rgba(142,43,37,.28); }
+.ca-dock.done:not(.open) { background: var(--blood-soft); color: var(--blood); box-shadow: none; }
+.ca-dock-bar { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; }
+.ca-dock-bar:disabled { cursor: default; opacity: .7; }
+.ca-dock-kind { font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 2px 7px; border-radius: 5px; background: rgba(255,255,255,.18); }
+.ca-dock.done:not(.open) .ca-dock-kind { background: rgba(142,43,37,.12); }
+.ca-dock-title { font-weight: 700; }
+.ca-dock-cta { margin-left: auto; padding: 5px 12px; border-radius: 999px; background: #fff; color: var(--blood); font-size: 13px; font-weight: 700; }
+.ca-dock-state { margin-left: auto; font-size: 13px; font-weight: 600; }
+.ca-clock { font: 600 13px/1 ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; opacity: .9; }
+.ca-dock-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 0; font-size: 16px; }
+.ca-dock-sub { margin: 2px 14px 10px; font-size: 13px; opacity: .85; }
+.ca-vote-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 10px 10px; }
+.ca-vote-btns button { padding: 12px; border: 1.5px solid rgba(255,255,255,.55); border-radius: 10px; background: transparent; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; }
+.ca-vote-btns button:first-child { background: #fff; color: var(--blood); border-color: #fff; }
+
+.ca-compose { flex: none; display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px; padding-bottom: max(8px, env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--line); }
+.rv-phone .ca-compose { padding-bottom: 22px; }
+.ca-target { flex: none; align-self: center; font-size: 12px; font-weight: 700; color: var(--mute); padding: 4px 8px; border-radius: 6px; background: var(--paper); }
+.ca-compose textarea { box-sizing: border-box; flex: 1; min-width: 0; resize: none; border: 1px solid var(--line); border-radius: 18px; padding: 8px 12px; font: inherit; font-size: 16px; line-height: 1.35; background: var(--paper); color: var(--ink); outline: none; max-height: 120px; }
+.ca-compose textarea:focus { border-color: #b9b0a3; background: #fff; }
+.ca-compose button { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--ink); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.ca-compose button:disabled { background: #cfc7bb; cursor: default; }
+
+/* 입력 중(키보드가 올라온 상태)에는 머리 영역을 한 줄로 접어 대화 공간을 확보한다. */
+.ca.typing .ca-head { padding-bottom: 4px; }
+.ca.typing .ca-role { display: none; }
+.ca.typing .ca-day { font-size: 15px; }
+.ca.typing .ca-seats { padding: 0 12px 6px; gap: 6px; grid-template-columns: repeat(8, 22px); justify-content: start; }
+.ca.typing .ca-avatar:not(.sm) { width: 22px; height: 22px; font-size: 11px; }
+.ca.typing .ca-seats li.me .ca-avatar { box-shadow: 0 0 0 1.5px var(--paper), 0 0 0 3px var(--ink); }
+.ca.typing .ca-seats li.nominee .ca-avatar { box-shadow: 0 0 0 1.5px var(--paper), 0 0 0 3px var(--blood); }
+.ca.typing .ca-ghost { width: 8px; height: 8px; border-width: 1.5px; right: -3px; bottom: -3px; }
+.ca.typing .ca-seat-name, .ca.typing .ca-tabs { display: none; }
+
+@keyframes ca-rise { from { transform: translateY(12px); opacity: 0; } }
+@keyframes ca-drop { from { transform: translate(-50%, -8px); opacity: 0; } }
