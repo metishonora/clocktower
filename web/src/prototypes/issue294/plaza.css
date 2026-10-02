@@ -59,3 +59,81 @@
 @keyframes pz-hop { 0% { transform: translateY(0); } 40% { transform: translateY(-7px); } 100% { transform: translateY(0); } }
 @keyframes pz-pop { from { opacity: 0; scale: .85; } }
 @keyframes pz-breathe { 0%, 100% { opacity: .75; } 50% { opacity: 1; } }
+
+/* PC: 광장 무대 + 오른쪽 기록 */
+.pz-wide { flex-direction: row; background: #efe3c8; }
+.pz-stage { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+.pz-wide .pz-square { margin: 0 4%; }
+.pz-wide .pz-bubble { max-width: 34%; }
+.pz-log { flex: 0 0 340px; display: flex; flex-direction: column; background: #fbf5e8; border-left: 1px solid #e2d3b2; }
+.pz-log h2 { margin: 0; padding: 18px 20px 10px; font: 700 16px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; }
+.pz-log ol { list-style: none; margin: 0; padding: 0 20px; flex: 1; overflow: auto; display: grid; gap: 10px; align-content: end; }
+.pz-log li { display: grid; gap: 1px; font-size: 14px; line-height: 1.45; }
+.pz-log li b { font-size: 12px; color: var(--mute); }
+.pz-log li.ghost span { font-style: italic; color: #6f5f4a; }
+.pz-log-input { margin: 14px 16px 8px; display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 6px 0 16px; border-radius: 22px; background: #fff; border: 1px solid #e2d3b2; color: #a8977a; font-size: 14px; }
+.pz-log-input button { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--ink); color: #fbf2e2; font-size: 15px; }
+.pz-log-actions { display: flex; gap: 8px; padding: 0 16px 16px; }
+.pz-log-actions button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid #e2d3b2; background: transparent; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+/* 밤 */
+.pz-night { color: #e9e3cf; }
+.pz-time.night, .pz-role.night { background: rgba(20,28,52,.7); color: #e9e3cf; box-shadow: none; }
+.pz-night .pz-ground { background: radial-gradient(closest-side, #3a4466, #2e375a 92%, #252d4c 100%); box-shadow: inset 0 0 0 2px rgba(120,130,170,.35); }
+.pz-night .pz-ground::after { border-color: rgba(120,130,170,.35); }
+.pz-night .pz-well { filter: brightness(.45) saturate(.6); }
+.pz-lantern { position: absolute; left: 50%; top: 60%; width: 70%; aspect-ratio: 2; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(255,200,120,.16), transparent); pointer-events: none; }
+.pz-night .pz-person { all: unset; position: absolute; transform: translate(-50%, -100%) scale(var(--s)); transform-origin: 50% 100%; display: grid; justify-items: center; }
+.pz-night .pz-person .pz-fig { filter: brightness(.55) saturate(.55); transition: filter .3s; }
+.pz-night .pz-person .pz-name { background: rgba(20,28,52,.6); color: #aab0c8; }
+.pz-night .pz-person.ghost .pz-fig { filter: brightness(.7); }
+.pz-night.awake .pz-person.me .pz-fig { filter: none; }
+.pz-night.awake .pz-person.me .pz-name { background: #e9e3cf; color: #1b2238; }
+.pz-night .pz-person.lit .pz-fig { filter: brightness(1) saturate(.9) drop-shadow(0 0 10px rgba(255,214,140,.8)); }
+.pz-night .pz-person.lit .pz-name { background: #f2c58a; color: #2a1d0f; }
+.pz-night .pz-person.pickable { cursor: pointer; }
+.pz-pick { position: absolute; top: -10px; right: -6px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #f2c58a; color: #2a1d0f; font-weight: 800; font-size: 13px; box-shadow: 0 0 0 2px rgba(20,28,52,.8); }
+.pz-night-foot { position: relative; z-index: 2; display: flex; justify-content: flex-start; padding: 10px 14px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.rv-phone .pz-night-foot { padding-bottom: 24px; }
+.pz-act.night { background: rgba(20,28,52,.7); color: #c9cde0; }
+
+.pz-card { position: relative; z-index: 3; margin: 0 12px 12px; padding: 16px 18px 14px; border-radius: 18px; background: #f7efdc; color: #2a1d0f; box-shadow: 0 -6px 30px rgba(0,0,0,.45); animation: pz-card .45s cubic-bezier(.2,.9,.3,1); }
+.rv-phone .pz-card { margin-bottom: 24px; }
+.pz-card-kicker { margin: 0; font-size: 12px; font-weight: 700; color: #8a6a3f; letter-spacing: .04em; }
+.pz-card h3 { margin: 2px 0 10px; font: 700 20px/1.3 "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; }
+.pz-card-picks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.pz-card-picks span { padding: 10px; border-radius: 10px; border: 1.5px dashed #cdb68b; text-align: center; font-size: 14px; color: #a08a68; }
+.pz-card-picks span.on { border-style: solid; border-color: #c98f2e; background: #fff6e2; color: #2a1d0f; font-weight: 700; }
+.pz-card-go { width: 100%; height: 46px; border: 0; border-radius: 23px; background: #2a1d0f; color: #f7efdc; font-size: 16px; font-weight: 700; cursor: pointer; }
+.pz-card-go:disabled { background: #d8ccb2; color: #f7efdc; cursor: default; }
+.pz-card-go.ghost { background: transparent; border: 1.5px solid #cdb68b; color: #2a1d0f; }
+.pz-card-state { margin: 0; font-size: 14px; font-weight: 600; color: #8a6a3f; }
+.pz-info { display: flex; align-items: center; gap: 16px; margin: 6px 0 14px; }
+.pz-info strong { font: 700 56px/1 "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; color: #7a3b3b; }
+.pz-info span { font-size: 15px; line-height: 1.45; }
+
+/* 처형 */
+.pz-time.dusk { background: rgba(255,240,225,.75); }
+.pz-exec .pz-ground { background: radial-gradient(closest-side, #d9b597, #c49c80 92%, #b08a70 100%); }
+.pz-spot { position: absolute; width: 46%; aspect-ratio: 1.6; transform: translate(-50%, -62%); border-radius: 50%; background: radial-gradient(closest-side, rgba(255,236,200,.85), rgba(255,236,200,0)); opacity: 0; animation: pz-in .8s .3s forwards; pointer-events: none; }
+.pz-platform { position: absolute; width: 22%; aspect-ratio: 3.2; transform: translate(-50%, -40%); border-radius: 50%; background: linear-gradient(#8a6248, #6d4a36); box-shadow: 0 6px 0 #563827, 0 12px 16px rgba(40,20,10,.3); }
+.pz-person.crowd .pz-fig { animation: pz-dim .8s .5s forwards; }
+.pz-hand { position: absolute; top: -18px; left: 50%; width: 18px; height: 22px; transform: translateX(-50%); opacity: 0; animation: pz-hand .4s 1.1s forwards; }
+.pz-person.nominee { display: grid; justify-items: center; }
+.pz-person.nominee > div { grid-area: 1 / 1; }
+.pz-fade-out { animation: pz-out 1s 2.6s forwards; }
+.pz-fade-in { opacity: 0; animation: pz-rise 2.2s 2.8s forwards; }
+.pz-person.nominee .pz-name { grid-area: 2 / 1; background: #2a1d0f; color: #f7efdc; }
+.pz-tally { position: absolute; z-index: 5; top: 13%; left: 50%; transform: translateX(-50%); display: grid; justify-items: center; padding: 10px 22px; border-radius: 14px; background: rgba(42,29,15,.82); color: #f7efdc; opacity: 0; animation: pz-in .5s 1.4s forwards; }
+.rv-phone .pz-tally { top: 15%; }
+.pz-tally span { font-size: 12px; color: #d9c3a0; }
+.pz-tally strong { font: 700 30px/1.15 "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; }
+.pz-tally em { font-style: normal; font-size: 11px; color: #d9c3a0; }
+.pz-verdict { position: absolute; z-index: 5; left: 0; right: 0; bottom: 5%; margin: 0; text-align: center; font: 700 24px/1.3 "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; color: #2a1d0f; text-shadow: 0 1px 0 rgba(255,240,220,.7); opacity: 0; animation: pz-in .8s 4s forwards; }
+
+@keyframes pz-card { from { transform: translateY(40px); opacity: 0; } }
+@keyframes pz-in { to { opacity: 1; } }
+@keyframes pz-dim { to { filter: brightness(.72) saturate(.7); } }
+@keyframes pz-hand { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes pz-out { to { opacity: 0; } }
+@keyframes pz-rise { 0% { opacity: 0; transform: translateY(0); } 40% { opacity: .75; } 100% { opacity: .7; transform: translateY(-18px); } }

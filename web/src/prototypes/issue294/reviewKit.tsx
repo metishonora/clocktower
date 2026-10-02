@@ -64,3 +64,23 @@ export function PhoneFrame({ simKeyboard, children }: { simKeyboard: boolean; ch
   );
 }
 
+
+// PC 화면은 1280×800 기준으로 그리고 검토 영역 크기에 맞게 줄인다.
+export function PcFrame({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const el = ref.current?.parentElement;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setScale(Math.min(1, (el.clientWidth - 48) / 1280, (el.clientHeight - 48) / 800)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className="rv-pc" style={{ width: 1280 * scale, height: 800 * scale }}>
+      <div className="rv-pc-screen" style={{ transform: `scale(${scale})` }}>
+        {children}
+      </div>
+    </div>
+  );
+}
