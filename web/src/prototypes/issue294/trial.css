@@ -1,0 +1,124 @@
+.tr {
+  --blood: #c0242e;
+  --blood-deep: #6e0f17;
+  --gold: #d9a441;
+  --bone: #f2e6d0;
+  --night: #0b0709;
+  position: absolute; inset: 0; overflow: hidden;
+  background: radial-gradient(90% 60% at 50% 35%, #2a0f12 0%, #120709 60%, #070405 100%);
+  color: var(--bone);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+:where(.tr) button { font: inherit; color: inherit; }
+
+.tr-head { position: absolute; z-index: 20; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 10px; padding: 14px 16px; padding-top: max(14px, env(safe-area-inset-top)); }
+.rv-phone .tr-head { padding-top: 42px; }
+.tr-chip { padding: 4px 12px 5px; font: 800 14px/1 "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; letter-spacing: .12em; color: var(--night); background: var(--gold); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+.tr-chip.defend { background: var(--bone); }
+.tr-chip.vote { background: var(--blood); color: var(--bone); }
+.tr-timer { font: 700 15px ui-monospace, "SF Mono", Menlo, monospace; color: var(--gold); }
+.tr-vote-title { font: 700 18px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; }
+
+/* 초상화 */
+.tr-portrait { display: block; width: 100%; height: auto; }
+.tr-portrait.ghost { filter: grayscale(1) brightness(1.3); opacity: .75; }
+.tr-portrait.talking .tr-mouth { animation: tr-talk .22s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+
+/* 지명 컷인 */
+.tr-cutin { position: absolute; inset: 0; background: var(--night); }
+.tr-band { position: absolute; left: -10%; right: -10%; height: 40%; display: flex; align-items: center; overflow: hidden; }
+.tr-band.top { top: 6%; background: linear-gradient(100deg, #1a0a0c, #3a1015); transform: skewY(-8deg); animation: tr-in-left .45s cubic-bezier(.2,.9,.2,1) both; }
+.tr-band.bottom { bottom: 6%; justify-content: flex-end; background: linear-gradient(100deg, #3a1015, #1a0a0c); transform: skewY(-8deg); animation: tr-in-right .45s .15s cubic-bezier(.2,.9,.2,1) both; }
+.tr-band-portrait { width: 52%; transform: skewY(8deg) translateY(12%); }
+.tr-band.top .tr-band-portrait { margin-left: 12%; }
+.tr-band.bottom .tr-band-portrait { margin-right: 12%; }
+.tr-band-name { transform: skewY(8deg); font: 800 34px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; padding: 0 6%; text-shadow: 0 3px 0 var(--blood-deep); }
+.tr-slash { position: absolute; left: -10%; right: -10%; top: 50%; height: 64px; transform: translateY(-50%) skewY(-8deg); background: var(--blood); display: grid; place-items: center; box-shadow: 0 0 40px rgba(192,36,46,.6); animation: tr-slash .35s .45s cubic-bezier(.2,.9,.2,1.2) both; z-index: 2; }
+.tr-slash strong { transform: skewY(8deg); font: 900 40px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; letter-spacing: .4em; padding-left: .4em; color: var(--bone); text-shadow: 3px 3px 0 #000; }
+.tr-cutin-line { position: absolute; z-index: 3; left: 0; right: 0; bottom: 3%; margin: 0; text-align: center; font-size: 14px; color: #cdb9a0; animation: tr-fade .4s .9s both; }
+
+/* 증언대 */
+.tr-room { position: absolute; inset: 0; }
+.tr-stands { position: absolute; top: 17%; left: 0; display: flex; transition: transform .9s cubic-bezier(.6,0,.2,1); filter: blur(.5px); opacity: .55; }
+.tr-stand { flex: none; display: grid; justify-items: center; gap: 2px; }
+.tr-stand-head { width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.5); }
+.tr-stand-box { width: 54px; height: 30px; background: linear-gradient(#5a2a20, #2a1210); clip-path: polygon(8% 0, 92% 0, 100% 100%, 0 100%); border-top: 2px solid var(--gold); }
+.tr-stand-name { font-size: 10px; color: #b8a28a; }
+.tr-stand.ghost .tr-stand-head { opacity: .35; }
+.tr-stand.self { opacity: 0; }
+.tr-spot { position: absolute; left: 50%; top: 0; width: 120%; height: 78%; transform: translateX(-50%); background: radial-gradient(40% 60% at 50% 60%, rgba(255,214,150,.22), transparent 70%), conic-gradient(from 160deg at 50% -10%, transparent 0deg, rgba(255,220,170,.12) 20deg, transparent 40deg); pointer-events: none; }
+.tr-speaker { position: absolute; left: 50%; bottom: 27%; width: 66%; max-width: 290px; transform: translateX(-50%); animation: tr-speaker .5s cubic-bezier(.2,.9,.2,1); filter: drop-shadow(0 0 30px rgba(0,0,0,.6)); }
+.tr-ring { width: 60px; height: 60px; margin-left: auto; }
+.tr-ring-track { fill: rgba(0,0,0,.4); stroke: rgba(217,164,65,.35); stroke-width: 1; }
+.tr-ring-dot { fill: #8a7a6a; }
+.tr-ring-dot.ghost { fill: none; stroke: #6a5a4a; stroke-width: 1; }
+.tr-ring-dot.me { fill: var(--bone); }
+.tr-ring-dot.nominee { fill: var(--blood); }
+.tr-ring-dot.speaker { fill: var(--gold); filter: drop-shadow(0 0 3px var(--gold)); }
+.tr-reactions { position: absolute; z-index: 15; left: 12px; top: 33%; margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; max-width: 46%; }
+.tr-reactions li { padding: 5px 10px; border-radius: 10px 10px 10px 2px; background: rgba(20,10,12,.78); border: 1px solid rgba(242,230,208,.18); font-size: 12.5px; animation: tr-fade .35s both; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-reactions li:not(:last-child) { opacity: .55; }
+.tr-reactions li b { color: var(--gold); margin-right: 3px; }
+.tr-reactions li.ghost { font-style: italic; border-style: dashed; }
+.tr-dialog { position: absolute; z-index: 18; left: 10px; right: 10px; bottom: 86px; }
+.tr-dialog-box { padding: 22px 16px 14px; background: rgba(10,5,6,.92); border: 2px solid var(--blood); box-shadow: 0 0 0 1px #000, 0 10px 30px rgba(0,0,0,.6); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%); }
+.rv-phone .tr-dialog { bottom: 100px; }
+.tr-plate { position: absolute; z-index: 1; top: -14px; left: 14px; padding: 3px 14px 4px; background: var(--gold); color: var(--night); font: 800 15px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
+.tr-dialog p { margin: 0; min-height: 4.35em; font-size: 16px; line-height: 1.45; word-break: keep-all; }
+.tr-caret { display: inline-block; width: 8px; height: 8px; margin-left: 4px; background: var(--blood); clip-path: polygon(0 0, 100% 0, 50% 100%); animation: tr-blink .8s steps(2) infinite; }
+.tr-bottom { position: absolute; z-index: 18; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 12px 14px; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+.rv-phone .tr-bottom { padding-bottom: 26px; }
+.tr-speak { height: 48px; border: 1px solid rgba(242,230,208,.35); border-radius: 24px; background: rgba(242,230,208,.1); color: var(--bone); font-weight: 700; cursor: pointer; }
+.tr-whisper { height: 48px; padding: 0 18px; border-radius: 24px; border: 1px solid #3e8a80; background: rgba(30,60,58,.5); color: #bfe8e0; font-weight: 700; cursor: pointer; }
+
+/* 투표 */
+.tr-vote { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.tr-vote-floor { position: relative; margin: 92px auto 0; width: min(94%, 380px); aspect-ratio: 1; }
+.rv-phone .tr-vote-floor { margin-top: 110px; }
+.tr-vote-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tr-floor { fill: radial-gradient(#2a0f12, #120709); fill: #1a0b0d; stroke: rgba(217,164,65,.4); stroke-width: 1.5; }
+.tr-floor-inner { fill: none; stroke: rgba(192,36,46,.35); stroke-width: 1; stroke-dasharray: 2 4; }
+.tr-hand { stroke: var(--gold); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 4px var(--gold)); transition: all .6s cubic-bezier(.5,1.6,.5,1); }
+.tr-hub { fill: var(--gold); }
+.tr-token { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 2px; transition: transform .25s; }
+.tr-token-head { width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 0 2px #000, 0 0 0 3px rgba(242,230,208,.25); }
+.tr-token-name { font-size: 11px; font-weight: 700; padding: 0 5px; border-radius: 4px; background: rgba(0,0,0,.6); white-space: nowrap; }
+.tr-token.ghost .tr-token-head { opacity: .4; }
+.tr-token.ghost .tr-token-name { color: #9a8a7a; text-decoration: line-through; }
+.tr-token.me .tr-token-name { background: var(--bone); color: var(--night); }
+.tr-token.nominee .tr-token-head { box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--blood), 0 0 14px var(--blood); }
+.tr-token.nominee .tr-token-name { background: var(--blood); }
+.tr-token.now { transform: translate(-50%, -50%) scale(1.25); }
+.tr-token.up .tr-token-head { box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--gold), 0 0 12px var(--gold); }
+.tr-hand-icon { position: absolute; top: -20px; width: 16px; height: 20px; animation: tr-hand .3s ease-out; }
+.tr-count { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 30%); display: grid; justify-items: center; pointer-events: none; }
+.tr-count strong { font: 900 44px/1 "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; color: var(--bone); text-shadow: 0 2px 0 var(--blood-deep); }
+.tr-count span { font-size: 12px; color: #cdb9a0; }
+.tr-myvote { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+.rv-phone .tr-myvote { padding-bottom: 28px; }
+.tr-vote-btn { height: 52px; border-radius: 26px; border: 1.5px solid rgba(242,230,208,.35); background: transparent; color: var(--bone); font-size: 16px; font-weight: 800; cursor: pointer; }
+.tr-vote-btn.on:first-child { background: var(--gold); color: var(--night); border-color: var(--gold); }
+.tr-vote-btn.on:last-child { background: var(--bone); color: var(--night); border-color: var(--bone); }
+.tr-locked { grid-column: 1 / -1; margin: 0; height: 52px; display: grid; place-items: center; font-weight: 700; color: #cdb9a0; }
+
+/* 처형 결정 */
+.tr-verdict { position: absolute; inset: 0; display: grid; justify-items: center; align-content: center; gap: 4px; background: radial-gradient(70% 50% at 50% 40%, #3a0d12, #0b0709 75%); }
+.tr-verdict-portrait { position: relative; width: 70%; max-width: 300px; animation: tr-speaker .5s both; }
+.tr-verdict-portrait.dead .tr-portrait { animation: tr-gray 1.2s 1s forwards; }
+.tr-crack { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 47%, #000 48%, #000 49%, transparent 50%), linear-gradient(70deg, transparent 58%, rgba(0,0,0,.9) 58.5%, transparent 59.5%); opacity: 0; animation: tr-fade .2s 1.6s forwards; }
+.tr-stamp { margin-top: -40px; padding: 6px 30px 8px; border: 4px solid var(--blood); color: var(--blood); font: 900 46px/1 "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; letter-spacing: .3em; padding-left: calc(30px + .3em); transform: rotate(-8deg); background: rgba(11,7,9,.6); animation: tr-stamp .35s .7s cubic-bezier(.3,1.6,.5,1) both; }
+.tr-stamp.spared { border-color: var(--bone); color: var(--bone); }
+.tr-verdict-line { margin: 22px 0 0; font: 700 22px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; animation: tr-fade .6s 2s both; }
+.tr-verdict-sub { margin: 0; font-size: 13px; color: #cdb9a0; animation: tr-fade .6s 2.3s both; }
+
+@keyframes tr-talk { from { transform: scaleY(.4); } to { transform: scaleY(2.2); } }
+@keyframes tr-in-left { from { transform: skewY(-8deg) translateX(-100%); } }
+@keyframes tr-in-right { from { transform: skewY(-8deg) translateX(100%); } }
+@keyframes tr-slash { from { transform: translateY(-50%) skewY(-8deg) scaleX(0); } }
+@keyframes tr-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tr-speaker { from { opacity: 0; translate: 0 30px; } }
+@keyframes tr-blink { 50% { opacity: 0; } }
+@keyframes tr-hand { from { opacity: 0; translate: 0 6px; } }
+@keyframes tr-stamp { from { opacity: 0; transform: rotate(-8deg) scale(2.4); } }
+@keyframes tr-gray { to { filter: grayscale(1) brightness(.7) contrast(1.2); } }
