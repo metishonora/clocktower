@@ -1,5 +1,7 @@
 # 이슈 294 참가자 화면 프로토타입 인계
 
+> 2026-10-03 이후 최신 방향과 남은 범위는 [이슈 #294 설계 댓글](https://github.com/metishonora/clocktower/issues/294#issuecomment-5934051761)을 따른다. 이 문서는 당시 인계 기록으로 보존한다.
+
 2026년 10월 3일 기준. 다음 작업자가 사용자와 합의한 동작을 유지하면서 남은 검토를 이어가기 위한 기록이다. 원본 이슈는 [참가자 화면 컨셉과 구성 프로토타입](https://github.com/metishonora/clocktower/issues/294), 초기 컨셉과 전체 완료 기준은 [기존 설계 댓글](https://github.com/metishonora/clocktower/issues/294#issuecomment-5934051761)에 있다.
 
 **현재 기준은 검토 04인 `web/issue-294-guesses.html`이다. 검토 05인 `web/issue-294-square.html`은 사용자 요청으로 보류했다.** 05의 배치 변경을 채택한 것으로 취급하거나 기본 광장에 적용하지 않는다. 이번 기록은 프로토타입 검토 결과이며, 실제 서비스 기능 구현 완료를 뜻하지 않는다. 이슈 294의 전체 완료 조건도 아직 충족하지 않았다.
