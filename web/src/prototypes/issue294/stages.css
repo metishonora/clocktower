@@ -1,0 +1,163 @@
+.st {
+  --ink: #2f241a;
+  --mute: #7d6a55;
+  position: absolute; inset: 0; overflow: hidden;
+  display: flex; flex-direction: column;
+  color: var(--ink);
+  font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: linear-gradient(#ddc7a2 0%, #e8d8b8 22%, #cdb48f 23%, #c4ab85 100%);
+}
+:where(.st) button { font: inherit; color: inherit; }
+.st-night { --ink: #e6e0cf; --mute: #9aa0b8; background: linear-gradient(#0c1024 0%, #1b2040 22%, #222846 23%, #1a1f38 100%); }
+.st-k-fire { --ink: #f1e6d2; --mute: #b3a28a; background: radial-gradient(70% 55% at 50% 52%, #2a1a10 0%, #120c09 60%, #070505 100%); }
+.st-k-fire.st-night { background: radial-gradient(70% 55% at 50% 52%, #1a0f0d 0%, #0b0708 60%, #040304 100%); }
+
+/* 하늘과 지붕선 */
+.st-sky { position: absolute; left: 0; right: 0; top: 0; height: 23%; pointer-events: none; }
+.st-roofline { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 60px; fill: #a88a66; opacity: .55; }
+.st-night .st-roofline { fill: #10142a; opacity: .9; }
+.st-moon { position: absolute; right: 16%; top: 34%; width: 44px; height: 44px; border-radius: 50%; background: #e9dcc0; box-shadow: 0 0 30px rgba(233,220,192,.35); }
+.st-moon.blood, .st-k-houses.st-night .st-moon, .st-k-tower.st-night .st-moon { background: #b8392f; box-shadow: 0 0 40px rgba(184,57,47,.55); }
+.st-k-fire .st-moon.blood { position: absolute; top: 9%; right: 12%; z-index: 1; }
+
+.st-head { position: relative; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 0; padding-top: max(12px, env(safe-area-inset-top)); }
+.rv-phone .st-head { padding-top: 40px; }
+.st-phase { display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; border-radius: 10px; background: rgba(250,242,226,.72); }
+.st-night .st-phase, .st-k-fire .st-phase { background: rgba(20,16,24,.55); }
+.st-day { font: 700 16px/1 "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; letter-spacing: .02em; }
+.st-left { font-size: 13px; color: var(--mute); font-variant-numeric: tabular-nums; }
+.st-horn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(120,95,65,.35); background: rgba(250,242,226,.72); display: grid; place-items: center; cursor: pointer; }
+.st-night .st-horn, .st-k-fire .st-horn { background: rgba(20,16,24,.55); border-color: rgba(200,190,170,.2); }
+
+.st-field { position: relative; flex: 1; min-height: 0; }
+
+/* 광장 바닥 */
+.st-plaza { position: absolute; left: 4%; right: 4%; border-radius: 50%; }
+.st-plaza.tower { top: 12%; bottom: 0%; background: radial-gradient(closest-side, #d9c6a2, #c9b28b 88%, #b89e77 100%); box-shadow: inset 0 0 0 2px rgba(120,95,65,.25); }
+.st-plaza.houses { top: 20%; bottom: 8%; left: 14%; right: 14%; background: repeating-radial-gradient(circle at 50% 50%, #cdb895 0 10px, #c7b18d 10px 11px); box-shadow: inset 0 0 0 2px rgba(120,95,65,.3); }
+.st-night .st-plaza.tower { background: radial-gradient(closest-side, #2f3554, #262b47 88%, #1e2340 100%); }
+.st-night .st-plaza.houses { background: repeating-radial-gradient(circle at 50% 50%, #2b3150 0 10px, #272c4a 10px 11px); }
+
+/* 시계탑 */
+.st-tower-wrap { position: absolute; transform: translate(-50%, -100%); z-index: 5; pointer-events: none; }
+.st-tower { position: relative; width: 64px; }
+.st-tower svg { width: 100%; height: 100%; display: block; }
+.st-tower-roof { fill: #5c4433; }
+.st-tower-belfry, .st-tower-body { fill: #7d604a; }
+.st-tower-arch { fill: #3a2b22; }
+.st-tower-door { fill: #4a3628; }
+.st-night .st-tower-roof { fill: #141834; }
+.st-night .st-tower-belfry, .st-night .st-tower-body { fill: #1c2140; }
+.st-night .st-tower-arch { fill: #07080f; }
+.st-eyes circle { fill: #e04a3c; filter: drop-shadow(0 0 3px #e04a3c); animation: st-blink 5s infinite; }
+.st-tower-clock { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); display: grid; justify-items: center; }
+.st-tower-left { margin-top: 2px; padding: 1px 6px; border-radius: 4px; background: rgba(47,36,26,.85); color: #f6ead3; font: 700 12px/1.3 ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+.st-clock-rim { fill: #b48a45; }
+.st-clock-face { fill: #f6ecd6; }
+.st-night .st-clock-face { fill: #3a2e3a; }
+.st-night .st-clock-rim { fill: #5b4630; }
+.st-clock-left { fill: none; stroke: #b2462f; stroke-width: 2.2; stroke-linecap: round; }
+.st-clock-tick { stroke: #6a5236; stroke-width: 1; }
+.st-clock-hand { stroke: #2f241a; stroke-width: 1.8; stroke-linecap: round; }
+.st-clock-hand.stopped { stroke: #c4493b; }
+.st-clock-hub { fill: #2f241a; }
+
+/* 사람 (가) */
+.st-person { position: absolute; transform: translate(-50%, -100%) scale(var(--s)); transform-origin: 50% 100%; display: grid; justify-items: center; }
+.st-person .pz-fig { width: 44px; height: 70px; display: block; }
+.st-name { margin-top: 1px; padding: 1px 7px; border-radius: 5px; font-size: 12.5px; font-weight: 700; background: rgba(250,242,226,.88); color: #2f241a; white-space: nowrap; box-shadow: 0 1px 0 rgba(0,0,0,.08); }
+.st-person.me .st-name, .st-seat.me .st-name { background: #2f241a; color: #f6ead3; }
+.st-person.ghost .pz-fig { opacity: .65; animation: pz-float 3.6s ease-in-out infinite; }
+.st-person.ghost .st-name { background: transparent; color: var(--mute); text-decoration: line-through; box-shadow: none; }
+.st-person.speaking .pz-fig { filter: drop-shadow(0 0 8px rgba(255,236,190,.95)); }
+.st-person.whisper .pz-fig, .st-seat.whisper .st-medal { filter: drop-shadow(0 0 6px rgba(80,170,160,.9)); }
+.st-night .st-person:not(.me) .pz-fig { filter: brightness(.5) saturate(.5); }
+.st-night .st-person:not(.me) .st-name { background: rgba(20,24,46,.7); color: #aab0c8; }
+.st-night .st-person.me .pz-fig { filter: brightness(.75); }
+
+/* 귓속말 연결선 */
+.st-whisper-line { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 4; pointer-events: none; }
+.st-whisper-line path { fill: none; stroke: #3e9a8e; stroke-width: 1.6; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; animation: st-dash 1.2s linear infinite; }
+.st-whisper-line.fire path { stroke: #7fd0c4; }
+
+/* 집 (나) */
+.st-house { position: absolute; transform: translate(-50%, -100%) scale(var(--s)); transform-origin: 50% 100%; display: grid; justify-items: center; }
+.st-house-svg { width: 54px; height: 56px; display: block; }
+.st-roof { fill: var(--tint); }
+.st-wall { fill: #efe2c6; }
+.st-window { fill: #6b5b4a; }
+.st-window.lit { fill: #ffd98a; filter: drop-shadow(0 0 4px #ffcf6e); }
+.st-door { fill: #5a4030; }
+.st-wreath circle { fill: none; stroke: #1d1d1d; stroke-width: 1.6; }
+.st-wreath path { stroke: #1d1d1d; stroke-width: 1.2; }
+.st-board { stroke: #6b5340; stroke-width: 2; stroke-linecap: round; }
+.st-house.dead .st-wall { fill: #d8ccb4; }
+.st-house.dead .st-roof { filter: saturate(.35) brightness(.85); }
+.st-house-person { position: absolute; bottom: 14px; left: 50%; width: 22px; transform: translateX(-112%); }
+.st-house-person .pz-fig { width: 22px; height: 35px; }
+.st-house-person.ghost { opacity: .7; animation: pz-float 3.6s ease-in-out infinite; }
+.st-house.speaking .st-house-person .pz-fig { filter: drop-shadow(0 0 5px rgba(255,236,190,1)); }
+.st-house.whisper .st-house-svg { filter: drop-shadow(0 0 6px rgba(62,154,142,.9)); }
+.st-candle { position: absolute; bottom: 15px; right: 2px; width: 4px; height: 8px; border-radius: 1px; background: #f3ead6; }
+.st-candle::after { content: ""; position: absolute; left: 50%; top: -6px; width: 5px; height: 7px; transform: translateX(-50%); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #ffb547; box-shadow: 0 0 6px #ffb547; animation: st-flicker 1.6s ease-in-out infinite; }
+.st-candle.out::after { display: none; }
+.st-plate { margin-top: -1px; padding: 1px 7px; border-radius: 3px; font-size: 12.5px; font-weight: 700; background: #3b2c20; color: #f3e6cc; white-space: nowrap; border: 1px solid #b48a45; }
+.st-house.me .st-plate { background: #b48a45; color: #241a10; }
+.st-house.dead .st-plate { background: #5a5048; color: #cfc4b2; text-decoration: line-through; }
+.st-night .st-wall { fill: #2b3152; }
+.st-night .st-roof { filter: brightness(.45) saturate(.6); }
+.st-night .st-door { fill: #151a30; }
+.st-night .st-window:not(.lit) { fill: #12162a; }
+.st-night .st-house.dead .st-wall { fill: #262a42; }
+.st-night .st-plate { background: #151a30; color: #a9afc6; border-color: #3a4166; }
+.st-night .st-house.me .st-plate { background: #b48a45; color: #241a10; }
+
+/* 등불 원 (다) */
+.st-fog { position: absolute; inset: 0; background: radial-gradient(120% 40% at 50% 0%, rgba(120,110,100,.12), transparent 60%), radial-gradient(120% 40% at 50% 100%, rgba(120,110,100,.14), transparent 60%); pointer-events: none; }
+.st-firelight { position: absolute; left: 50%; top: 52%; width: 120%; aspect-ratio: 1.15; transform: translate(-50%, -50%); background: radial-gradient(closest-side, rgba(255,150,60,.28), rgba(255,120,40,.08) 55%, transparent 75%); animation: st-glow 3s ease-in-out infinite; pointer-events: none; }
+.st-night .st-firelight { background: radial-gradient(closest-side, rgba(170,40,30,.2), transparent 60%); animation: none; }
+.st-bonfire { position: absolute; width: 96px; height: 96px; transform: translate(-50%, -50%); z-index: 5; }
+.st-bonfire svg { width: 100%; height: 100%; overflow: visible; }
+.st-flame path { fill: #ff9a3c; filter: drop-shadow(0 0 8px #ff8a2a); transform-origin: 0 14px; animation: st-flame 1.4s ease-in-out infinite; }
+.st-flame path.inner { fill: #ffe08a; }
+.st-night .st-flame { transform: scale(.45) translateY(14px); }
+.st-night .st-flame path { fill: #a8322a; filter: drop-shadow(0 0 6px #a8322a); }
+.st-night .st-flame path.inner { fill: #e0603a; }
+.st-logs rect { fill: #4a2e1c; }
+.st-ember-track { fill: none; stroke: rgba(255,170,90,.15); stroke-width: 2; }
+.st-ember-left { fill: none; stroke: #ffae55; stroke-width: 2; stroke-linecap: round; filter: drop-shadow(0 0 3px #ff9a3c); }
+.st-seat { position: absolute; transform: translate(-50%, -50%) scale(var(--s)); display: grid; justify-items: center; gap: 2px; }
+.st-medal { position: relative; width: 46px; height: 46px; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--tint) 70%, #000), #1a120c 75%); box-shadow: 0 0 0 2px #6b4a2a, 0 0 14px rgba(255,140,50,.35); }
+.st-medal .pz-fig { position: absolute; left: 50%; top: 4px; width: 46px; height: 74px; transform: translateX(-50%); }
+.st-seat .st-name { background: rgba(255,236,205,.92); }
+.st-seat.me .st-medal { box-shadow: 0 0 0 2.5px #f0b45a, 0 0 18px rgba(255,170,80,.6); }
+.st-seat.ghost .st-medal { background: radial-gradient(circle, #3a3a42, #15151a); box-shadow: 0 0 0 1.5px dashed #6b6b75; opacity: .8; }
+.st-seat.ghost .st-name { background: rgba(40,40,48,.8); color: #a8a3b0; text-decoration: line-through; }
+.st-seat.speaking .st-medal { box-shadow: 0 0 0 2.5px #ffd27a, 0 0 22px rgba(255,200,110,.9); }
+.st-night .st-seat:not(.me) .st-medal { filter: brightness(.45) saturate(.4); box-shadow: 0 0 0 2px #2a2228; }
+.st-night .st-seat:not(.me) .st-name { background: rgba(30,24,30,.85); color: #9a929c; }
+
+/* 말풍선: 한 줄, 최근 둘 */
+.st-bubble { position: absolute; z-index: 900; max-width: 48%; padding: 5px 10px; border-radius: 12px; background: #fffaf0; color: #2f241a; font-size: 13px; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 4px 14px rgba(40,25,10,.22); border-left: 3px solid var(--tint); animation: st-pop .3s ease-out; }
+.st-bubble b { font-weight: 700; color: color-mix(in srgb, var(--tint) 75%, #000); }
+.st-bubble.center { transform: translate(-50%, -100%); }
+.st-bubble.start { transform: translate(-18px, -100%); }
+.st-bubble.end { transform: translate(calc(-100% + 18px), -100%); }
+.st-bubble.old { opacity: .6; }
+.st-bubble.ghost { font-style: italic; background: rgba(255,250,240,.82); }
+
+/* 하단 두 버튼 (채택한 말하기 화면) */
+.st-bottom { position: relative; z-index: 60; display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 10px 14px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.rv-phone .st-bottom { padding-bottom: 24px; }
+.st-speak { height: 50px; border: 0; border-radius: 25px; background: #2f241a; color: #f6ead3; font-size: 16px; font-weight: 700; box-shadow: 0 6px 16px rgba(30,20,10,.3); cursor: pointer; }
+.st-whisper { display: inline-flex; align-items: center; gap: 6px; height: 50px; padding: 0 18px; border-radius: 25px; border: 1.5px solid #9fcfc6; background: #eef8f5; color: #1f5c54; font-size: 15px; font-weight: 700; cursor: pointer; }
+.st-bottom.dark .st-speak { background: #e8dcc4; color: #1d1610; }
+.st-bottom.dark .st-whisper { background: rgba(30,60,58,.6); border-color: #3e8a80; color: #bfe8e0; }
+
+@keyframes st-dash { to { stroke-dashoffset: -14; } }
+@keyframes st-blink { 0%, 92%, 100% { opacity: 1; } 95% { opacity: 0; } }
+@keyframes st-flicker { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(.85, 1.1); } }
+@keyframes st-flame { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(.94, 1.08); } }
+@keyframes st-glow { 0%, 100% { opacity: .9; } 50% { opacity: 1; } }
+@keyframes st-pop { from { opacity: 0; scale: .9; } }
