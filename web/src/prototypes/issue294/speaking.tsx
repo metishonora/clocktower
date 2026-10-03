@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createRoot, type Root } from 'react-dom/client';
 import { cast } from './cast';
 import { useWide } from './reviewKit';
-import { SpeakingPlaza, type SpeakingMessage, type SpeakingNotice, type SpeakingView } from './SpeakingPlaza';
+import { SpeakingPlaza, type SpeakingMessage, type SpeakingNotice, type SpeakingView, type SquareVariant } from './SpeakingPlaza';
 import { useMobileViewport } from './useMobileViewport';
 import { PlazaTimer, timerSnapshot } from './PlazaTimer';
 import type { WhisperArrival } from './WhisperAction';
@@ -29,7 +29,7 @@ const guessReview = location.pathname.endsWith('issue-294-guesses.html');
 const squareReview = location.pathname.endsWith('issue-294-square.html');
 const liveTimer = timerReview || guessReview || squareReview;
 const reviewNumber = squareReview ? '05' : guessReview ? '04' : timerReview ? '03' : noticeReview ? '02' : '01';
-const reviewTitle = squareReview ? '광장과 인물 가독성 · 보류' : guessReview ? '상대 직업 추측' : timerReview ? '남은 시간' : noticeReview ? '공지 전달 방식' : '말하기 중 화면';
+const reviewTitle = squareReview ? '광장 뒷줄 가독성' : guessReview ? '상대 직업 추측' : timerReview ? '남은 시간' : noticeReview ? '공지 전달 방식' : '말하기 중 화면';
 const shortNotice = '잠시 후 지명을 받겠습니다.';
 const longNotice = '오늘은 지명을 받기 전에 각자 받은 정보를 짧게 이야기해 주세요. 귓속말 중인 분들도 광장으로 돌아와서 함께 들어 주세요.';
 const noticeTime = (at = Date.now()) => new Intl.DateTimeFormat('ko', { hour: '2-digit', minute: '2-digit', hour12: false }).format(at);
@@ -44,7 +44,10 @@ function App() {
   const params = new URLSearchParams(location.search);
   const [count, setCount] = useState<8 | 15>(params.get('n') === '15' ? 15 : 8);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [readableSquare, setReadableSquare] = useState(params.get('layout') !== 'original');
+  const [squareVariant, setSquareVariant] = useState<SquareVariant>(() => {
+    const v = params.get('layout');
+    return v === 'original' || v === 'readable' || v === 'flat' ? v : 'soft';
+  });
   const [keyboard, setKeyboard] = useState(true);
   const [auto, setAuto] = useState(!liveTimer);
   const [timer, setTimer] = useState(() => timerSnapshot());
@@ -73,9 +76,9 @@ function App() {
     const url = new URL(location.href);
     url.searchParams.set('mode', squareReview ? 'square' : guessReview ? 'guesses' : timerReview ? 'timer' : noticeReview ? 'notices' : 'conversation');
     url.searchParams.set('n', String(count));
-    if (squareReview) url.searchParams.set('layout', readableSquare ? 'readable' : 'original');
+    if (squareReview) url.searchParams.set('layout', squareVariant);
     history.replaceState(null, '', url);
-  }, [count, readableSquare]);
+  }, [count, squareVariant]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const addIncoming = () => {
     const line = incoming[incomingIndex.current++ % incoming.length];
@@ -165,14 +168,13 @@ function App() {
   };
   const controls = <>
     {squareReview && <>
-      <section className="rv-notes"><h2>보류한 시안</h2><p>2026년 10월 3일 사용자 요청으로 보류했습니다. A/B를 채택한 상태가 아니며, 현재 기준은 검토 04입니다.</p><a className="sp-original-link" href="./issue-294-guesses.html">현재 기준 · 검토 04로 돌아가기 ↗</a></section>
-      <section className="rv-notes"><h2>이번 검토 · 광장과 인물 가독성</h2><p>광장을 세로로 넓혀 인물 간격을 고르게 배치합니다. 앞뒤 인물 크기를 맞추고, 이름은 같은 크기로 표시합니다. 최근 발언은 중앙에 모아 인물과 상단 정보를 가리지 않게 합니다.</p></section>
-      <section><h2>배치 비교</h2><div className="rv-seg">
-        <button type="button" aria-pressed={!readableSquare} onClick={() => { setReadableSquare(false); setPanelOpen(false); }}>A · 기존 원근</button>
-        <button type="button" aria-pressed={readableSquare} onClick={() => { setReadableSquare(true); setPanelOpen(false); }}>B · 인물 가독성</button>
-      </div><p className="rv-hint">B에서는 귓속말 중에도 좌석을 고정합니다. 귓속말 상대 표시 방식은 다음 검토에서 다룹니다.</p></section>
+      <section className="rv-notes"><h2>이번 검토 · 뒷줄 가독성</h2><p>원래 광장의 모습과 머리 위 말풍선은 그대로 두고, 원근만 줄여 뒷줄 사람과 이름을 키웁니다. 광장을 세로로 조금 늘려 앞뒤 줄 간격을 확보합니다.</p></section>
+      <section><h2>배치 비교</h2><div className="rv-events">
+        {([['original', 'A · 원래 광장'], ['soft', 'C · 원근 완화 (뒷줄 0.86배)'], ['flat', 'D · 원근 최소 (뒷줄 0.95배)'], ['readable', 'B · 세로 타원·중앙 말풍선 (보류)']] as [SquareVariant, string][]).map(([v, label]) =>
+          <button key={v} type="button" aria-pressed={squareVariant === v} onClick={() => { setSquareVariant(v); setPanelOpen(false); }}>{label}</button>)}
+      </div><p className="rv-hint">C·D는 이름표를 인물 크기와 상관없이 같은 크기로 표시합니다. B는 2026-10-03에 보류한 Codex 시안으로, 비교용으로만 남깁니다.</p></section>
       <section><h2>인원 · 변경하면 처음부터</h2><div className="rv-seg">{([8, 15] as const).map((n) => <button key={n} type="button" aria-pressed={count === n} onClick={() => reset(n)}>{n}인</button>)}</div></section>
-      <section className="rv-notes"><h2>확인할 흐름</h2><ol className="sp-review-steps"><li>8인에서 앞뒤 인물 크기와 광장 분위기 비교</li><li>15인에서 뒤쪽 이름과 사망한 인물 확인</li><li>뒤쪽 인물을 눌러 정보·추측·귓속말 진입</li></ol></section>
+      <section className="rv-notes"><h2>확인할 흐름</h2><ol className="sp-review-steps"><li>15인에서 A와 C·D의 뒷줄 사람·이름 비교</li><li>말풍선이 말한 사람 머리 위에 붙어 있는지 확인</li><li>8인에서 광장 분위기가 유지되는지 확인</li></ol></section>
     </>}
     {guessReview && <>
       <section className="rv-notes"><h2>이번 검토 · 상대 직업 추측</h2><p>광장 인물을 누른 뒤 이름 옆 ‘직업 추측’을 선택합니다. 고른 직업은 인물 정보와 광장·귓속말 대화의 이름 옆에 아이콘과 함께 표시합니다.</p><p className="rv-hint">상대마다 하나씩 적는 본인용 기록입니다. 직업 목록은 이 시안의 Trouble Brewing 22종입니다. 새로고침하거나 시안을 초기화하면 기록도 지워집니다.</p></section>
@@ -215,13 +217,13 @@ function App() {
     </>}
     <section className="rv-notes"><h2>이어 검토할 것</h2><p>{!liveTimer && '남은 시간 연출, '}{!squareReview && '광장 형태·먼 인물 가독성, '}귓속말 상대 표시. 화면 도움말(?)은 마지막에 검토합니다.</p></section>
     <section><button type="button" className="rv-reset" onClick={() => reset()}>{guessReview || squareReview ? '시안 초기화' : timerReview ? '시간과 대화 초기화' : '작성 내용과 소식 초기화'}</button>
-      <a className="sp-original-link" href={squareReview ? './issue-294-guesses.html' : guessReview ? './issue-294-square.html' : timerReview ? './issue-294-guesses.html' : noticeReview ? './issue-294-timer.html' : './issue-294-notices.html'}>{squareReview ? '이전 검토 · 상대 직업 추측 ↗' : guessReview ? '보류한 시안 · 광장과 인물 가독성 ↗' : timerReview ? '다음 검토 · 상대 직업 추측 ↗' : noticeReview ? '다음 검토 · 남은 시간 ↗' : '다음 검토 · 공지 ↗'}</a>
+      <a className="sp-original-link" href={squareReview ? './issue-294-guesses.html' : guessReview ? './issue-294-square.html' : timerReview ? './issue-294-guesses.html' : noticeReview ? './issue-294-timer.html' : './issue-294-notices.html'}>{squareReview ? '이전 검토 · 상대 직업 추측 ↗' : guessReview ? '다음 검토 · 광장 뒷줄 가독성 ↗' : timerReview ? '다음 검토 · 상대 직업 추측 ↗' : noticeReview ? '다음 검토 · 남은 시간 ↗' : '다음 검토 · 공지 ↗'}</a>
       {timerReview && <a className="sp-original-link" href="./issue-294-notices.html">이전 검토 · 공지 ↗</a>}
       {noticeReview && <a className="sp-original-link" href="./issue-294-speaking.html">대화창 검토로 돌아가기 ↗</a>}
     </section>
   </>;
   const product = <SpeakingPlaza key={round} c={c} messages={messages} notices={notices}
-    readableSquare={squareReview && readableSquare}
+    squareVariant={squareReview ? squareVariant : 'original'}
     whisperArrival={whisperArrival}
     timeDisplay={liveTimer ? <PlazaTimer key={timer.revision} snapshot={timer} /> : undefined}
     roleGuesses={guessReview || squareReview ? roleGuesses : undefined}
@@ -254,7 +256,7 @@ function App() {
     }} />;
 
   return wide ? <div className="rv-wide sp-review"><aside className="rv-panel"><header><span className="rv-tag">검토 {reviewNumber}</span><h1>#294 · {reviewTitle}</h1></header>{controls}</aside><main className="rv-stage"><div className="rv-phone"><div className="rv-phone-screen"><div className="rv-phone-app">{product}</div>{keyboard && <div className="rv-keyboard"><span>키보드 자리</span><button type="button" onPointerDown={(e) => e.preventDefault()} onClick={() => { if (document.activeElement instanceof HTMLTextAreaElement) document.activeElement.blur(); }}>키보드 닫기</button></div>}</div></div></main></div>
-    : <div ref={viewportRef} className="rv-narrow sp-review"><div className={`rv-bar ${panelOpen ? 'open' : ''}`}><button type="button" className="rv-bar-toggle" onClick={() => setPanelOpen((o) => !o)}><span className="rv-tag">검토 {reviewNumber}</span>{squareReview ? '광장과 인물' : guessReview ? '상대 직업 추측' : timerReview ? '남은 시간' : noticeReview ? '공지 전달' : '광장 대화'} · {count}인<span className="rv-bar-caret">{panelOpen ? '닫기' : '설정'}</span></button>{panelOpen && <div className="rv-bar-body">{controls}</div>}</div><main className="rv-product">{product}</main></div>;
+    : <div ref={viewportRef} className="rv-narrow sp-review"><div className={`rv-bar ${panelOpen ? 'open' : ''}`}><button type="button" className="rv-bar-toggle" onClick={() => setPanelOpen((o) => !o)}><span className="rv-tag">검토 {reviewNumber}</span>{squareReview ? '광장 뒷줄' : guessReview ? '상대 직업 추측' : timerReview ? '남은 시간' : noticeReview ? '공지 전달' : '광장 대화'} · {count}인<span className="rv-bar-caret">{panelOpen ? '닫기' : '설정'}</span></button>{panelOpen && <div className="rv-bar-body">{controls}</div>}</div><main className="rv-product">{product}</main></div>;
 }
 
 const root: Root = import.meta.hot?.data.root ?? createRoot(document.getElementById('root')!);

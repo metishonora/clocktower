@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { dayLabel, role, type Cast, type Line } from './cast';
-import { Backdrop, EnvelopeIcon, Figure, Ground, layout, Sun } from './plazaParts';
+import { Backdrop, EnvelopeIcon, Figure, Ground, layout, Sun, type Depth } from './plazaParts';
 import { NoticeHub, type SpeakingNotice } from './NoticeHub';
 import { WhisperAction, type WhisperArrival } from './WhisperAction';
 import { MessageRoleGuess, RoleGuessChip, RoleGuessPicker } from './RoleGuess';
@@ -68,7 +68,9 @@ function Conversation({ c, messages, label, empty, roleGuesses, onFilter }: { c:
   );
 }
 
-function Square({ c, messages, selectedSeat, choosingWhisper, inactive, readable, onSelect }: { c: Cast; messages: SpeakingMessage[]; selectedSeat: number | null; choosingWhisper: boolean; inactive: boolean; readable: boolean; onSelect: (seat: number, trigger: HTMLButtonElement) => void }) {
+function Square({ c, messages, selectedSeat, choosingWhisper, inactive, variant, onSelect }: { c: Cast; messages: SpeakingMessage[]; selectedSeat: number | null; choosingWhisper: boolean; inactive: boolean; variant: SquareVariant; onSelect: (seat: number, trigger: HTMLButtonElement) => void }) {
+  const readable = variant === 'readable';
+  const depth: Depth = variant === 'soft' || variant === 'flat' ? variant : 'original';
   const square = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 390, height: 520 });
   useLayoutEffect(() => {
@@ -80,7 +82,7 @@ function Square({ c, messages, selectedSeat, choosingWhisper, inactive, readable
     observer.observe(element);
     return () => observer.disconnect();
   }, [readable]);
-  const spots = readable ? readableLayout(c, size.width, size.height) : layout(c, { whisper: true });
+  const spots = readable ? readableLayout(c, size.width, size.height) : layout(c, { whisper: true, depth });
   const [w1, w2] = c.whisper.map((seat) => spots.get(seat)!);
   const mid = { x: (w1.x + w2.x) / 2, y: (w1.y + w2.y) / 2, scale: (w1.scale + w2.scale) / 2 };
   const whisperTop = readable
@@ -93,13 +95,13 @@ function Square({ c, messages, selectedSeat, choosingWhisper, inactive, readable
     const p = c.players.find((p) => p.seat === m.seat)!;
     const align = s.x < 32 ? 'start' : s.x > 68 ? 'end' : 'center';
     return <div key={m.id} className={`pz-bubble ${align} ${p.alive ? '' : 'ghost'} ${i < shown.length - 1 ? 'old' : ''}`}
-      style={{ left: `${s.x}%`, top: `calc(${s.y}% - ${86 * s.scale}px)`, zIndex: 900 + i }}>
+      style={{ left: `${s.x}%`, top: `calc(${s.y}% - ${86 * s.scale}px)`, zIndex: 1000 + i }}>
       <b>{p.me ? '나' : p.name}</b>{m.text}
     </div>;
   });
-  return <div ref={square} className={`pz-square sp-square ${readable ? 'is-readable' : ''}`} aria-label="마을 광장" inert={inactive}>
+  return <div ref={square} className={`pz-square sp-square ${readable ? 'is-readable' : ''} depth-${depth}`} aria-label="마을 광장" inert={inactive}>
     <div className="sp-people-area">
-    <Ground />
+    <Ground depth={depth} />
     {c.players.map((p) => {
       const s = spots.get(p.seat)!;
       return <div key={p.seat}
@@ -110,6 +112,12 @@ function Square({ c, messages, selectedSeat, choosingWhisper, inactive, readable
         <button type="button" className="sp-person-hit" aria-label={`${p.name}${p.me ? ' (나)' : ''} 선택`} aria-expanded={selectedSeat === p.seat} disabled={choosingWhisper && p.me} onClick={(e) => onSelect(p.seat, e.currentTarget)} />
       </div>;
     })}
+    {depth !== 'original' && <div className="sp-name-layer" aria-hidden="true">
+      {c.players.map((p) => {
+        const s = spots.get(p.seat)!;
+        return <span key={p.seat} className={`sp-name-tag ${p.alive ? '' : 'ghost'} ${p.me ? 'me' : ''}`} style={{ left: `${s.x}%`, top: `calc(${s.y}% - ${19 * s.scale}px)` }}>{p.me ? '나' : p.name}</span>;
+      })}
+    </div>}
     <div className="pz-whisper" style={{ left: `${mid.x}%`, top: whisperTop }} aria-label="귓속말 중"><span>···</span></div>
     {readable ? <div className="sq-speech">{bubbles}</div> : bubbles}
     </div>
@@ -137,7 +145,9 @@ function SendButton({ availableAt, empty, whisper }: { availableAt: number; empt
   </button>;
 }
 
-export function SpeakingPlaza({ c, messages, privateMessages, whisperUnread, whisperArrival, view, setView, notices, draft, composing, sendAvailableAt, setDraft, setComposing, onSend, onBegin, onReadNotice, onReadWhisper, timeDisplay, roleGuesses, onRoleGuess, readableSquare = false }: {
+export type SquareVariant = 'original' | 'readable' | 'soft' | 'flat';
+
+export function SpeakingPlaza({ c, messages, privateMessages, whisperUnread, whisperArrival, view, setView, notices, draft, composing, sendAvailableAt, setDraft, setComposing, onSend, onBegin, onReadNotice, onReadWhisper, timeDisplay, roleGuesses, onRoleGuess, squareVariant = 'original' }: {
   c: Cast;
   messages: SpeakingMessage[];
   privateMessages: SpeakingMessage[];
@@ -158,7 +168,7 @@ export function SpeakingPlaza({ c, messages, privateMessages, whisperUnread, whi
   timeDisplay?: ReactNode;
   roleGuesses?: Record<number, string>;
   onRoleGuess?: (seat: number, roleId?: string) => void;
-  readableSquare?: boolean;
+  squareVariant?: SquareVariant;
 }) {
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [guessingRole, setGuessingRole] = useState(false);
@@ -276,7 +286,7 @@ export function SpeakingPlaza({ c, messages, privateMessages, whisperUnread, whi
       <header className="pz-head">
         {timeDisplay ?? <div className="pz-time"><Sun /><span className="pz-day">{dayLabel}</span><span className="pz-left">토론 2:48</span></div>}
       </header>
-      <Square c={c} messages={messages} selectedSeat={selectedSeat} choosingWhisper={choosingWhisper} inactive={composing} readable={readableSquare} onSelect={selectPerson} />
+      <Square c={c} messages={messages} selectedSeat={selectedSeat} choosingWhisper={choosingWhisper} inactive={composing} variant={squareVariant} onSelect={selectPerson} />
       <div className="sp-action-space" aria-hidden="true" />
     </div>
     <div className="sp-floating-layer">

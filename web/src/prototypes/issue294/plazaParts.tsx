@@ -8,9 +8,21 @@ export const RY = 25;
 
 export type Spot = { x: number; y: number; scale: number; z: number };
 
-export function layout(c: Cast, { whisper = false, center }: { whisper?: boolean; center?: number } = {}): Map<number, Spot> {
+export type Depth = 'original' | 'soft' | 'flat';
+// 뒷줄 축소 정도. original은 1차 광장, soft·flat은 15인 뒷줄 가독성을 위해 원근을 줄이고 광장을 세로로 조금 늘린다.
+const depths: Record<Depth, { cy: number; ry: number; base: [number, number]; back: number; span: number }> = {
+  original: { cy: CY, ry: RY, base: [1, 0.74], back: 0.7, span: 0.42 },
+  soft: { cy: 57, ry: 31, base: [1.04, 0.84], back: 0.86, span: 0.2 },
+  flat: { cy: 57, ry: 31, base: [1.02, 0.82], back: 0.96, span: 0.06 },
+};
+export const ringOf = (depth: Depth = 'original') => ({ cy: depths[depth].cy, ry: depths[depth].ry });
+
+export function layout(c: Cast, { whisper = false, center, depth = 'original' }: { whisper?: boolean; center?: number; depth?: Depth } = {}): Map<number, Spot> {
   const n = c.players.length;
-  const base = n > 10 ? 0.74 : 1;
+  const d = depths[depth];
+  const base = n > 10 ? d.base[1] : d.base[0];
+  const CY = d.cy;
+  const RY = d.ry;
   const angle = (seat: number) => Math.PI + ((seat - c.meSeat) * 2 * Math.PI) / n;
   const spots = new Map<number, Spot>();
   c.players.forEach((p) => {
@@ -35,16 +47,17 @@ export function layout(c: Cast, { whisper = false, center }: { whisper?: boolean
     }
     x = Math.min(92, Math.max(8, x));
     const t = (y - (CY - RY)) / (2 * RY);
-    spots.set(p.seat, { x, y, scale: base * (0.7 + 0.42 * t) * (center === p.seat ? 1.25 : 1), z: Math.round(y * 10) });
+    spots.set(p.seat, { x, y, scale: base * (d.back + d.span * t) * (center === p.seat ? 1.25 : 1), z: Math.round(y * 10) });
   });
   return spots;
 }
 
-export function Ground({ well = true }: { well?: boolean }) {
+export function Ground({ well = true, depth = 'original' }: { well?: boolean; depth?: Depth }) {
+  const { cy, ry } = ringOf(depth);
   return (
     <>
-      <div className="pz-ground" style={{ left: `${CX - RX - 5}%`, top: `${CY - RY - 6}%`, width: `${2 * (RX + 5)}%`, height: `${2 * (RY + 6)}%` }} />
-      {well && <div className="pz-well" style={{ left: `${CX}%`, top: `${CY}%` }} />}
+      <div className="pz-ground" style={{ left: `${CX - RX - 5}%`, top: `${cy - ry - 6}%`, width: `${2 * (RX + 5)}%`, height: `${2 * (ry + 6)}%` }} />
+      {well && <div className="pz-well" style={{ left: `${CX}%`, top: `${cy}%` }} />}
     </>
   );
 }
