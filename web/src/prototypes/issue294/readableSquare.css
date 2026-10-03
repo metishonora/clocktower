@@ -1,0 +1,19 @@
+.sp-surface:has(> .is-readable) { background: #d8c29a; }
+/* Keep the town behind the upper seats, even on a tall phone. */
+.sp-surface:has(> .is-readable) > .pz-backdrop { top: calc(-92px + var(--notice-top)); bottom: auto; height: 760px; }
+.sp-square.is-readable { container-type: size; }
+.is-readable .pz-ground { left: 2% !important; top: 17% !important; width: 96% !important; height: 85% !important; }
+.is-readable .pz-ground::after { inset: 16% 20%; }
+.is-readable .pz-well { top: 76% !important; }
+.is-readable .pz-person { transition: none; }
+.is-readable .pz-fig { width: 46px; height: 74px; }
+.pz-n15 .is-readable .pz-fig { height: clamp(44px, calc((100cqh - 135px) / 7), 60px); width: calc(clamp(44px, (100cqh - 135px) / 7, 60px) * .625); }
+.sp-plaza .is-readable .pz-name { min-width: 28px; padding: 1px 6px; font-size: 13px; line-height: 18px; text-align: center; background: #fff6e5; box-shadow: 0 1px 3px #60452320; }
+.is-readable .pz-person.me .pz-name { background: #3b2c1f; color: #fff6e5; }
+.sp-plaza .is-readable .pz-person.ghost .pz-name { color: #695b46; background: #f5e9d4; }
+.is-readable .pz-person.ghost .pz-fig { opacity: .92; filter: drop-shadow(0 1px 1px #66523480); }
+.is-readable .sp-person-hit { top: auto; bottom: 0; height: calc(100% - 14px); min-height: 44px; min-width: 44px; }
+.sq-speech { position: absolute; z-index: 900; left: 50%; top: 51%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 9px; width: 48%; pointer-events: none; }
+.is-readable .sq-speech .pz-bubble { position: relative; left: auto !important; top: auto !important; transform: none; width: 100%; box-sizing: border-box; max-width: none; font-size: 13px; -webkit-line-clamp: 3; }
+.is-readable .pz-bubble b { color: #68563e; }
+.is-readable .pz-whisper { z-index: 800; }

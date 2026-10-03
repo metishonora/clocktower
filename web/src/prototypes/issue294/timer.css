@@ -1,0 +1,23 @@
+/* The same 32px header footprint keeps the square and conversation in place. */
+.tr-time { display: inline-flex; height: 32px; max-width: calc(100cqw - 84px); border-radius: 18px; background: #fff8e9; box-shadow: 0 2px 10px #5a3c301f; }
+.tr-day { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 5px; padding: 0 9px; }
+.tr-day > svg { width: 18px; height: 18px; }
+.tr-day .pz-day { font-size: 14px; white-space: nowrap; }
+.tr-readout { --timer-ink: #715329; --timer-paper: #f2e2c2; display: grid; grid-template-columns: 22px 25px 3.85ch; gap: 3px; align-items: center; padding: 0 8px 0 6px; border-radius: 0 18px 18px 0; background: var(--timer-paper); color: var(--timer-ink); font-size: 21px; transition: background-color .3s, color .3s; }
+.tr-ring { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; }
+.tr-ring-track { opacity: .18; }
+.tr-ring-value { transform: rotate(-90deg); transform-origin: center; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.tr-clock-hands { stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.tr-label { font-size: 11px; font-weight: 600; white-space: nowrap; text-align: center; }
+.tr-digits { font-size: 21px; line-height: 1; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.04em; text-align: right; }
+.tr-soon .tr-readout { --timer-ink: #68430e; --timer-paper: #edc477; animation: tr-attention 1s ease-out 2; }
+.tr-urgent .tr-readout, .tr-ended .tr-readout { --timer-ink: #fff3dd; --timer-paper: #713b45; }
+.tr-urgent .tr-readout { animation: tr-attention 1s ease-out 2; }
+.tr-ended .tr-ring-track { opacity: .55; }
+.tr-ended .tr-digits { opacity: .8; }
+.tr-added { animation: tr-added .5s ease-out; }
+.tr-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.tr-review-presets { margin-bottom: 8px; }
+@keyframes tr-attention { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--timer-paper) 75%, transparent); } 100% { box-shadow: 0 0 0 7px transparent; } }
+@keyframes tr-added { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .tr-time *, .tr-time *::before, .tr-time *::after { animation: none !important; transition: none !important; } }

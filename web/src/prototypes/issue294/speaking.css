@@ -1,0 +1,137 @@
+.sp-plaza { container-type: size; --occluded-bottom: 0px; --notice-top: max(6px, env(safe-area-inset-top)); --notice-right: 0px; }
+/* A delayed keyboard resize must never leave the closed actions in mid-air. */
+.sp-plaza.is-composing { --occluded-bottom: var(--viewport-bottom-inset, 0px); }
+.rv-phone .sp-plaza { --notice-top: 34px; }
+.sp-surface { position: absolute; z-index: 0; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
+.sp-plaza .pz-head { flex: 0 0 auto; min-height: 32px; }
+.sp-plaza button:focus-visible, .sp-plaza textarea:focus-visible { outline: 2px solid #976526; outline-offset: 3px; }
+/* Reserve the original footer space in the world; only the dock follows the keyboard. */
+.sp-action-space { flex: 0 0 calc(58px + max(12px, env(safe-area-inset-bottom))); background: linear-gradient(to top, rgba(216,194,154,.95), rgba(216,194,154,0)); }
+.rv-phone .sp-action-space { flex-basis: 82px; }
+.sp-actions { position: relative; z-index: 2; flex: 0 0 48px; display: grid; grid-template-columns: minmax(0, 1fr) 102px; gap: 10px; align-items: stretch; }
+.sp-actions button { position: relative; display: flex; align-items: center; justify-content: center; gap: 7px; }
+.sp-actions .sp-whisper-action { flex-direction: row; min-width: 0; min-height: 48px; box-sizing: border-box; padding: 8px; border: 1px solid #6b9a8b70; border-radius: 24px; background: #f3f5e8; color: #35675b; font-size: 14px; }
+.sp-actions .sp-whisper-action svg { flex: 0 0 17px; width: 17px; height: 17px; }
+.sp-fold-mark { flex: 0 0 auto; font-size: 16px; line-height: 1; }
+.sp-chat-dock.is-open .sp-actions button.is-active { border-color: transparent; background: transparent; box-shadow: none; color: var(--chat-ink); }
+.sp-chat-dock.channel-public.is-open .sp-actions .pz-speak { border-radius: 0 0 24px 24px; }
+.sp-chat-dock.channel-whisper.is-open .sp-actions .sp-whisper-action { border-radius: 0 0 24px 24px; }
+.sp-compose { position: relative; z-index: 5; flex: 0 0 auto; padding: 9px 10px 10px; border-top: 1px solid var(--chat-line); background: var(--chat-paper); }
+.sp-input-row { display: flex; align-items: flex-end; gap: 8px; padding: 4px 5px 4px 12px; border: 1px solid var(--chat-line); background: var(--chat-input); border-radius: 21px; }
+.sp-input-row:focus-within { border-color: var(--chat-ink); box-shadow: 0 0 0 2px color-mix(in srgb, var(--chat-ink) 10%, transparent); }
+.sp-input-row textarea { flex: 1; min-width: 0; box-sizing: border-box; min-height: 44px; max-height: min(88px, max(44px, calc(100cqh - 190px))); margin: 0; padding: 10px 0; border: 0; background: transparent; color: #3b2c1f; font: 16px/24px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; resize: none; outline: none; overscroll-behavior: contain; }
+.sp-input-row textarea::placeholder { color: var(--chat-muted); }
+.sp-input-row textarea:focus-visible { outline: none; }
+@container (max-height: 360px) {
+  .sp-input-row textarea { max-height: 44px; }
+}
+.sp-character-count { flex: 0 0 auto; min-width: 46px; margin-bottom: 14px; color: var(--chat-muted); font-size: 10px; line-height: 14px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sp-character-count.at-limit { color: #985448; font-weight: 600; }
+.sp-send { position: relative; flex: 0 0 38px; width: 38px; height: 38px; display: grid; place-items: center; margin-bottom: 3px; padding: 0; border: 0; border-radius: 50%; background: var(--chat-ink); color: #fffdf7 !important; cursor: pointer; }
+.sp-send:disabled { background: var(--chat-line); color: var(--chat-muted) !important; cursor: default; }
+.sp-send svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sp-send.is-cooling { background: #ede3d0; color: #8c683b !important; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sp-send .sp-cooldown-ring { position: absolute; inset: 0; width: 38px; height: 38px; transform: rotate(-90deg); stroke-width: 2; }
+.sp-people-area { position: absolute; inset: 0; }
+.sp-person-hit { position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: max(100%, calc(44px / var(--s))); min-height: calc(44px / var(--s)); padding: 0; border: 0; border-radius: 12px; background: transparent; cursor: pointer; touch-action: manipulation; }
+.sp-person-hit:disabled { cursor: default; }
+.sp-plaza .pz-person.is-selected .sp-person-hit { outline: 2px solid #956d31; outline-offset: 5px; background: #f7d59020; }
+.sp-plaza .pz-bubble, .sp-plaza .pz-whisper { pointer-events: none; }
+.sp-person-card { margin: auto 10px 0; padding: 10px 14px 14px; border: 1px solid #cab795; border-radius: 20px; background: #fbf4e8; box-shadow: 0 8px 30px #3b2c1f35; }
+.sp-person-card > header { display: flex; align-items: center; gap: 8px; min-height: 40px; }
+.sp-person-card h2 { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; margin: 0; font-size: 16px; white-space: nowrap; outline: none; }
+.sp-person-card h2 small, .sp-person-state { font-size: 11px; font-weight: 400; color: #8a7352; }
+.sp-person-card > header > button { flex: 0 0 40px; margin-left: auto; width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; font-size: 24px; color: #8a7352; cursor: pointer; }
+.sp-self-role { display: inline-flex; align-items: center; gap: 5px; min-width: 0; margin-left: 4px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.sp-self-role > span { overflow: hidden; text-overflow: ellipsis; }
+.sp-self-role img { flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; background: #efe3cc; }
+.sp-person-dot { flex: 0 0 9px; width: 9px; height: 9px; border-radius: 50%; }
+.sp-person-actions { display: flex; gap: 8px; margin-top: 5px; }
+.sp-person-actions button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 46px; padding: 9px 8px; border: 1px solid #d8c5a4; border-radius: 12px; background: #fffaf0; font-size: 13px; font-weight: 600; cursor: pointer; }
+.sp-person-actions button span { color: #8a7352; font-size: 12px; }
+.sp-person-actions svg, .sp-chat-heading h2 svg { width: 17px; height: 17px; }
+
+.sp-floating-layer { position: absolute; z-index: 10; top: 0; left: 0; right: 0; height: max(0px, calc(100% - var(--occluded-bottom))); box-sizing: border-box; padding: calc(var(--notice-top) + 56px) 0 max(12px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.rv-phone .sp-floating-layer { padding-bottom: max(10px, calc(24px - var(--occluded-bottom))); }
+.sp-floating-layer > * { pointer-events: auto; }
+.sp-chat-dock { --chat-paper: #f8ecd4; --chat-heading: #f1dfbd; --chat-ink: #694c2c; --chat-line: #d8c49f; --chat-input: #fffaf0; --chat-muted: #8c795b; position: relative; isolation: isolate; flex: 0 0 48px; display: flex; flex-direction: column; min-height: 0; margin: auto 14px 0; }
+.sp-chat-dock.channel-whisper { --chat-paper: #dcefe8; --chat-heading: #c4e2d8; --chat-ink: #245e50; --chat-line: #a8cec0; --chat-input: #f4fcf8; --chat-muted: #607f74; }
+.sp-chat-dock.is-open { flex: 1 1 0; min-height: 0; margin-top: 0; }
+.sp-person-card + .sp-chat-dock { margin-top: 0; }
+.sp-dock-shell { position: absolute; z-index: 0; inset: 0; pointer-events: none; filter: drop-shadow(0 8px 14px #38291838); animation: sp-expand-public .28s cubic-bezier(.2,.75,.25,1) both; }
+.sp-dock-body { position: absolute; inset: 0 0 58px; border-radius: 22px; background: var(--chat-paper); }
+.sp-dock-stem { position: absolute; left: 0; bottom: 0; width: calc(100% - 112px); height: 80px; border-radius: 0 0 24px 24px; background: var(--chat-paper); }
+.channel-whisper .sp-dock-stem { left: auto; right: 0; width: 102px; }
+.channel-whisper .sp-dock-shell { animation-name: sp-expand-whisper; }
+.sp-chat-dock.is-closing { animation: sp-dock-dismiss .18s ease-in both; pointer-events: none; }
+.is-closing .sp-dock-shell { animation: none; }
+.sp-focus-chat { container-type: size; position: relative; z-index: 1; flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 0 0 10px; overflow: hidden; border: 0; border-radius: 22px 22px 22px 0; animation: sp-chat-reveal .28s ease-out both; }
+.channel-whisper .sp-focus-chat { border-radius: 22px 22px 0 22px; }
+.is-closing .sp-focus-chat { animation: none; }
+.sp-chat-heading { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 44px; box-sizing: border-box; padding: 0 8px 0 16px; color: var(--chat-ink); background: var(--chat-heading); border-bottom: 1px solid var(--chat-line); }
+.sp-chat-heading h2 { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 13px; font-weight: 700; outline: none; }
+.sp-chat-heading button { display: grid; place-items: center; width: 44px; height: 44px; border: 0; background: transparent; color: var(--chat-ink); padding: 0; cursor: pointer; }
+.sp-chat-heading button span { font-size: 24px; line-height: 1; }
+.sp-chat-dock.is-picking { flex: 0 0 auto; margin-top: auto; }
+.is-picking .sp-focus-chat { container-type: inline-size; flex: 0 0 auto; }
+.sp-whisper-recipients { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+.sp-whisper-recipients button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 0; min-height: 0; aspect-ratio: 1; box-sizing: border-box; padding: 5px; border: 1px solid var(--chat-line); border-radius: 13px; background: var(--chat-input); color: var(--chat-ink); font-size: 13px; font-weight: 600; cursor: pointer; }
+.sp-whisper-recipients button.has-unread { border-color: #4d9380; box-shadow: inset 0 0 0 1px #4d9380; }
+.sp-whisper-recipients .pz-fig { flex: 0 0 30px; width: 20px; height: 30px; margin: 0; }
+.sp-recipient-name { display: flex; align-items: baseline; gap: 3px; line-height: 16px; white-space: nowrap; }
+.sp-whisper-recipients small { color: var(--chat-muted); font-size: 9px; font-weight: 400; }
+.sp-whisper-badge { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; min-width: 18px; height: 18px; box-sizing: border-box; padding: 0 4px; border-radius: 10px; background: #a94235; color: #fffaf3; font-size: 10px; line-height: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sp-whisper-action .sp-whisper-badge { top: -4px; right: -2px; min-width: 21px; height: 21px; font-size: 11px; box-shadow: 0 0 0 2px var(--chat-paper); }
+/* Arrival stays inside the existing button: no new row, overlay or focus change. */
+.sp-chat-dock .sp-actions button.sp-whisper-action.has-arrival { border-color: #245e50; border-radius: 24px; background: #245e50; color: #f5fff7; box-shadow: 0 3px 12px #245e5040; }
+.sp-whisper-arrival { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; min-width: 0; }
+.sp-whisper-envelope { display: flex; flex: 0 0 17px; animation: sp-whisper-nudge .7s ease-in-out 2; }
+.sp-whisper-arrival-copy { display: grid; gap: 1px; min-width: 0; text-align: left; line-height: 1.15; }
+.sp-whisper-arrival-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 500; color: #c7e5d9; }
+.sp-whisper-arrival-copy strong { font-size: 12px; font-weight: 700; white-space: nowrap; }
+.sp-whisper-flare { position: absolute; inset: -1px; border: 2px solid #5caa90; border-radius: 24px; pointer-events: none; animation: sp-whisper-flare 1s ease-out 2; }
+.sp-whisper-badge.is-arriving { animation: sp-whisper-badge .35s cubic-bezier(.2,.8,.3,1.4); }
+.sp-whisper-live { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; pointer-events: none; }
+@keyframes sp-whisper-nudge { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-13deg); } 65% { transform: rotate(10deg); } }
+@keyframes sp-whisper-flare { from { box-shadow: 0 0 0 0 #5caa9090; } to { box-shadow: 0 0 0 8px #5caa9000; } }
+@keyframes sp-whisper-badge { from { transform: scale(.6); } to { transform: scale(1); } }
+@keyframes sp-expand-public { from { clip-path: inset(calc(100% - 48px) 112px 0 0 round 24px); } to { clip-path: inset(0 0 0 0 round 0px); } }
+@keyframes sp-expand-whisper { from { clip-path: inset(calc(100% - 48px) 0 0 calc(100% - 102px) round 24px); } to { clip-path: inset(0 0 0 0 round 0px); } }
+@keyframes sp-chat-reveal { 0%, 28% { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sp-dock-dismiss { to { opacity: 0; transform: translateY(12px); } }
+.sp-conversation { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.sp-conversation ol { flex: 1; min-height: 0; list-style: none; margin: 0; padding: 14px 16px; overflow-y: auto; overscroll-behavior: contain; scroll-padding-bottom: 16px; }
+.sp-conversation li { width: fit-content; max-width: calc(100% - 30px); box-sizing: border-box; margin-bottom: 12px; padding: 9px 12px 10px; border: 1px solid color-mix(in srgb, var(--speaker) 24%, #fffdf8); border-radius: 15px 15px 15px 4px; background: color-mix(in srgb, var(--speaker) 13%, #fffdf8); }
+.sp-conversation li:last-child { margin-bottom: 0; }
+.sp-message-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.sp-message-author { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: color-mix(in srgb, var(--speaker) 75%, #211b17); }
+.sp-plaza button.sp-message-author { padding: 3px 0; margin: -3px 0; border: 0; background: transparent; font-size: 12px; font-weight: 700; color: color-mix(in srgb, var(--speaker) 75%, #211b17); cursor: pointer; }
+.sp-message-author > span { width: 7px; height: 7px; border-radius: 50%; background: var(--speaker); }
+.sp-message-author small { font-size: 10px; font-weight: 500; opacity: .8; }
+.sp-conversation p { margin: 4px 0 0; font-size: 14px; line-height: 1.5; color: #3e3028; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sp-conversation li.mine { margin-left: auto; border-radius: 15px 15px 4px 15px; }
+.sp-conversation li.ghost { border-style: dashed; }
+.sp-conversation > .sp-empty { position: absolute; top: 40%; left: 18px; right: 18px; margin: 0; text-align: center; color: var(--chat-muted); font-size: 13px; }
+.sp-filter { flex-shrink: 0; display: flex; align-items: center; gap: 7px; padding: 6px 12px 6px 16px; background: #f0e7d7; font-size: 12px; }
+.sp-filter b { margin-left: 4px; font-size: 11px; color: #8a7352; }
+.sp-filter button { margin-left: auto; min-height: 32px; border: 1px solid #cfbd9d; border-radius: 16px; padding: 4px 10px; background: #fffaf0; color: #705434; font-size: 12px; cursor: pointer; }
+.sp-new-lines { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); padding: 7px 13px; border: 1px solid #ccb58b; border-radius: 20px; background: #fff9ed; box-shadow: 0 3px 12px #3b2c1f20; font-size: 12px; cursor: pointer; white-space: nowrap; }
+
+.sp-review-events { margin-top: 10px; }
+.sp-review-steps { margin: 0 0 12px; padding-left: 20px; line-height: 1.8; color: #b8bdc4; }
+.sp-original-link { display: block; margin-top: 14px; text-align: center; font-size: 12px; color: #b8bdc4; text-underline-offset: 3px; }
+/* The review keyboard covers the stage, just like the mobile keyboard. */
+.sp-review .rv-stage { overflow: hidden; }
+.sp-review .rv-phone { height: min(844px, calc(100dvh - 68px)); }
+.sp-review .rv-phone-app { position: absolute; inset: 0; }
+.sp-review .rv-keyboard { position: absolute; z-index: 40; left: 0; right: 0; bottom: 0; height: 291px; align-content: center; gap: 18px; }
+.sp-review .rv-keyboard button { border: 1px solid #737982; border-radius: 7px; padding: 9px 13px; background: #292c31; color: #d7dbe0; font: inherit; letter-spacing: 0; cursor: pointer; }
+.sp-review .rv-phone-screen:has(> .rv-keyboard):has(textarea:focus) .sp-plaza { --occluded-bottom: 292px; }
+.sp-review .rv-phone-screen:not(:has(textarea:focus)) > .rv-keyboard { display: none; }
+html:has(.sp-review), body:has(.sp-review), #root:has(.sp-review) { height: 100%; overflow: hidden; overscroll-behavior: none; scroll-behavior: auto; overflow-anchor: none; }
+body:has(.sp-review) { position: fixed; inset: 0; }
+.rv-narrow.sp-review { position: fixed; top: 0; left: 0; width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-plaza *, .sp-plaza *::before, .sp-plaza *::after { animation: none !important; transition: none !important; }
+}
