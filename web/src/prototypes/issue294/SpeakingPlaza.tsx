@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { dayLabel, role, type Cast, type Line } from './cast';
-import { Backdrop, EnvelopeIcon, Figure, Ground, horizonY, layout, Sun, type Depth, type Ring } from './plazaParts';
+import { EnvelopeIcon, Figure, Ground, horizonY, layout, Sun, type Depth, type Ring } from './plazaParts';
 import { NoticeHub, type SpeakingNotice } from './NoticeHub';
 import { WhisperAction, type WhisperArrival } from './WhisperAction';
 import { MessageRoleGuess, RoleGuessChip, RoleGuessPicker } from './RoleGuess';
 import { readableLayout } from './readableSquare';
+import { groundFilter, MoodBackdrop, type Mood } from './MoodBackdrop';
 import './plaza.css';
 import './speaking.css';
 import './readableSquare.css';
@@ -68,7 +69,7 @@ function Conversation({ c, messages, label, empty, roleGuesses, onFilter }: { c:
   );
 }
 
-function Square({ c, messages, selectedSeat, choosingWhisper, inactive, variant, onSelect }: { c: Cast; messages: SpeakingMessage[]; selectedSeat: number | null; choosingWhisper: boolean; inactive: boolean; variant: SquareVariant; onSelect: (seat: number, trigger: HTMLButtonElement) => void }) {
+function Square({ c, messages, selectedSeat, choosingWhisper, inactive, variant, groundStyle, onSelect }: { c: Cast; messages: SpeakingMessage[]; selectedSeat: number | null; choosingWhisper: boolean; inactive: boolean; variant: SquareVariant; groundStyle?: string; onSelect: (seat: number, trigger: HTMLButtonElement) => void }) {
   const readable = variant === 'readable';
   const depth: Depth = variant === 'soft' || variant === 'flat' ? variant : 'original';
   const square = useRef<HTMLDivElement>(null);
@@ -113,7 +114,7 @@ function Square({ c, messages, selectedSeat, choosingWhisper, inactive, variant,
       <b>{p.me ? '나' : p.name}</b>{m.text}
     </div>;
   });
-  return <div ref={square} className={`pz-square sp-square ${readable ? 'is-readable' : ''} depth-${depth}`} aria-label="마을 광장" inert={inactive}>
+  return <div ref={square} className={`pz-square sp-square ${readable ? 'is-readable' : ''} depth-${depth}`} style={groundStyle ? { ['--ground-filter' as string]: groundStyle } : undefined} aria-label="마을 광장" inert={inactive}>
     <div className="sp-people-area">
     <Ground depth={depth} ring={ring} well={depth !== 'flat'} />
     {c.players.map((p) => {
@@ -161,7 +162,7 @@ function SendButton({ availableAt, empty, whisper }: { availableAt: number; empt
 
 export type SquareVariant = 'original' | 'readable' | 'soft' | 'flat';
 
-export function SpeakingPlaza({ c, messages, privateMessages, whisperUnread, whisperArrival, view, setView, notices, draft, composing, sendAvailableAt, setDraft, setComposing, onSend, onBegin, onReadNotice, onReadWhisper, timeDisplay, roleGuesses, onRoleGuess, squareVariant = 'original' }: {
+export function SpeakingPlaza({ c, messages, privateMessages, whisperUnread, whisperArrival, view, setView, notices, draft, composing, sendAvailableAt, setDraft, setComposing, onSend, onBegin, onReadNotice, onReadWhisper, timeDisplay, roleGuesses, onRoleGuess, squareVariant = 'original', mood = 'base', fall = 0 }: {
   c: Cast;
   messages: SpeakingMessage[];
   privateMessages: SpeakingMessage[];
@@ -183,6 +184,8 @@ export function SpeakingPlaza({ c, messages, privateMessages, whisperUnread, whi
   roleGuesses?: Record<number, string>;
   onRoleGuess?: (seat: number, roleId?: string) => void;
   squareVariant?: SquareVariant;
+  mood?: Mood;
+  fall?: number;
 }) {
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [guessingRole, setGuessingRole] = useState(false);
@@ -296,11 +299,11 @@ export function SpeakingPlaza({ c, messages, privateMessages, whisperUnread, whi
 
   return <div className={`pz sp-plaza pz-n${c.players.length} ${composing ? 'is-composing conversation-mode' : ''} ${selectedPerson || choosingWhisper ? 'is-person-menu' : ''}`}>
     <div className="sp-surface">
-      <Backdrop />
+      <MoodBackdrop mood={mood} fall={fall} />
       <header className="pz-head">
         {timeDisplay ?? <div className="pz-time"><Sun /><span className="pz-day">{dayLabel}</span><span className="pz-left">토론 2:48</span></div>}
       </header>
-      <Square c={c} messages={messages} selectedSeat={selectedSeat} choosingWhisper={choosingWhisper} inactive={composing} variant={squareVariant} onSelect={selectPerson} />
+      <Square c={c} messages={messages} selectedSeat={selectedSeat} choosingWhisper={choosingWhisper} inactive={composing} variant={squareVariant} groundStyle={groundFilter(mood, fall)} onSelect={selectPerson} />
       <div className="sp-action-space" aria-hidden="true" />
     </div>
     <div className="sp-floating-layer">

@@ -142,3 +142,9 @@ body:has(.sp-review) { position: fixed; inset: 0; }
 .sp-name-tag { position: absolute; transform: translate(-50%, 0); padding: 0 6px; border-radius: 6px; font-size: 12.5px; font-weight: 700; line-height: 1.45; color: #3b2c1f; background: rgba(255,248,235,.9); white-space: nowrap; box-shadow: 0 1px 0 rgba(90,60,30,.12); }
 .sp-name-tag.me { background: #3b2c1f; color: #fbf2e2; }
 .sp-name-tag.ghost { background: transparent; box-shadow: none; color: #8a7559; text-decoration: line-through; }
+.sp-square .pz-ground { filter: var(--ground-filter, none); transition: filter 1s; }
+.pz-backdrop.mood .md-fog { animation: md-drift 18s ease-in-out infinite alternate; }
+.pz-backdrop.mood .md-fog.b { animation-duration: 24s; animation-direction: alternate-reverse; }
+.pz-backdrop.mood .md-eyes { animation: md-blink 6s infinite; }
+@keyframes md-drift { from { transform: translateX(-18px); } to { transform: translateX(18px); } }
+@keyframes md-blink { 0%, 90%, 100% { opacity: 1; } 93% { opacity: 0; } }
