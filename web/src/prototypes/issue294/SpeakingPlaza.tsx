@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { dayLabel, role, type Cast, type Line } from './cast';
-import { Backdrop, EnvelopeIcon, Figure, Ground, layout, Sun, type Depth } from './plazaParts';
+import { Backdrop, EnvelopeIcon, Figure, Ground, horizonY, layout, Sun, type Depth, type Ring } from './plazaParts';
 import { NoticeHub, type SpeakingNotice } from './NoticeHub';
 import { WhisperAction, type WhisperArrival } from './WhisperAction';
 import { MessageRoleGuess, RoleGuessChip, RoleGuessPicker } from './RoleGuess';
@@ -73,16 +73,30 @@ function Square({ c, messages, selectedSeat, choosingWhisper, inactive, variant,
   const depth: Depth = variant === 'soft' || variant === 'flat' ? variant : 'original';
   const square = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 390, height: 520 });
+  const [ring, setRing] = useState<Ring | undefined>(undefined);
   useLayoutEffect(() => {
-    if (!readable || !square.current) return;
+    if (!square.current) return;
     const element = square.current;
-    const measure = () => setSize({ width: element.clientWidth, height: element.clientHeight });
+    const root = element.closest('.pz') as HTMLElement | null;
+    const measure = () => {
+      setSize({ width: element.clientWidth, height: element.clientHeight });
+      if (!root || depth === 'original') return setRing(undefined);
+      // 광장 바닥의 위쪽 끝을 배경 지평선에 맞춘다. 화면 비율이 달라도 광장이 마을 위로 올라가지 않게 한다.
+      const r = root.getBoundingClientRect();
+      const q = element.getBoundingClientRect();
+      const top = ((horizonY(r.width, r.height) - (q.top - r.top)) / q.height) * 100;
+      const groundTop = Math.min(30, Math.max(4, top));
+      const bottom = 88;
+      const ry = (bottom - groundTop - 6) / 2;
+      setRing({ cy: bottom - ry, ry });
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
+    if (root) observer.observe(root);
     return () => observer.disconnect();
-  }, [readable]);
-  const spots = readable ? readableLayout(c, size.width, size.height) : layout(c, { whisper: true, depth });
+  }, [depth]);
+  const spots = readable ? readableLayout(c, size.width, size.height) : layout(c, { whisper: true, depth, ring });
   const [w1, w2] = c.whisper.map((seat) => spots.get(seat)!);
   const mid = { x: (w1.x + w2.x) / 2, y: (w1.y + w2.y) / 2, scale: (w1.scale + w2.scale) / 2 };
   const whisperTop = readable
@@ -101,7 +115,7 @@ function Square({ c, messages, selectedSeat, choosingWhisper, inactive, variant,
   });
   return <div ref={square} className={`pz-square sp-square ${readable ? 'is-readable' : ''} depth-${depth}`} aria-label="마을 광장" inert={inactive}>
     <div className="sp-people-area">
-    <Ground depth={depth} />
+    <Ground depth={depth} ring={ring} well={depth !== 'flat'} />
     {c.players.map((p) => {
       const s = spots.get(p.seat)!;
       return <div key={p.seat}

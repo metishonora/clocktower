@@ -17,12 +17,14 @@ const depths: Record<Depth, { cy: number; ry: number; base: [number, number]; ba
 };
 export const ringOf = (depth: Depth = 'original') => ({ cy: depths[depth].cy, ry: depths[depth].ry });
 
-export function layout(c: Cast, { whisper = false, center, depth = 'original' }: { whisper?: boolean; center?: number; depth?: Depth } = {}): Map<number, Spot> {
+export type Ring = { cy: number; ry: number };
+
+export function layout(c: Cast, { whisper = false, center, depth = 'original', ring }: { whisper?: boolean; center?: number; depth?: Depth; ring?: Ring } = {}): Map<number, Spot> {
   const n = c.players.length;
   const d = depths[depth];
   const base = n > 10 ? d.base[1] : d.base[0];
-  const CY = d.cy;
-  const RY = d.ry;
+  const CY = ring?.cy ?? d.cy;
+  const RY = ring?.ry ?? d.ry;
   const angle = (seat: number) => Math.PI + ((seat - c.meSeat) * 2 * Math.PI) / n;
   const spots = new Map<number, Spot>();
   c.players.forEach((p) => {
@@ -52,11 +54,12 @@ export function layout(c: Cast, { whisper = false, center, depth = 'original' }:
   return spots;
 }
 
-export function Ground({ well = true, depth = 'original' }: { well?: boolean; depth?: Depth }) {
-  const { cy, ry } = ringOf(depth);
+export function Ground({ well = true, depth = 'original', ring }: { well?: boolean; depth?: Depth; ring?: Ring }) {
+  const { cy, ry } = ring ?? ringOf(depth);
+  const inner = depth === 'original';
   return (
     <>
-      <div className="pz-ground" style={{ left: `${CX - RX - 5}%`, top: `${cy - ry - 6}%`, width: `${2 * (RX + 5)}%`, height: `${2 * (ry + 6)}%` }} />
+      <div className={`pz-ground ${inner ? '' : 'plain'}`} style={{ left: `${CX - RX - 5}%`, top: `${cy - ry - 6}%`, width: `${2 * (RX + 5)}%`, height: `${2 * (ry + 6)}%` }} />
       {well && <div className="pz-well" style={{ left: `${CX}%`, top: `${cy}%` }} />}
     </>
   );
@@ -168,3 +171,9 @@ export const ScrollIcon = () => (
 export const EnvelopeIcon = () => (
   <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2.5" y="5" width="15" height="10.5" rx="1.8" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M3 6l7 5 7-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>
 );
+
+// Backdrop은 390×760 기준을 화면을 덮도록 키우고 아래에 맞춘다(xMidYMax slice). 그때의 지평선 높이를 구한다.
+export function horizonY(width: number, height: number) {
+  const s = Math.max(width / 390, height / 760);
+  return height - 760 * s + 266 * s;
+}

@@ -46,7 +46,7 @@ function App() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [squareVariant, setSquareVariant] = useState<SquareVariant>(() => {
     const v = params.get('layout');
-    return v === 'original' || v === 'readable' || v === 'flat' ? v : 'soft';
+    return v === 'original' || v === 'readable' || v === 'soft' ? v : 'flat';
   });
   const [keyboard, setKeyboard] = useState(true);
   const [auto, setAuto] = useState(!liveTimer);
@@ -170,9 +170,9 @@ function App() {
     {squareReview && <>
       <section className="rv-notes"><h2>이번 검토 · 뒷줄 가독성</h2><p>원래 광장의 모습과 머리 위 말풍선은 그대로 두고, 원근만 줄여 뒷줄 사람과 이름을 키웁니다. 광장을 세로로 조금 늘려 앞뒤 줄 간격을 확보합니다.</p></section>
       <section><h2>배치 비교</h2><div className="rv-events">
-        {([['original', 'A · 원래 광장'], ['soft', 'C · 원근 완화 (뒷줄 0.86배)'], ['flat', 'D · 원근 최소 (뒷줄 0.95배)'], ['readable', 'B · 세로 타원·중앙 말풍선 (보류)']] as [SquareVariant, string][]).map(([v, label]) =>
+        {([['flat', 'D · 원근 최소 · 중앙 장식 없음'], ['soft', 'C · 원근 완화 (뒷줄 0.86배)'], ['original', 'A · 원래 광장'], ['readable', 'B · 세로 타원·중앙 말풍선 (보류)']] as [SquareVariant, string][]).map(([v, label]) =>
           <button key={v} type="button" aria-pressed={squareVariant === v} onClick={() => { setSquareVariant(v); setPanelOpen(false); }}>{label}</button>)}
-      </div><p className="rv-hint">C·D는 이름표를 인물 크기와 상관없이 같은 크기로 표시합니다. B는 2026-10-03에 보류한 Codex 시안으로, 비교용으로만 남깁니다.</p></section>
+      </div><p className="rv-hint">C·D는 이름표를 인물 크기와 상관없이 같은 크기로 표시하고, 광장 위쪽 끝을 배경 지평선에 맞춥니다. D는 우물과 안쪽 점선을 뺐습니다. B는 2026-10-03에 보류한 Codex 시안으로, 비교용으로만 남깁니다.</p></section>
       <section><h2>인원 · 변경하면 처음부터</h2><div className="rv-seg">{([8, 15] as const).map((n) => <button key={n} type="button" aria-pressed={count === n} onClick={() => reset(n)}>{n}인</button>)}</div></section>
       <section className="rv-notes"><h2>확인할 흐름</h2><ol className="sp-review-steps"><li>15인에서 A와 C·D의 뒷줄 사람·이름 비교</li><li>말풍선이 말한 사람 머리 위에 붙어 있는지 확인</li><li>8인에서 광장 분위기가 유지되는지 확인</li></ol></section>
     </>}
