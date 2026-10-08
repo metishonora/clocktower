@@ -12,7 +12,7 @@ export function VoteFigure({ p, up, ghost }: { p: Player; up: boolean; ghost?: '
   if (ghost) {
     return (
       <svg className={`vf vf-ghost ${ghost} ${up ? 'up' : ''}`} viewBox="0 0 40 64" aria-hidden="true">
-        {up && <g className="vf-arms"><path d="M12 38 C8 32 6 25 7 18" /><path d="M28 38 C32 32 34 25 33 18" /></g>}
+        {up && <g className="vf-arms"><path d="M28 38 C32 32 34 25 33 17" /></g>}
         <path className="vf-body" d="M9 58 C8 41 11 27 20 27 C29 27 32 41 31 58 C28 55 26 60 23.5 57 C21 60 19 55 16.5 58 C14 61 12 55 9 58Z" />
         <circle className="vf-body" cx="20" cy="20" r="8.5" />
         <circle className="vf-eye" cx="17" cy="20" r="1.2" />
@@ -23,8 +23,8 @@ export function VoteFigure({ p, up, ghost }: { p: Player; up: boolean; ghost?: '
   return (
     <svg className={`vf vf-alive ${up ? 'up' : ''}`} viewBox="0 0 40 64" aria-hidden="true">
       <ellipse cx="20" cy="61" rx="12" ry="2.8" fill="rgba(40,25,15,.25)" />
-      {up && <g className="vf-arms" stroke={p.tint}><path d="M12.5 37 C9 31 7.5 24 8 17" /><path d="M27.5 37 C31 31 32.5 24 32 17" /></g>}
-      {up && <g fill="#f0d6bd"><circle cx="8" cy="16" r="2.4" /><circle cx="32" cy="16" r="2.4" /></g>}
+      {up && <g className="vf-arms" stroke={p.tint}><path d="M27.5 37 C31 31 32.5 24 32 16" /></g>}
+      {up && <circle cx="32" cy="15" r="2.6" fill="#f0d6bd" />}
       <path d="M8.5 60 C8.5 41 12 31 20 31 C28 31 31.5 41 31.5 60 Z" fill={p.tint} />
       <path d="M14.5 33.5 L20 41 L25.5 33.5" fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="1.4" strokeLinejoin="round" />
       <circle cx="20" cy="22" r="8.2" fill="#f0d6bd" />
@@ -37,12 +37,15 @@ export function VoteFigure({ p, up, ghost }: { p: Player; up: boolean; ghost?: '
 
 /* ── 공통 진행: 지명된 사람 다음 자리부터 시계방향으로 한 사람씩 확정한다. */
 type Run = ReturnType<typeof useVoteRun>;
-export function useVoteRun(c: Cast, myVote: boolean, runKey: number) {
+export type Prior = { seat: number; votes: number } | null;
+
+// 지명된 사람 자리부터 시계방향으로 한 사람씩 비춘다. 빛이 머무는 동안은 바꿀 수 있고, 빛이 지나가면 확정된다.
+export function useVoteRun(c: Cast, myVote: boolean, runKey: number, prior: Prior) {
   const n = c.players.length;
   const raisers = useMemo(() => new Set(n > 10 ? [7, 9, 10, 13, 1, 5] : [7, 1, 5]), [n]);
   const order = useMemo(() => {
     const i = c.players.findIndex((p) => p.seat === NOMINEE);
-    return Array.from({ length: n }, (_, k) => c.players[(i + 1 + k) % n].seat);
+    return Array.from({ length: n }, (_, k) => c.players[(i + k) % n].seat);
   }, [c, n]);
   const [pos, setPos] = useState(-1);
   const [running, setRunning] = useState(false);
@@ -54,22 +57,26 @@ export function useVoteRun(c: Cast, myVote: boolean, runKey: number) {
   }, [c, runKey]);
   useEffect(() => {
     if (!running) return;
-    const t = window.setInterval(() => setPos((p) => (p >= n - 1 ? p : p + 1)), 950);
+    const t = window.setInterval(() => setPos((p) => (p >= n ? p : p + 1)), 1100);
     return () => window.clearInterval(t);
   }, [running, n]);
   const canVote = (p: Player) => !!(p.alive || p.ghostVote);
   const wants = (p: Player) => (p.me ? myVote : raisers.has(p.seat)) && canVote(p);
-  const passed = (seat: number) => order.indexOf(seat) <= pos;
-  const counted = order.slice(0, pos + 1).filter((s) => wants(c.players.find((p) => p.seat === s)!));
+  const passed = (seat: number) => order.indexOf(seat) < pos;
+  const lit = (seat: number) => order.indexOf(seat) === pos;
+  const counted = order.filter((s) => passed(s) && wants(c.players.find((p) => p.seat === s)!));
   const me = c.players.find((p) => p.me)!;
   const locked = passed(me.seat);
   const view = (p: Player) => {
-    const up = wants(p) && (passed(p.seat) || !!p.me);
+    const up = wants(p) && (passed(p.seat) || lit(p.seat) || !!p.me);
     const ghost: 'available' | 'spent' | undefined = p.alive ? undefined : p.ghostVote && !(wants(p) && passed(p.seat)) ? 'available' : 'spent';
-    return { up, ghost, current: order[pos] === p.seat, passed: passed(p.seat) };
+    return { up, ghost, current: lit(p.seat), passed: passed(p.seat), voted: wants(p) && passed(p.seat) };
   };
-  const needed = Math.ceil(c.alive / 2);
-  return { order, pos, counted, needed, locked, me, view, canVote, done: pos >= n - 1 };
+  const majority = Math.ceil(c.alive / 2);
+  // 오늘 이미 과반을 넘긴 지명이 있으면 그 표를 넘어야 처형 예정이 되고, 같으면 동점이다.
+  const tie = prior && prior.votes >= majority ? prior.votes : null;
+  const threshold = tie ? tie + 1 : majority;
+  return { order, pos, counted, majority, tie, threshold, locked, me, view, canVote, done: pos >= n };
 }
 
 function MyVote({ run, myVote, setMyVote, meState }: { run: Run; myVote: boolean; setMyVote: (v: boolean) => void; meState: MeState }) {
@@ -83,10 +90,29 @@ function MyVote({ run, myVote, setMyVote, meState }: { run: Run; myVote: boolean
   );
 }
 
-function Tally({ count, needed }: { count: number; needed: number }) {
+function Tally({ c, run, prior }: { c: Cast; run: Run; prior: Prior }) {
+  const count = run.counted.length;
+  const slots = Math.max(run.threshold, count);
+  const state = count >= run.threshold ? 'exec' : run.tie && count === run.tie ? 'tie' : 'below';
+  const priorName = prior ? c.players.find((p) => p.seat === prior.seat)!.name : '';
   return (
-    <div className={`vl-tally ${count >= needed ? 'full' : ''}`} aria-label={`${count}표, ${needed}표 필요`}>
-      {Array.from({ length: Math.max(needed, count) }, (_, i) => <i key={i} className={i < count ? 'on' : i >= needed ? 'extra' : ''} />)}
+    <div className={`vl-tally-box ${state}`}>
+      <div className="vl-tally" aria-label={`${count}표, 처형 예정 ${run.threshold}표`}>
+        {Array.from({ length: slots }, (_, i) => {
+          const k = i + 1;
+          return (
+            <i key={i} className={`${i < count ? 'on' : ''} ${k === run.tie ? 'tie' : ''} ${k === run.threshold ? 'line' : ''} ${k > run.threshold ? 'over' : ''}`}>
+              {k === run.tie && <b className="vl-mark tie">동점</b>}
+              {k === run.threshold && <b className="vl-mark line">처형</b>}
+            </i>
+          );
+        })}
+      </div>
+      <div className="vl-tally-state">
+        <strong>{count}</strong><span>/ {run.threshold}</span>
+        {state === 'exec' && <em className="exec">처형 예정</em>}
+        {state === 'tie' && <em className="tie">{priorName}와 동점</em>}
+      </div>
     </div>
   );
 }
@@ -94,8 +120,8 @@ function Tally({ count, needed }: { count: number; needed: number }) {
 const name = (c: Cast, seat: number) => c.players.find((p) => p.seat === seat)!.name;
 
 /* ── 가. 해 질 녘 광장에서 투표 */
-export function PlazaVote({ c, myVote, setMyVote, meState, runKey }: { c: Cast; myVote: boolean; setMyVote: (v: boolean) => void; meState: MeState; runKey: number }) {
-  const run = useVoteRun(c, myVote, runKey);
+export function PlazaVote({ c, myVote, setMyVote, meState, runKey, prior }: { c: Cast; myVote: boolean; setMyVote: (v: boolean) => void; meState: MeState; runKey: number; prior: Prior }) {
+  const run = useVoteRun(c, myVote, runKey, prior);
   const root = useRef<HTMLDivElement>(null);
   const square = useRef<HTMLDivElement>(null);
   const [ring, setRing] = useState<Ring>();
@@ -126,9 +152,17 @@ export function PlazaVote({ c, myVote, setMyVote, meState, runKey }: { c: Cast; 
   const scale = Math.max(box.w / 390, box.h / 760);
   const tower = { x: (box.w - 390 * scale) / 2 + 195 * scale, y: box.h - 760 * scale + 160 * scale };
   void s0;
-  const cur = run.pos >= 0 ? px(run.order[run.pos]) : null;
-  const nom = px(NOMINEE);
-  const tallyY = nom.y + 14;
+  const cur = run.pos >= 0 && run.pos < run.order.length ? px(run.order[run.pos]) : null;
+  const tallyRef = useRef<HTMLDivElement>(null);
+  const [tallyPos, setTallyPos] = useState({ x: 195, y: 120 });
+  useLayoutEffect(() => {
+    const t = tallyRef.current?.querySelector('.vl-tally');
+    const r0 = root.current;
+    if (!t || !r0) return;
+    const a = t.getBoundingClientRect();
+    const r = r0.getBoundingClientRect();
+    setTallyPos({ x: a.left - r.left + a.width / 2, y: a.top - r.top + 20 });
+  }, [box, run.threshold, run.counted.length]);
 
   return (
     <div ref={root} className="vl vl-plaza">
@@ -158,16 +192,17 @@ export function PlazaVote({ c, myVote, setMyVote, meState, runKey }: { c: Cast; 
           {c.players.map((p) => {
             const s = spots.get(p.seat)!;
             const v = run.view(p);
-            return <span key={p.seat} className={`${p.me ? 'me' : ''} ${p.alive ? '' : 'ghost'} ${v.ghost === 'spent' ? 'spent' : ''} ${p.seat === NOMINEE ? 'nominee' : ''} ${v.up && v.passed ? 'voted' : ''}`}
+            return <span key={p.seat} className={`${p.me ? 'me' : ''} ${p.alive ? '' : 'ghost'} ${v.ghost === 'spent' ? 'spent' : ''} ${p.seat === NOMINEE ? 'nominee' : ''} ${v.voted ? 'voted' : ''}`}
               style={{ left: `${s.x}%`, top: `calc(${s.y}% - ${19 * s.scale}px)` }}>{p.me ? '나' : p.name}</span>;
           })}
         </div>
       </div>
-      <div className="vl-tally-wrap" style={{ left: nom.x, top: tallyY + 12 }}><Tally count={run.counted.length} needed={run.needed} /></div>
+      <div ref={tallyRef} className="vl-tally-wrap"><Tally c={c} run={run} prior={prior} /></div>
       {run.counted.map((seat, i) => {
         const from = px(seat);
-        const slotX = nom.x + (i - (Math.max(run.needed, run.counted.length) - 1) / 2) * 16;
-        return <span key={seat} className="vl-coin" style={{ left: slotX, top: tallyY + 19, ['--dx' as string]: `${from.x - slotX}px`, ['--dy' as string]: `${from.y - 40 - tallyY - 19}px` } as CSSProperties} />;
+        const slots = Math.max(run.threshold, run.counted.length);
+        const slotX = tallyPos.x + (i - (slots - 1) / 2) * 18;
+        return <span key={seat} className="vl-coin" style={{ left: slotX, top: tallyPos.y, ['--dx' as string]: `${from.x - slotX}px`, ['--dy' as string]: `${from.y - 40 - tallyPos.y}px` } as CSSProperties} />;
       })}
       <MyVote run={run} myVote={myVote} setMyVote={setMyVote} meState={meState} />
     </div>
@@ -175,11 +210,11 @@ export function PlazaVote({ c, myVote, setMyVote, meState, runKey }: { c: Cast; 
 }
 
 /* ── 나. 다듬은 시계 문자판 */
-export function DialVote({ c, myVote, setMyVote, meState, runKey }: { c: Cast; myVote: boolean; setMyVote: (v: boolean) => void; meState: MeState; runKey: number }) {
-  const run = useVoteRun(c, myVote, runKey);
+export function DialVote({ c, myVote, setMyVote, meState, runKey, prior }: { c: Cast; myVote: boolean; setMyVote: (v: boolean) => void; meState: MeState; runKey: number; prior: Prior }) {
+  const run = useVoteRun(c, myVote, runKey, prior);
   const n = c.players.length;
   const angle = (seat: number) => Math.PI + ((seat - c.meSeat) * 2 * Math.PI) / n;
-  const cur = run.pos >= 0 ? run.order[run.pos] : null;
+  const cur = run.pos >= 0 && run.pos < n ? run.order[run.pos] : run.pos >= n ? run.order[n - 1] : null;
   const startA = angle(run.order[0]) - (2 * Math.PI) / n;
   const [turns, setTurns] = useState(0);
   const targetDeg = ((cur ? angle(cur) : startA) * 180) / Math.PI;
@@ -215,7 +250,7 @@ export function DialVote({ c, myVote, setMyVote, meState, runKey }: { c: Cast; m
           {/* 지나간 자리를 따라 남는 금빛 호 */}
           {run.pos >= 0 && (() => {
             const a0 = startA + (2 * Math.PI) / n / 2;
-            const a1 = angle(run.order[run.pos]);
+            const a1 = angle(run.order[Math.min(run.pos, n - 1)]);
             const span = ((a1 - a0) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
             const r = 62;
             const x0 = r * Math.sin(a0), y0 = -r * Math.cos(a0), x1 = r * Math.sin(a0 + span), y1 = -r * Math.cos(a0 + span);
@@ -237,14 +272,14 @@ export function DialVote({ c, myVote, setMyVote, meState, runKey }: { c: Cast; m
           const a = angle(p.seat);
           const v = run.view(p);
           return (
-            <div key={p.seat} className={`vl-medal ${p.alive ? '' : 'is-ghost'} ${v.ghost ?? ''} ${p.seat === NOMINEE ? 'nominee' : ''} ${p.me ? 'me' : ''} ${v.current ? 'current' : ''} ${v.up && v.passed ? 'voted' : ''}`}
+            <div key={p.seat} className={`vl-medal ${p.alive ? '' : 'is-ghost'} ${v.ghost ?? ''} ${p.seat === NOMINEE ? 'nominee' : ''} ${p.me ? 'me' : ''} ${v.current ? 'current' : ''} ${v.voted ? 'voted' : ''}`}
               style={{ left: `${50 + R * Math.sin(a)}%`, top: `${50 - R * Math.cos(a)}%`, width: med, height: med }}>
               <span className="vl-medal-face"><VoteFigure p={p} up={v.up} ghost={v.ghost} /></span>
               <span className="vl-medal-name">{p.me ? '나' : p.name}</span>
             </div>
           );
         })}
-        <div className="vl-dial-center"><Tally count={run.counted.length} needed={run.needed} /></div>
+        <div className="vl-dial-center"><Tally c={c} run={run} prior={prior} /></div>
       </div>
       <MyVote run={run} myVote={myVote} setMyVote={setMyVote} meState={meState} />
     </div>
