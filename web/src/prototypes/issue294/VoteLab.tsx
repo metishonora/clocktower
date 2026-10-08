@@ -146,7 +146,8 @@ export function PlazaVote({ c, myVote, setMyVote, meState, runKey, prior }: { c:
     ro.observe(r0);
     return () => ro.disconnect();
   }, []);
-  const spots = layout(c, { depth: 'flat', ring, center: NOMINEE });
+  // 투표가 끝나면 지명된 사람은 자기 자리로 돌아가고, 결과가 광장 가운데로 내려온다.
+  const spots = layout(c, { depth: 'flat', ring, center: run.done ? undefined : NOMINEE });
   const seats = layout(c, { depth: 'flat', ring });
   const toPx = (s: { x: number; y: number }) => ({ x: box.qx + (s.x / 100) * box.qw, y: box.qy + (s.y / 100) * box.qh });
   const px = (seat: number) => toPx(spots.get(seat)!);
@@ -174,7 +175,7 @@ export function PlazaVote({ c, myVote, setMyVote, meState, runKey, prior }: { c:
   }, [box, run.threshold, run.counted.length]);
 
   return (
-    <div ref={root} className="vl vl-plaza">
+    <div ref={root} className={`vl vl-plaza ${run.done ? 'is-done' : ''}`}>
       <MoodBackdrop mood="overcast" fall={0.85} />
       <header className="vl-head"><span className="vl-chip">투표</span><strong>{name(c, NOMINEE)} 처형</strong></header>
       {cur && (
@@ -213,7 +214,7 @@ export function PlazaVote({ c, myVote, setMyVote, meState, runKey, prior }: { c:
           })}
         </div>
       </div>
-      <div ref={tallyRef} className="vl-tally-wrap"><Tally c={c} run={run} prior={prior} /></div>
+      <div ref={tallyRef} className="vl-tally-wrap" style={run.done ? { top: box.qy + ((ring?.cy ?? 58) / 100) * box.qh } : undefined}><Tally c={c} run={run} prior={prior} /></div>
       {run.counted.map((seat, i) => {
         const from = px(seat);
         const slots = Math.max(run.threshold, run.counted.length);
@@ -245,7 +246,7 @@ export function DialVote({ c, myVote, setMyVote, meState, runKey, prior }: { c: 
   const med = n > 10 ? 46 : 58;
 
   return (
-    <div className="vl vl-dial">
+    <div className={`vl vl-dial ${run.done ? 'is-done' : ''}`}>
       <header className="vl-head dark"><span className="vl-chip">투표</span><strong>{name(c, NOMINEE)} 처형</strong></header>
       <div className="vl-dial-wrap">
         <svg className="vl-face" viewBox="-120 -120 240 240" aria-hidden="true">

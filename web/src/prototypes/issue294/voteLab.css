@@ -121,3 +121,13 @@
 .vl-names span.next { box-shadow: 0 0 0 1.5px #ffe3a3aa; }
 .vl-medal.next .vl-medal-face { box-shadow: 0 0 0 2px #a87e3c, 0 0 0 4px #ffe3a366, 0 4px 10px #000a; animation: vl-ring 1s ease-in-out infinite alternate; }
 .vl-medal.nominee.current .vl-medal-face { transform: scale(1.14); box-shadow: 0 0 0 2.5px #c33a32, 0 0 0 5px #ffe3a3, 0 0 22px #ffe3a3cc; }
+
+/* 투표 종료: 지명된 사람은 자리로 돌아가고 결과가 가운데로 내려온다 */
+.vl-plaza .vl-person, .vl-plaza .vl-names span { transition: left .8s cubic-bezier(.5,0,.3,1), top .8s cubic-bezier(.5,0,.3,1), background .3s, color .3s; }
+.vl-tally-wrap { transition: top .8s cubic-bezier(.5,0,.3,1) .35s, transform .8s cubic-bezier(.5,0,.3,1) .35s; }
+.vl-plaza.is-done .vl-tally-wrap { transform: translate(-50%, -50%) scale(1.22); }
+.vl-plaza.is-done .vl-center-spot, .vl-plaza.is-done .vl-empty-seat { opacity: 0; transition: opacity .5s; }
+.vl-plaza.is-done .vl-person.nominee .vf-alive { filter: none; }
+.vl-dial-center { transition: top .8s cubic-bezier(.5,0,.3,1) .35s, transform .8s cubic-bezier(.5,0,.3,1) .35s; }
+.vl-dial.is-done .vl-dial-center { top: 50%; transform: translate(-50%, -50%) scale(1.15); }
+.vl-dial.is-done .vl-hand { opacity: 0; transition: opacity .5s; }
