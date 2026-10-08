@@ -70,7 +70,7 @@ export function useVoteRun(c: Cast, myVote: boolean, runKey: number, prior: Prio
   const view = (p: Player) => {
     const up = wants(p) && (passed(p.seat) || lit(p.seat) || !!p.me);
     const ghost: 'available' | 'spent' | undefined = p.alive ? undefined : p.ghostVote && !(wants(p) && passed(p.seat)) ? 'available' : 'spent';
-    return { up, ghost, current: lit(p.seat), passed: passed(p.seat), voted: wants(p) && passed(p.seat) };
+    return { up, ghost, current: lit(p.seat), next: order[pos + 1] === p.seat, passed: passed(p.seat), voted: wants(p) && passed(p.seat) };
   };
   const majority = Math.ceil(c.alive / 2);
   // 오늘 이미 과반을 넘긴 지명이 있으면 그 표를 넘어야 처형 예정이 되고, 같으면 동점이다.
@@ -147,12 +147,21 @@ export function PlazaVote({ c, myVote, setMyVote, meState, runKey, prior }: { c:
     return () => ro.disconnect();
   }, []);
   const spots = layout(c, { depth: 'flat', ring, center: NOMINEE });
-  const px = (seat: number) => { const s = spots.get(seat)!; return { x: box.qx + (s.x / 100) * box.qw, y: box.qy + (s.y / 100) * box.qh }; };
+  const seats = layout(c, { depth: 'flat', ring });
+  const toPx = (s: { x: number; y: number }) => ({ x: box.qx + (s.x / 100) * box.qw, y: box.qy + (s.y / 100) * box.qh });
+  const px = (seat: number) => toPx(spots.get(seat)!);
+  // 빛은 자리를 비춘다. 지명된 사람은 가운데에 나와 있으므로 빈 자리를 비추고, 가운데의 본인도 함께 강조한다.
+  const seatPx = (seat: number) => toPx(seat === NOMINEE ? seats.get(NOMINEE)! : spots.get(seat)!);
+  const emptySeat = seats.get(NOMINEE)!;
+  const curSeat = run.pos >= 0 && run.pos < run.order.length ? run.order[run.pos] : null;
+  const nextSeat = run.pos + 1 < run.order.length ? run.order[run.pos + 1] : null;
   const s0 = 390 / Math.max(box.w / 390, box.h / 760);
   const scale = Math.max(box.w / 390, box.h / 760);
   const tower = { x: (box.w - 390 * scale) / 2 + 195 * scale, y: box.h - 760 * scale + 160 * scale };
   void s0;
-  const cur = run.pos >= 0 && run.pos < run.order.length ? px(run.order[run.pos]) : null;
+  const cur = curSeat ? seatPx(curSeat) : null;
+  const next = nextSeat ? seatPx(nextSeat) : null;
+  const nomLit = curSeat === NOMINEE;
   const tallyRef = useRef<HTMLDivElement>(null);
   const [tallyPos, setTallyPos] = useState({ x: 195, y: 120 });
   useLayoutEffect(() => {
@@ -177,12 +186,19 @@ export function PlazaVote({ c, myVote, setMyVote, meState, runKey, prior }: { c:
       <div ref={square} className="vl-square">
         <Ground depth="flat" ring={ring} well={false} />
         <div className="vl-center-spot" style={{ left: `${spots.get(NOMINEE)!.x}%`, top: `${spots.get(NOMINEE)!.y}%` }} />
+        <div className={`vl-empty-seat ${nomLit ? 'lit' : ''}`} style={{ left: `${emptySeat.x}%`, top: `${emptySeat.y}%` }} aria-hidden="true" />
+        {nomLit && (
+          <svg className="vl-link" width="100%" height="100%" aria-hidden="true">
+            <line x1={`${emptySeat.x}%`} y1={`${emptySeat.y}%`} x2={`${spots.get(NOMINEE)!.x}%`} y2={`${spots.get(NOMINEE)!.y}%`} />
+          </svg>
+        )}
         {cur && <div className="vl-pool" style={{ left: cur.x - box.qx, top: cur.y - box.qy }} />}
+        {next && run.pos >= -1 && <div key={nextSeat} className="vl-next" style={{ left: next.x - box.qx, top: next.y - box.qy }} aria-hidden="true" />}
         {c.players.map((p) => {
           const s = spots.get(p.seat)!;
           const v = run.view(p);
           return (
-            <div key={p.seat} className={`vl-person ${p.seat === NOMINEE ? 'nominee' : ''} ${v.current ? 'current' : ''} ${p.me ? 'me' : ''}`}
+            <div key={p.seat} className={`vl-person ${p.seat === NOMINEE ? 'nominee' : ''} ${v.current ? 'current' : ''} ${v.next ? 'next' : ''} ${p.me ? 'me' : ''}`}
               style={{ left: `${s.x}%`, top: `${s.y}%`, zIndex: p.seat === NOMINEE ? 500 : s.z, ['--s' as string]: s.scale }}>
               <VoteFigure p={p} up={v.up} ghost={v.ghost} />
             </div>
@@ -192,7 +208,7 @@ export function PlazaVote({ c, myVote, setMyVote, meState, runKey, prior }: { c:
           {c.players.map((p) => {
             const s = spots.get(p.seat)!;
             const v = run.view(p);
-            return <span key={p.seat} className={`${p.me ? 'me' : ''} ${p.alive ? '' : 'ghost'} ${v.ghost === 'spent' ? 'spent' : ''} ${p.seat === NOMINEE ? 'nominee' : ''} ${v.voted ? 'voted' : ''}`}
+            return <span key={p.seat} className={`${p.me ? 'me' : ''} ${p.alive ? '' : 'ghost'} ${v.ghost === 'spent' ? 'spent' : ''} ${p.seat === NOMINEE ? 'nominee' : ''} ${v.voted ? 'voted' : ''} ${v.current ? 'current' : ''} ${v.next ? 'next' : ''}`}
               style={{ left: `${s.x}%`, top: `calc(${s.y}% - ${19 * s.scale}px)` }}>{p.me ? '나' : p.name}</span>;
           })}
         </div>
@@ -272,7 +288,7 @@ export function DialVote({ c, myVote, setMyVote, meState, runKey, prior }: { c: 
           const a = angle(p.seat);
           const v = run.view(p);
           return (
-            <div key={p.seat} className={`vl-medal ${p.alive ? '' : 'is-ghost'} ${v.ghost ?? ''} ${p.seat === NOMINEE ? 'nominee' : ''} ${p.me ? 'me' : ''} ${v.current ? 'current' : ''} ${v.voted ? 'voted' : ''}`}
+            <div key={p.seat} className={`vl-medal ${p.alive ? '' : 'is-ghost'} ${v.ghost ?? ''} ${p.seat === NOMINEE ? 'nominee' : ''} ${p.me ? 'me' : ''} ${v.current ? 'current' : ''} ${v.voted ? 'voted' : ''} ${v.next ? 'next' : ''}`}
               style={{ left: `${50 + R * Math.sin(a)}%`, top: `${50 - R * Math.cos(a)}%`, width: med, height: med }}>
               <span className="vl-medal-face"><VoteFigure p={p} up={v.up} ghost={v.ghost} /></span>
               <span className="vl-medal-name">{p.me ? '나' : p.name}</span>
