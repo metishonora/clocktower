@@ -90,6 +90,15 @@ for(const group of ['bmr','noble','golem']){
 
   const m=make('moonchild-day-choice',ecpRoster);first(m);execution(m,'p9');day(m,{kind:'confirmExecution'});day(m,{kind:'confirmDeath'});save('moonchild-day-choice',m);
   check('낮 사망 직후 달의 자손 선택 대기',()=>assert(replay(m).day.consequences.some(c=>c.source.characterId==='moonchild'&&!c.resolved)));
+  check('달의 자손 예약 사망의 어릿광대 방지·소모·Undo',()=>{
+   const g=load('moonchild-night'),before=replay(g);
+   const event=act(g,null);
+   assert.equal(event.payload.result.deaths[0].prevention.source.characterId,'fool');
+   assert(replay(g).players[2].alive);
+   assert(replay(g).ruleState.abilityUses.some(u=>u.abilityUse.characterId==='fool'));
+   assert.equal(replay(g).currentStep.actionRef.actionId,'dawn');
+   g.game.events.pop();assert.deepEqual(replay(g),before);
+  });
   const l=load('moonchild');const consequence=replay(l).day.consequences.find(c=>c.source.characterId==='moonchild'&&!c.resolved);
   day(l,{kind:'resolveConsequence',consequenceId:consequence.id,playerId:'p5'});beginNight(l);
   at(l,'moonchild',{guessCharacter:{playerIds:['p2'],characterIds:['gambler']},protectPlayer:{playerIds:['p7']},protectExecution:{playerIds:['p3']},attackPlayer:{playerIds:['p7']}});save('moonchild-night-lethal',l);
@@ -98,14 +107,15 @@ for(const group of ['bmr','noble','golem']){
   night(p,{choosePoisonTarget:{playerIds:['p2']}});beginNight(p);night(p,{choosePoisonTarget:{playerIds:['p2']},attackPlayer:{playerIds:['p6']}});day(p,{kind:'advance'});
   day(p,{kind:'resolveConsequence',consequenceId:replay(p).day.consequences.find(c=>c.source.characterId==='moonchild').id,playerId:'p1'});beginNight(p);
   at(p,'moonchild',{choosePoisonTarget:{playerIds:['p6']},attackPlayer:{playerIds:['p2']}});save('moonchild-night-poisoned',p);
-  // Keep this runnable failure checkpoint visible in the acceptance report.
-  try {
-   act(p,null);assert(replay(p).players[0].alive);
-   checks.push({group,label:'선택 뒤 밤에 중독된 달의 자손은 예약 대상을 죽이지 않음',result:'passed'});
-  } catch(error) {
-   assert.match(error.message,/INVALID_FIRST_NIGHT_ACTION_PROVENANCE/);
-   checks.push({group,label:'중독된 달의 자손 예약 확정',file:'bmr/moonchild-night-poisoned.game.json',result:'failed',expected:'대상 생존을 확정하고 다음 순서로 이동',actual:'INVALID_FIRST_NIGHT_ACTION_PROVENANCE — 첫날 밤 행동 출처가 올바르지 않습니다.'});
-  }
+  check('밤에 중독된 달의 자손의 확정·재생·Undo',()=>{
+   const before=structuredClone(p),state=replay(p);
+   const event=act(p,null);
+   assert(replay(p).players[0].alive);
+   assert.equal(replay(p).currentStep.actionRef.actionId,'dawn');
+   assert.deepEqual(event.payload.actionCause,state.currentStep.actionCause);
+   assert.deepEqual(replay(JSON.parse(JSON.stringify(p))),replay(p));
+   p.game.events.pop();assert.deepEqual(replay(p),replay(before));
+  });
  }
  if(group==='noble'){
   const c=make('noble-philosopher',['philosopher','artist','soldier','poisoner','imp'],['noble','philosopher','artist','soldier','poisoner','imp','mayor','virgin','saint','chef','empath']);
@@ -127,7 +137,7 @@ for(const group of ['bmr','noble','golem']){
  }
 }
 const checkSummary={total:checks.length,passed:checks.filter(c=>c.result==='passed').length,failed:checks.filter(c=>c.result==='failed').length};
-const manifest={issue:271,preparedOn:'2026-10-09',characters:['grandmother','gambler','fool','moonchild','devilsAdvocate','assassin','noble','golem'],runtimeGroups:runtimes,fileCount:rows.length,files:rows,scriptedCheckSummary:checkSummary,scriptedChecks:checks,manualAcceptance:'pending',realDeviceAcceptance:'pending'};
+const manifest={issue:271,preparedOn:'2026-10-10',characters:['grandmother','gambler','fool','moonchild','devilsAdvocate','assassin','noble','golem'],runtimeGroups:runtimes,fileCount:rows.length,files:rows,scriptedCheckSummary:checkSummary,scriptedChecks:checks,manualAcceptance:'pending',realDeviceAcceptance:'pending'};
 writeFileSync(join(output,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
-writeFileSync(join(output,'results.csv'),'file,canonical_replay,json_round_trip,known_action_failure,user_acceptance,real_device,notes\n'+rows.map(r=>`${r.file},PASS,PASS,${checks.some(c=>c.file===r.file&&c.result==='failed')?'INVALID_FIRST_NIGHT_ACTION_PROVENANCE':''},NOT_RUN,NOT_RUN,`).join('\n')+'\n');
+writeFileSync(join(output,'results.csv'),'file,canonical_replay,json_round_trip,known_action_failure,user_acceptance,real_device,notes\n'+rows.map(r=>`${r.file},PASS,PASS,,NOT_RUN,NOT_RUN,`).join('\n')+'\n');
 console.log(JSON.stringify({output,files:rows.length,scriptedChecks:checkSummary,runtimes},null,2));

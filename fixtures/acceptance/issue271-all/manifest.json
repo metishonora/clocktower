@@ -1,6 +1,6 @@
 {
   "issue": 271,
-  "preparedOn": "2026-10-09",
+  "preparedOn": "2026-10-10",
   "characters": [
     "grandmother",
     "gambler",
@@ -16,7 +16,7 @@
       "baseCommit": "6c171f46c087e45d22a2e904b9c2a17e31cf9d5f",
       "branch": "codex/issue-271",
       "workingTreeDirty": true,
-      "wasmSha256": "74be9dc9acc0ea17caf48d8bfbc25dea586e33aa4a1450f1ce5e0bc244e25c59"
+      "wasmSha256": "e2624f085c04bf26e6a65c348e9eb5b57af63d9e92d78b6875f128288c56e797"
     },
     "noble": {
       "baseCommit": "6c171f46c087e45d22a2e904b9c2a17e31cf9d5f",
@@ -2983,9 +2983,9 @@
     }
   ],
   "scriptedCheckSummary": {
-    "total": 23,
-    "passed": 22,
-    "failed": 1
+    "total": 24,
+    "passed": 24,
+    "failed": 0
   },
   "scriptedChecks": [
     {
@@ -3045,16 +3045,18 @@
     },
     {
       "group": "bmr",
+      "label": "달의 자손 예약 사망의 어릿광대 방지·소모·Undo",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
       "label": "달의 자손 예약 사망은 할머니의 악마 연쇄를 일으키지 않음",
       "result": "passed"
     },
     {
       "group": "bmr",
-      "label": "중독된 달의 자손 예약 확정",
-      "file": "bmr/moonchild-night-poisoned.game.json",
-      "result": "failed",
-      "expected": "대상 생존을 확정하고 다음 순서로 이동",
-      "actual": "INVALID_FIRST_NIGHT_ACTION_PROVENANCE — 첫날 밤 행동 출처가 올바르지 않습니다."
+      "label": "밤에 중독된 달의 자손의 확정·재생·Undo",
+      "result": "passed"
     },
     {
       "group": "noble",
