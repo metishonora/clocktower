@@ -13,27 +13,27 @@
   ],
   "runtimeGroups": {
     "bmr": {
-      "baseCommit": "6c171f46c087e45d22a2e904b9c2a17e31cf9d5f",
+      "baseCommit": "840759378c9651d64fc5adac4149b5ea12addc6d",
       "branch": "codex/issue-271-integration",
-      "workingTreeDirty": true,
+      "workingTreeDirty": false,
       "wasmSha256": "b035370c1ddf45ef5a14e72bfbb68b52b297c559f4ba969a96f0cae9e7e0345b"
     },
     "noble": {
-      "baseCommit": "6c171f46c087e45d22a2e904b9c2a17e31cf9d5f",
+      "baseCommit": "840759378c9651d64fc5adac4149b5ea12addc6d",
       "branch": "codex/issue-271-integration",
-      "workingTreeDirty": true,
+      "workingTreeDirty": false,
       "wasmSha256": "b035370c1ddf45ef5a14e72bfbb68b52b297c559f4ba969a96f0cae9e7e0345b"
     },
     "golem": {
-      "baseCommit": "6c171f46c087e45d22a2e904b9c2a17e31cf9d5f",
+      "baseCommit": "840759378c9651d64fc5adac4149b5ea12addc6d",
       "branch": "codex/issue-271-integration",
-      "workingTreeDirty": true,
+      "workingTreeDirty": false,
       "wasmSha256": "b035370c1ddf45ef5a14e72bfbb68b52b297c559f4ba969a96f0cae9e7e0345b"
     },
     "integrated": {
-      "baseCommit": "6c171f46c087e45d22a2e904b9c2a17e31cf9d5f",
+      "baseCommit": "840759378c9651d64fc5adac4149b5ea12addc6d",
       "branch": "codex/issue-271-integration",
-      "workingTreeDirty": true,
+      "workingTreeDirty": false,
       "wasmSha256": "b035370c1ddf45ef5a14e72bfbb68b52b297c559f4ba969a96f0cae9e7e0345b"
     }
   },
