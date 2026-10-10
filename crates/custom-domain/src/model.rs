@@ -355,6 +355,7 @@ pub(crate) enum AbnormalAbilityEffect {
     PreacherSuppression,
     NightwatchmanNotification,
     GolemDeath,
+    SlayerDeath,
     PoisonerPoison,
     ButlerMaster,
     MutantExecution,

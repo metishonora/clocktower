@@ -52,8 +52,12 @@ pub(crate) fn reduce_custom_facts(
         next.malfunction_audit.extend(crate::death::audit(previous,Some(&source),&crate::death::Attempt {player_id:&outcome.player_id,execution:false,unpreventable:event.fact_changes().resolved_deaths().unpreventable_player_ids.contains(&outcome.player_id)},outcome,event.id()));
         crate::death::consume(&mut next, outcome, event.id());
     }
-    if !event.fact_changes().resolved_deaths().outcomes.is_empty() {
-        next.death_resolutions.push(crate::death::Record { event_id: event.id().into(), outcomes: event.fact_changes().resolved_deaths().outcomes.clone() });
+    let resolution = event.fact_changes().resolved_deaths();
+    if !resolution.outcomes.is_empty() || !resolution.explanations.is_empty() {
+        next.death_resolutions.push(crate::death::Record {
+            event_id: event.id().into(), outcomes: resolution.outcomes.clone(),
+            explanations: resolution.explanations.clone(),
+        });
     }
     apply_snv_facts(&mut next, event)?;
     crate::characters::carousel::apply_marionette(&mut next, event)?;

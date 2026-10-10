@@ -154,3 +154,71 @@ it('a Moonchild poisoned after the public choice confirms once, restores, and un
  await vi.waitFor(()=>expect(imported.play!.getSnapshot().saveStatus).toBe('saved'));
  imported.dispose();
 });
+
+
+it.each(['healthy','acquired','poisoned','spent'] as const)('Assassin shows only Core-confirmed protection bypasses for a %s Fool after reload',async(mode)=>{
+ const roster=mode==='poisoned'
+  ?['fool','soldier','artist','mayor','slayer','ravenkeeper','undertaker','poisoner','assassin','imp']
+  :[mode==='acquired'?'philosopher':'fool','soldier','artist','mayor','slayer','assassin','imp'];
+ const {controller:c}=await create271(undefined,{roster});
+ for(let i=0;i<10&&c.getSnapshot().replay.phase!=='day';i++){
+  const step=c.step!,action=step.actionRef!.actionId;
+  await act271(c,action==='chooseAbility'?{characterIds:['fool']}:
+   action==='choosePoisonTarget'?{playerIds:['p1']}:
+   action==='demonInfo'?{characterIds:step.requiredInput.allowedCharacterIds!.slice(0,3)}:null);
+ }
+ expect(c.getSnapshot().replay.phase).toBe('day');await next271(c);
+ if(mode==='poisoned')await act271(c,{playerIds:['p1']});
+ expect(c.step?.character).toBe('imp');
+ await act271(c,{playerIds:[mode==='spent'?'p1':'p3']});
+ const before=c.getSnapshot().file;
+ play(c);
+ fireEvent.click(screen.getByRole('button',{name:'암살 대상 선택'}));
+ fireEvent.click(screen.getByRole('button',{name:/1번 P1, .*, 생존/}));
+ fireEvent.click(screen.getByRole('button',{name:'공격 확정'}));
+ await vi.waitFor(()=>{
+  expect(c.getSnapshot().handoff?.result).toMatchObject({kind:'assassinUsed',spent:true});
+  expect(c.getSnapshot().saveStatus).toBe('saved');
+ });
+ const bypass=mode==='healthy'||mode==='acquired';
+ const check=()=>{
+  const result=within(screen.getByRole('list',{name:'예상 결과'}));
+  expect(result.getByText('사망',{exact:true})).toBeDefined();
+  expect(Boolean(result.queryByText(/최초 사망 방지 무시$/))).toBe(bypass);
+ };
+ check();
+ const saved=parseGameFileJson(exportGameFileJson(c.getSnapshot().file));
+ const result=saved.game.events.at(-1)!.payload;
+ expect(JSON.stringify(result)).not.toContain('explanations');
+ cleanup();c.dispose();
+ const {controller:loaded}=await create271(saved);
+ play(loaded);check();
+ await loaded.undo();
+ expect(loaded.getSnapshot().file.game.events).toEqual(before.game.events);
+ expect(loaded.getSnapshot().replay.players[0].alive).toBe(true);
+ loaded.dispose();
+});
+
+it('an Imp attacking an already dead Soldier shows the event-time reason and restores it on reload',async()=>{
+ const {controller:c}=await create271(undefined,{roster:['fool','soldier','artist','mayor','slayer','assassin','imp']});
+ await act271(c,null);await next271(c);
+ await act271(c,{playerIds:['p3']});await act271(c,{playerIds:['p2']});
+ await act271(c,null);await next271(c);
+ const before=c.getSnapshot().file;
+ await c.prepare({input:{playerIds:['p2']}});c.conceal();await c.confirm();
+ expect(c.getSnapshot().error).toBeUndefined();
+ await vi.waitFor(()=>expect(c.getSnapshot().saveStatus).toBe('saved'));
+ const check=()=>{
+  const result=within(screen.getByRole('list',{name:'예상 결과'}));
+  expect(result.getByText('사망 없음',{exact:true})).toBeDefined();
+  expect(result.getByText('군인 · 이미 사망',{exact:true})).toBeDefined();
+  expect(result.queryByText(/군인 보호/)).toBeNull();
+ };
+ play(c);check();
+ const saved=parseGameFileJson(exportGameFileJson(c.getSnapshot().file));
+ cleanup();c.dispose();
+ const {controller:loaded}=await create271(saved);
+ play(loaded);check();
+ await loaded.undo();expect(loaded.getSnapshot().file.game.events).toEqual(before.game.events);
+ loaded.dispose();
+});

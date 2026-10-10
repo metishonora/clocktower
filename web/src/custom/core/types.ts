@@ -198,7 +198,7 @@ export type MathematicianAuditOutcome =
     | "noDashiiPoison"
     | "vigormortisOngoingEffect"
     | "vortoxFalseInformation"
-    | "vortoxExecution" | "nightwatchmanNotification" | "golemDeath";
+    | "vortoxExecution" | "nightwatchmanNotification" | "golemDeath" | "slayerDeath";
   };
 
 
@@ -314,7 +314,7 @@ export type PendingIdentityReveal = {
   payload: PreacherRevealPayload | CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload | NightwatchmanRevealPayload | GrantedAbilityRevealPayload | MarionetteRevealPayload;
 };
 export type RuleState = {
-  deathResolutions?:{eventId:string;outcomes:DeathOutcome[]}[];
+  deathResolutions?:{eventId:string;outcomes:DeathOutcome[];explanations?:DeathExplanation[]}[];
   scheduledDeaths?:ScheduledDeath[];
   automaticReminders?: AutomaticReminder[];
   preparations?: PreparationRecord[];
@@ -577,6 +577,12 @@ export type GuidanceCause = { kind: "initialDrunk" | "acquiredDrunk" | "marionet
 export type CustomGameEnd = { winningAlignment: "good" | "evil"; reason: "goodTwinExecuted"|"saintExecuted"|"mayorNoExecution"|"vortoxNoExecution"|"demonAbsent"|"twoLivingPlayers"|"klutzChoice"|"storytellerDecision"; sourceEventId: string };
 export type InformationPreparation = { information: InformationResult; correctPlayerId: string | null };
 export type DeathPrevention = {source:AbilityUseRef;consumed:boolean};
+/** Read-only causes frozen by Core at the confirmed event prefix. */
+export type DeathExplanation = {playerId:string;reason:
+  | {kind:'protection'|'bypassedProtection'|'redirected';source:AbilityUseRef}
+  | {kind:'alreadyDead'}
+  | {kind:'impaired';source:AbilityUseRef;impairments:('drunk'|'poisoned')[]}
+};
 export type DeathOutcome = {playerId:string;died:boolean;prevention:DeathPrevention|null;sourceCharacterId:string|null};
 export type ScheduledDeath = {source:AbilityUseRef;eventId:string;targetPlayerId:string;chosenGood:boolean;night:number;preview:Extract<CustomActionResult,{kind:'moonchildResolved'}>|null};
 export type CustomActionResult =

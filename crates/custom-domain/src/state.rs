@@ -146,6 +146,7 @@ pub(crate) enum FailedEffect {
     PreacherSuppression,
     NightwatchmanNotification,
     GolemDeath,
+    SlayerDeath,
     DemonDeath,
     PitHagCharacterChange,
     PoisonerPoison,

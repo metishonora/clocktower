@@ -34,12 +34,13 @@ export function CustomGrimoireBoard({ file, replay, onProgress, controller, onSe
   const state=controller.getSnapshot(), handoff=state.handoff, step=handoff?.step ?? controller.step;
   const model=taskPresentationModel(controller);
   const resultEventId=file.game.events.find(e=>e.type==='customActionConfirmed'&&e.payload.stepId===handoff?.step.id)?.id;
-  const deaths=replay.ruleState.deathResolutions?.find(r=>r.eventId===resultEventId)?.outcomes??[];
+  const deathResolution=replay.ruleState.deathResolutions?.find(r=>r.eventId===resultEventId);
+  const deaths=deathResolution?.outcomes??[];
   // Recorded history only: the Devil's Advocate's previous confirmed choice, which Core already excludes.
   const previousAdvocateTarget=step?.character==='devilsAdvocate'&&state.selecting?file.game.events.filter(e=>e.type==='customActionConfirmed'&&e.payload.actionRef.kind==='character'&&e.payload.actionRef.characterId==='devilsAdvocate'&&e.payload.abilityUse?.abilityInstanceId===step.abilityUse?.abilityInstanceId).map(e=>e.type==='customActionConfirmed'&&e.payload.input&&'playerIds' in e.payload.input?e.payload.input.playerIds?.[0]:undefined).at(-1):undefined;
   const pendingNightDeath=!!resultEventId&&!!replay.nightDeaths?.pendingAttackEventIds.includes(resultEventId);
   // A scheduled (Pit-Hag) attack has no outcome yet, so it keeps the plain rows.
-  const verdicts=pendingNightDeath?[]:bmrResultVerdicts(handoff?.result,step?.playerId,deaths,step?.character,{replay,impairments:handoff?.step.abilityImpairments??replay.ruleState.activeImpairments?.filter(i=>i.playerId===handoff?.step.abilityUse?.ownerPlayerId).map(i=>i.kind),resultEventId});
+  const verdicts=pendingNightDeath?[]:bmrResultVerdicts(handoff?.result,step?.playerId,deaths,step?.character,{replay,impairments:handoff?.step.abilityImpairments??replay.ruleState.activeImpairments?.filter(i=>i.playerId===handoff?.step.abilityUse?.ownerPlayerId).map(i=>i.kind),explanations:deathResolution?.explanations});
   const poisoning=step?.character==='poisoner'||step?.character==='vigormortis'&&step.actionRef?.actionId==='choosePoison';
   const selecting=state.selecting, completed=handoff?.stage==='result', notification=handoff?.stage==='notification'?handoff.notifications[handoff.notificationIndex]:undefined, ids=completed||notification?handoff?.playerIds ?? []:controller.boardSelectedPlayerIds;
   const desktop=rectangularSeatPositions(replay.players.length,false), mobile=rectangularSeatPositions(replay.players.length,true), heights=grimoireHeights(replay.players.length);

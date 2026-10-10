@@ -846,7 +846,7 @@ impl SnvHandler {
                 },
                 CustomFactChanges::default()
                     .with_execution(None, end)
-                    .with_resolved_deaths(crate::death::NightResolution { unpreventable_player_ids:vec![], outcomes: death.into_iter().collect(), sources: vec![(actor.id.clone(), occurrence.clone())] })
+                    .with_resolved_deaths(crate::death::NightResolution { explanations:vec![], unpreventable_player_ids:vec![], outcomes: death.into_iter().collect(), sources: vec![(actor.id.clone(), occurrence.clone())] })
                     .with_audit(audit),
             ));
         }
@@ -2169,6 +2169,7 @@ fn mathematician_audit(
                         AbnormalAbilityEffect::NightwatchmanNotification
                     }
                     FailedEffect::GolemDeath => AbnormalAbilityEffect::GolemDeath,
+                    FailedEffect::SlayerDeath => AbnormalAbilityEffect::SlayerDeath,
                     FailedEffect::DemonDeath => AbnormalAbilityEffect::DemonDeath,
                     FailedEffect::PitHagCharacterChange => {
                         AbnormalAbilityEffect::PitHagCharacterChange
@@ -3742,13 +3743,8 @@ impl SnvNightHandler {
         {
             return Err(invalid());
         }
-        let killed = super::trouble_brewing::demon_attack_target(
-            facts,
-            source,
-            target,
-            &fields.mayor_decision,
-        )?;
-        let mut dead = killed.filter(|_| !demon_deaths_arbitrary(facts));
+        let attack = super::trouble_brewing::demon_attack(facts, source, target, &fields.mayor_decision)?;
+        let mut dead = attack.target.filter(|_| !demon_deaths_arbitrary(facts));
         let mut identities = vec![];
         let mut snv = SnvFactChanges::default();
         if self.character() == "fangGu"
@@ -3766,7 +3762,8 @@ impl SnvNightHandler {
                 ability_use: source.clone(),
             });
         }
-        let deaths = crate::death::night(facts, o, &dead.clone().into_iter().collect::<Vec<_>>(), false);
+        let mut deaths = crate::death::night(facts, o, &dead.clone().into_iter().collect::<Vec<_>>(), false);
+        deaths.explanations.extend(attack.explanations);
         if dead.is_some() && deaths.deaths().is_empty() {
             dead = None;
             identities.clear();
@@ -4407,4 +4404,26 @@ pub(super) fn wakes_actor(action: &crate::contracts::FirstNightActionRef) -> boo
             ("vigormortis", "attackPlayer") | ("flowergirl", "learnDemonVoted") |
             ("townCrier", "learnMinionNominated") | ("oracle", "learnDeadEvilCount") |
             ("juggler", "learnJuggles") | ("sage", "learnDemon") | ("mathematician", "learnCount")))
+}
+
+pub(crate) fn death_audit(
+    _facts: &crate::state::CustomGameFacts,
+    source: Option<&crate::state::ActionOccurrence>,
+    attempt: &crate::death::Attempt<'_>,
+    outcome: &crate::death::Outcome,
+    event: &str,
+) -> Vec<crate::state::MalfunctionEvidence> {
+    let effect =
+        source
+            .and_then(|o| o.ability_use.as_ref())
+            .and_then(|s| match s.character_id.as_str() {
+                "fangGu" | "noDashii" | "vigormortis" | "vortox" => {
+                    Some(crate::state::FailedEffect::DemonDeath)
+                }
+                "witch" => Some(crate::state::FailedEffect::WitchDeath),
+                _ => None,
+            });
+    effect
+        .map(|e| crate::death::prevented_failure(source, attempt, outcome, e, event))
+        .unwrap_or_default()
 }

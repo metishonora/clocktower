@@ -430,7 +430,13 @@ fn resolve(
                 } else {
                     crate::death::consume(&mut next.facts, &outcome, event_id);
                     day.execution.as_mut().expect("execution").prevention=outcome.prevention.clone();
-                    next.facts.death_resolutions.push(crate::death::Record {event_id:event_id.into(),outcomes:vec![outcome]});
+                    next.facts.death_resolutions.push(crate::death::Record {
+                        event_id: event_id.into(),
+                        explanations: crate::death::explanations(facts, &crate::death::Attempt {
+                            player_id: id, execution: true, unpreventable: false,
+                        }, &outcome),
+                        outcomes: vec![outcome],
+                    });
                     day.stage = DayStage::NightReady;
                     day.pending_game_end = crate::characters::sects_and_violets::day_execution_end(facts, id, event_id);
                 }
@@ -904,8 +910,17 @@ fn apply_death(
             unpreventable: false,
         },
     );
+    // Day evidence keeps the causing ability; its displayed step is this day confirmation.
+    let source = pending.source.as_ref().map(|source| {
+        crate::state::ActionOccurrence::character(
+            crate::contracts::FirstNightActionRef::character(&source.character_id, "daytimeAbility"),
+            source.clone(),
+        )
+        .expect("day death source")
+        .in_night(before.night_number())
+    });
     next.malfunction_audit.extend(
-        crate::death::audit(&before, None, &attempt, &outcome, event_id)
+        crate::death::audit(&before, source.as_ref(), &attempt, &outcome, event_id)
             .into_iter()
             .map(|mut e| {
                 e.daytime_step_id = Some(step_id(prior).expect("day step"));
@@ -926,6 +941,7 @@ fn apply_death(
     }
     next.death_resolutions.push(crate::death::Record {
         event_id: event_id.into(),
+        explanations: crate::death::explanations(&before, &attempt, &outcome),
         outcomes: vec![outcome.clone()],
     });
     if !outcome.died {

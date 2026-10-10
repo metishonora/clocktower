@@ -61,7 +61,8 @@ pub(crate) fn death_audit_rules() -> Vec<crate::death::AuditRule> {
     }
     #[cfg(not(feature = "custom-runtime-fixtures"))]
     {
-        vec![bad_moon_rising::death_audit]
+        vec![bad_moon_rising::death_audit, trouble_brewing::death_audit,
+            sects_and_violets::death_audit, carousel::death_audit]
     }
 }
 

@@ -3444,3 +3444,22 @@ pub(crate) fn golem_nominate(
     }
     Ok(selected)
 }
+
+pub(crate) fn death_audit(
+    _facts: &crate::state::CustomGameFacts,
+    source: Option<&crate::state::ActionOccurrence>,
+    attempt: &crate::death::Attempt<'_>,
+    outcome: &crate::death::Outcome,
+    event: &str,
+) -> Vec<crate::state::MalfunctionEvidence> {
+    let effect =
+        source
+            .and_then(|o| o.ability_use.as_ref())
+            .and_then(|s| match s.character_id.as_str() {
+                "golem" => Some(crate::state::FailedEffect::GolemDeath),
+                _ => None,
+            });
+    effect
+        .map(|e| crate::death::prevented_failure(source, attempt, outcome, e, event))
+        .unwrap_or_default()
+}

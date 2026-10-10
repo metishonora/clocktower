@@ -518,7 +518,7 @@ function isMathematicianAuditOutcome(value: unknown): boolean {
       "poisonerPoison", "butlerMaster", "mutantExecution", "philosopherAcquisition", "witchCurse", "cerenovusMadness", "evilTwinRelationship",
       "snakeCharmerSwap", "witchDeath", "sweetheartDrunkenness", "demonDeath",
       "pitHagCharacterChange", "noDashiiPoison", "vigormortisOngoingEffect",
-      "vortoxFalseInformation", "vortoxExecution", "golemDeath","gamblerDeath","moonchildDeath","assassinDeath","grandmotherDeath","foolProtection","devilsAdvocateProtection", "nightwatchmanNotification", "preacherSuppression",
+      "vortoxFalseInformation", "vortoxExecution", "golemDeath","slayerDeath","gamblerDeath","moonchildDeath","assassinDeath","grandmotherDeath","foolProtection","devilsAdvocateProtection", "nightwatchmanNotification", "preacherSuppression",
     ].includes(String(value.effect));
 }
 
@@ -854,9 +854,16 @@ function isTargetAssignment(value: unknown): boolean {
 function isPreparationRecord(value: unknown): boolean {
   return isRecord(value) && hasOnlyKeys(value,["sourceEventId","actionRef","abilityUse","simulationSource","result","registrationJudgments"]) && nonempty(value.sourceEventId) && isFirstNightActionRef(value.actionRef) && ((value.abilityUse !== undefined && isAbilityUseRef(value.abilityUse) && value.simulationSource === undefined) || (value.abilityUse === undefined && isSimulationSource(value.simulationSource))) && validateCustomActionResult(value.result,isKnownCharacter,isSpyGrimoirePlayer) && Array.isArray(value.registrationJudgments) && value.registrationJudgments.every(isRegistrationJudgment);
 }
+function isDeathExplanation(value: unknown): boolean {
+  if(!isRecord(value)||!hasExactKeys(value,['playerId','reason'])||!nonempty(value.playerId)||!isRecord(value.reason))return false;
+  const r=value.reason;
+  if(r.kind==='alreadyDead')return hasExactKeys(r,['kind']);
+  if(['protection','bypassedProtection','redirected'].includes(String(r.kind)))return hasExactKeys(r,['kind','source'])&&isAbilityUseRef(r.source);
+  return r.kind==='impaired'&&hasExactKeys(r,['kind','source','impairments'])&&isAbilityUseRef(r.source)&&Array.isArray(r.impairments)&&r.impairments.every(k=>k==='drunk'||k==='poisoned');
+}
 function isRuleState(value: unknown): boolean {
   return isRecord(value) && hasOnlyKeys(value, ["deathResolutions", "scheduledDeaths", "automaticReminders", "unannouncedNightDeathPlayerIds", "activeImpairments", "abilityGrants", "abilityUses", "philosopherChoices", "witchCurses", "twinRelationships", "preparations", "poisonerChoices", "masterChoices", "guidance"]) &&
-    optionalList(value.deathResolutions,v=>isRecord(v)&&hasExactKeys(v,['eventId','outcomes'])&&isString(v.eventId)&&isDeathOutcomes(v.outcomes,isKnownCharacter)) &&
+    optionalList(value.deathResolutions,v=>isRecord(v)&&hasOnlyKeys(v,['eventId','outcomes','explanations'])&&isString(v.eventId)&&isDeathOutcomes(v.outcomes,isKnownCharacter)&&optionalList(v.explanations,isDeathExplanation)) &&
     optionalList(value.scheduledDeaths,v=>isRecord(v)&&hasExactKeys(v,['source','eventId','targetPlayerId','chosenGood','night','preview'])&&isAbilityUseRef(v.source)&&isString(v.eventId)&&isString(v.targetPlayerId)&&typeof v.chosenGood==='boolean'&&Number.isSafeInteger(v.night)&&(v.preview===null||validateCustomActionResult(v.preview,isKnownCharacter,isSpyGrimoirePlayer))) &&
     optionalList(value.automaticReminders, isAutomaticReminder) &&
     Array.isArray(value.unannouncedNightDeathPlayerIds) && value.unannouncedNightDeathPlayerIds.every(isString) &&

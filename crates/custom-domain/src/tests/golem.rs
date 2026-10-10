@@ -416,7 +416,7 @@ fn golem_mathematician_counts_only_poison_that_prevented_an_actual_death() {
             }
             let input = match step["actionRef"]["actionId"].as_str().unwrap() {
                 "choosePoisonTarget" => json!({"playerIds":["p4"]}),
-                "attackPlayer" => json!({"playerIds":["p3"]}),
+                "attackPlayer" => json!({"playerIds":["p5"]}),
                 _ => panic!("unexpected {step}"),
             };
             super::issue225_nights::step(&mut g, step["actionRef"].clone(), input, None);

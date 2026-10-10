@@ -21,6 +21,7 @@ pub(crate) struct Outcome {
     pub(crate) prevention: Option<Prevention>,
     pub(crate) source_character_id: Option<String>,
 }
+#[derive(Clone, Copy)]
 pub(crate) struct Attempt<'a> {
     pub(crate) player_id: &'a str,
     pub(crate) execution: bool,
@@ -31,9 +32,7 @@ pub(crate) type ProtectionRule = fn(&CustomGameFacts, &Attempt<'_>) -> Option<Pr
 pub(crate) fn decide(facts: &CustomGameFacts, attempt: Attempt<'_>) -> Outcome {
     let alive = facts.player(attempt.player_id).is_some_and(|p| p.alive);
     let prevention = if alive && !attempt.unpreventable {
-        crate::characters::death_protection_rules()
-            .into_iter()
-            .find_map(|rule| rule(facts, &attempt))
+        protection(facts, &attempt)
     } else {
         None
     };
@@ -44,6 +43,74 @@ pub(crate) fn decide(facts: &CustomGameFacts, attempt: Attempt<'_>) -> Outcome {
         source_character_id: None,
     }
 }
+/// The same source-bound query also explains a protection bypass before consumption.
+pub(crate) fn protection(facts: &CustomGameFacts, attempt: &Attempt<'_>) -> Option<Prevention> {
+    crate::characters::death_protection_rules()
+        .into_iter()
+        .find_map(|rule| rule(facts, attempt))
+}
+
+/// Read-only event-prefix explanations. These never enter a confirmed event or GameFile.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct Explanation {
+    pub(crate) player_id: String,
+    pub(crate) reason: Reason,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub(crate) enum Reason {
+    Protection {
+        source: AbilityUseRef,
+    },
+    BypassedProtection {
+        source: AbilityUseRef,
+    },
+    AlreadyDead,
+    Impaired {
+        source: AbilityUseRef,
+        impairments: Vec<crate::contracts::ImpairmentKind>,
+    },
+    Redirected {
+        source: AbilityUseRef,
+    },
+}
+pub(crate) fn explanations(
+    facts: &CustomGameFacts,
+    attempt: &Attempt<'_>,
+    outcome: &Outcome,
+) -> Vec<Explanation> {
+    let reason = if !facts.player(attempt.player_id).is_some_and(|p| p.alive) {
+        Some(Reason::AlreadyDead)
+    } else if let Some(prevention) = &outcome.prevention {
+        Some(Reason::Protection {
+            source: prevention.source.clone(),
+        })
+    } else if attempt.unpreventable {
+        protection(
+            facts,
+            &Attempt {
+                unpreventable: false,
+                ..*attempt
+            },
+        )
+        .map(|p| Reason::BypassedProtection { source: p.source })
+    } else {
+        None
+    };
+    reason
+        .into_iter()
+        .map(|reason| Explanation {
+            player_id: attempt.player_id.into(),
+            reason,
+        })
+        .collect()
+}
+
 pub(crate) type ConsumptionRule = fn(&CustomGameFacts, &Outcome) -> Vec<AbilityUseRef>;
 pub(crate) fn consume(facts: &mut CustomGameFacts, outcome: &Outcome, event: &str) {
     let mut sources = outcome
@@ -71,6 +138,7 @@ pub(crate) fn consume(facts: &mut CustomGameFacts, outcome: &Outcome, event: &st
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct NightResolution {
+    pub(crate) explanations: Vec<Explanation>,
     pub(crate) unpreventable_player_ids: Vec<String>,
     pub(crate) outcomes: Vec<Outcome>,
     pub(crate) sources: Vec<(String, ActionOccurrence)>,
@@ -91,6 +159,8 @@ pub(crate) type FollowUpRule =
 pub(crate) struct Record {
     pub(crate) event_id: String,
     pub(crate) outcomes: Vec<Outcome>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) explanations: Vec<Explanation>,
 }
 pub(crate) fn night(
     facts: &CustomGameFacts,
@@ -109,14 +179,15 @@ pub(crate) fn night(
         if result.outcomes.iter().any(|o: &Outcome| o.player_id == id) {
             continue;
         }
-        let mut outcome = decide(
-            &view,
-            Attempt {
-                player_id: &id,
-                execution: false,
-                unpreventable: bypass,
-            },
-        );
+        let attempt = Attempt {
+            player_id: &id,
+            execution: false,
+            unpreventable: bypass,
+        };
+        let mut outcome = decide(&view, attempt);
+        result
+            .explanations
+            .extend(explanations(&view, &attempt, &outcome));
         outcome.source_character_id = source.ability_use.as_ref().map(|s| s.character_id.clone());
         consume(&mut view, &outcome, "death-preview");
         if bypass {
@@ -133,11 +204,54 @@ pub(crate) fn night(
             if let Some(p) = view.players.iter_mut().find(|p| p.id == id) {
                 p.alive = false;
             }
-            result.sources.push((id, source));
         }
+        // A prevented follow-up still belongs to its own ability, not the initiating attack.
+        result.sources.push((id, source));
         result.outcomes.push(outcome);
     }
     result
+}
+
+/// Character policies select the failed effect; this helper retains the actual cause.
+pub(crate) fn ability_failure(
+    source: &ActionOccurrence,
+    cause: &AbilityUseRef,
+    effect: crate::state::FailedEffect,
+    event: &str,
+) -> Vec<crate::state::MalfunctionEvidence> {
+    let Some(actor) = source.actor_player_id() else {
+        return vec![];
+    };
+    if source.ability_use.as_ref() == Some(cause) {
+        return vec![];
+    }
+    vec![crate::state::MalfunctionEvidence {
+        daytime_step_id: None,
+        cause_details: vec![],
+        event_id: event.into(),
+        occurrence: source.clone(),
+        subject_player_id: actor.into(),
+        outcome: crate::state::MalfunctionOutcome::EffectFailure { effect },
+        causes: vec![cause.clone()],
+    }]
+}
+pub(crate) fn prevented_failure(
+    source: Option<&ActionOccurrence>,
+    attempt: &Attempt<'_>,
+    outcome: &Outcome,
+    effect: crate::state::FailedEffect,
+    event: &str,
+) -> Vec<crate::state::MalfunctionEvidence> {
+    // Execution abilities promise an execution, not a death (e.g. Virgin).
+    if attempt.execution {
+        return vec![];
+    }
+    match (source, &outcome.prevention) {
+        (Some(source), Some(protection)) => {
+            ability_failure(source, &protection.source, effect, event)
+        }
+        _ => vec![],
+    }
 }
 
 pub(crate) type AuditRule = fn(

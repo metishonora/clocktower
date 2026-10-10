@@ -180,3 +180,357 @@ fn all_eight_golem_moonchild_choice_blocks_vote_and_resolves_that_night() {
     let loaded: Value = serde_json::from_str(&g.to_string()).unwrap();
     assert_eq!(replay(&loaded), replay(&g));
 }
+
+// Regression expectations follow the Mathematician's "another character's ability"
+// rule and the Fool/Assassin almanacs, not the current computed result.
+fn review_until(g: &mut Value, stop: &str, inputs: Value) {
+    for _ in 0..40 {
+        let state = replay(g);
+        if state["phase"] == stop || state["currentStep"]["character"] == stop {
+            return;
+        }
+        let s = &state["currentStep"];
+        let action = s["actionRef"]["actionId"].as_str().expect("active step");
+        let input = if action == "demonInfo" {
+            json!({"characterIds":s["requiredInput"]["allowedCharacterIds"].as_array().unwrap()[..3]})
+        } else if let Some(input) = inputs.get(action) {
+            input.clone()
+        } else if s["requiredInput"]["optional"] == true
+            || s["requiredInput"]["kind"] == "none"
+            || matches!(action, "dawn" | "dusk" | "minionInfo")
+        {
+            Value::Null
+        } else {
+            panic!("missing input for {s}");
+        };
+        let computed = s["informationPrompt"]["computedResult"].clone();
+        step(
+            g,
+            s["actionRef"].clone(),
+            input,
+            (!computed.is_null()).then_some(computed),
+        );
+    }
+    panic!("did not reach {stop}");
+}
+fn review_act(g: &mut Value, input: Value) -> Value {
+    let action = replay(g)["currentStep"]["actionRef"].clone();
+    step(g, action, input, None)
+}
+fn math_subjects(g: &Value) -> Vec<String> {
+    let s = replay(g);
+    assert_eq!(s["currentStep"]["character"], "mathematician");
+    s["currentStep"]["informationPrompt"]["mathematicianAudit"]["records"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["subjectPlayerId"].as_str().unwrap().into())
+        .collect()
+}
+fn explanation(g: &Value, event: &Value) -> Value {
+    replay(g)["ruleState"]["deathResolutions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["eventId"] == event["id"])
+        .unwrap()["explanations"]
+        .clone()
+}
+
+#[test]
+fn prevented_imp_death_counts_the_imp_and_round_trip_undo_restores_the_audit() {
+    let mut g = configured_game(
+        &[
+            "fool",
+            "mathematician",
+            "soldier",
+            "artist",
+            "mayor",
+            "assassin",
+            "imp",
+        ],
+        None,
+        "fool",
+    );
+    review_until(&mut g, "day", json!({}));
+    super::issue225_nights::begin_night(&mut g);
+    let before = g.clone();
+    review_act(&mut g, json!({"playerIds":["p1"]}));
+    review_act(&mut g, Value::Null);
+    assert_eq!(math_subjects(&g), vec!["p7"]);
+    assert_eq!(
+        replay(&g)["currentStep"]["informationPrompt"]["computedResult"],
+        json!({"kind":"number","value":1})
+    );
+    round_trip_and_undo(&g, &before, 2);
+    // The spent Fool's next death is ordinary; the new dawn also clears the audit window.
+    review_until(&mut g, "day", json!({}));
+    super::issue225_nights::begin_night(&mut g);
+    review_act(&mut g, json!({"playerIds":["p1"]}));
+    review_act(&mut g, Value::Null);
+    assert_eq!(math_subjects(&g), Vec::<String>::new());
+}
+
+#[test]
+fn assassin_bypass_counts_the_healthy_fool_including_an_acquired_instance() {
+    for acquired in [false, true] {
+        let mut g = configured_game(
+            &[
+                if acquired { "philosopher" } else { "fool" },
+                "mathematician",
+                "soldier",
+                "artist",
+                "mayor",
+                "assassin",
+                "imp",
+            ],
+            None,
+            "fool",
+        );
+        review_until(
+            &mut g,
+            "day",
+            json!({"chooseAbility":{"characterIds":["fool"]}}),
+        );
+        super::issue225_nights::begin_night(&mut g);
+        review_act(&mut g, json!({"playerIds":["p4"]}));
+        let before = g.clone();
+        let event = review_act(&mut g, json!({"playerIds":["p1"]}));
+        assert_eq!(math_subjects(&g), vec!["p1"]);
+        let explanations = explanation(&g, &event);
+        assert_eq!(explanations[0]["reason"]["kind"], "bypassedProtection");
+        assert_eq!(explanations[0]["reason"]["source"]["characterId"], "fool");
+        assert_eq!(explanations[0]["reason"]["source"]["ownerPlayerId"], "p1");
+        assert!(event["payload"]["result"].get("explanations").is_none());
+        round_trip_and_undo(&g, &before, 1);
+    }
+}
+
+#[test]
+fn poisoned_or_spent_fool_has_no_active_protection_for_assassin_to_bypass() {
+    let mut g = configured_game(
+        &[
+            "fool",
+            "mathematician",
+            "soldier",
+            "artist",
+            "mayor",
+            "slayer",
+            "ravenkeeper",
+            "poisoner",
+            "assassin",
+            "imp",
+        ],
+        None,
+        "fool",
+    );
+    review_until(
+        &mut g,
+        "day",
+        json!({"choosePoisonTarget":{"playerIds":["p1"]}}),
+    );
+    super::issue225_nights::begin_night(&mut g);
+    review_until(
+        &mut g,
+        "assassin",
+        json!({"choosePoisonTarget":{"playerIds":["p1"]},"attackPlayer":{"playerIds":["p4"]}}),
+    );
+    let event = review_act(&mut g, json!({"playerIds":["p1"]}));
+    assert_eq!(math_subjects(&g), Vec::<String>::new());
+    assert!(explanation(&g, &event).is_null());
+
+    let mut g = configured_game(
+        &[
+            "fool",
+            "mathematician",
+            "soldier",
+            "artist",
+            "mayor",
+            "assassin",
+            "imp",
+        ],
+        None,
+        "fool",
+    );
+    review_until(&mut g, "day", json!({}));
+    super::issue225_nights::begin_night(&mut g);
+    review_act(&mut g, json!({"playerIds":["p1"]}));
+    let event = review_act(&mut g, json!({"playerIds":["p1"]}));
+    assert_eq!(math_subjects(&g), vec!["p7"]); // Only the preceding blocked Imp attack.
+    assert!(explanation(&g, &event).is_null());
+}
+
+#[test]
+fn golem_prevented_by_fool_counts_the_golem_with_day_evidence() {
+    let mut g = configured_game(
+        &[
+            "golem",
+            "mathematician",
+            "fool",
+            "soldier",
+            "poisoner",
+            "imp",
+        ],
+        None,
+        "fool",
+    );
+    review_until(
+        &mut g,
+        "day",
+        json!({"choosePoisonTarget":{"playerIds":["p4"]}}),
+    );
+    for _ in 0..3 {
+        day(&mut g, json!({"kind":"advance"}));
+    }
+    let before = g.clone();
+    day(
+        &mut g,
+        json!({"kind":"nominate","nominatorId":"p1","nomineeId":"p3"}),
+    );
+    round_trip_and_undo(&g, &before, 1);
+    day(&mut g, json!({"kind":"vote","voterIds":[]}));
+    day(&mut g, json!({"kind":"closeNominations"}));
+    day(&mut g, json!({"kind":"confirmExecution"}));
+    day(&mut g, json!({"kind":"beginNight"}));
+    review_until(
+        &mut g,
+        "mathematician",
+        json!({"choosePoisonTarget":{"playerIds":["p4"]},"attackPlayer":{"playerIds":["p5"]}}),
+    );
+    assert_eq!(math_subjects(&g), vec!["p1"]);
+    let evidence = &replay(&g)["currentStep"]["informationPrompt"]["mathematicianAudit"]["records"]
+        [0]["evidence"][0];
+    assert_eq!(evidence["phase"], "day");
+    assert_eq!(evidence["outcome"]["effect"], "golemDeath");
+}
+
+#[test]
+fn dead_soldier_attack_explanation_is_frozen_at_the_attack_prefix() {
+    let mut g = configured_game(
+        &[
+            "fool",
+            "mathematician",
+            "soldier",
+            "artist",
+            "mayor",
+            "assassin",
+            "imp",
+        ],
+        None,
+        "fool",
+    );
+    review_until(&mut g, "day", json!({}));
+    super::issue225_nights::begin_night(&mut g);
+    review_act(&mut g, json!({"playerIds":["p4"]}));
+    review_act(&mut g, json!({"playerIds":["p3"]}));
+    review_until(&mut g, "day", json!({}));
+    super::issue225_nights::begin_night(&mut g);
+    let before = g.clone();
+    let event = review_act(&mut g, json!({"playerIds":["p3"]}));
+    assert_eq!(
+        explanation(&g, &event),
+        json!([{"playerId":"p3","reason":{"kind":"alreadyDead"}}])
+    );
+    round_trip_and_undo(&g, &before, 1);
+}
+
+#[test]
+fn fool_blocks_a_witch_death_but_not_the_nomination_for_mathematician() {
+    let mut g = configured_game(
+        &[
+            "fool",
+            "mathematician",
+            "soldier",
+            "artist",
+            "mayor",
+            "witch",
+            "imp",
+        ],
+        None,
+        "fool",
+    );
+    review_until(
+        &mut g,
+        "day",
+        json!({"chooseCursedPlayer":{"playerIds":["p1"]}}),
+    );
+    for _ in 0..3 {
+        day(&mut g, json!({"kind":"advance"}));
+    }
+    day(
+        &mut g,
+        json!({"kind":"nominate","nominatorId":"p1","nomineeId":"p4"}),
+    );
+    day(&mut g, json!({"kind":"confirmDeath"}));
+    assert!(alive(&g, "p1"));
+    assert_eq!(replay(&g)["day"]["stage"], "voting");
+    day(&mut g, json!({"kind":"vote","voterIds":[]}));
+    day(&mut g, json!({"kind":"closeNominations"}));
+    day(&mut g, json!({"kind":"confirmExecution"}));
+    day(&mut g, json!({"kind":"beginNight"}));
+    review_until(
+        &mut g,
+        "mathematician",
+        json!({"chooseCursedPlayer":{"playerIds":["p3"]},"attackPlayer":{"playerIds":["p4"]}}),
+    );
+    assert_eq!(math_subjects(&g), vec!["p6"]);
+    assert_eq!(
+        replay(&g)["currentStep"]["informationPrompt"]["mathematicianAudit"]["records"][0]
+            ["evidence"][0]["outcome"]["effect"],
+        "witchDeath"
+    );
+}
+
+#[test]
+fn boffin_fool_protection_counts_a_blocked_slayer_shot_with_its_actual_source() {
+    let mut g = configured_game(
+        &[
+            "slayer",
+            "mathematician",
+            "soldier",
+            "artist",
+            "mayor",
+            "boffin",
+            "imp",
+        ],
+        Some("fool"),
+        "fool",
+    );
+    review_until(
+        &mut g,
+        "day",
+        json!({"grantAbility":{"playerIds":["p7"],"characterIds":["fool"]}}),
+    );
+    let state = replay(&g);
+    let action = state["day"]["availableActions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["characterId"] == "slayer")
+        .unwrap();
+    day(
+        &mut g,
+        json!({"kind":"useAbility","actionId":action["id"],"record":{"kind":"slayer","targetPlayerId":"p7","recluseAsDemon":false}}),
+    );
+    let before = g.clone();
+    day(&mut g, json!({"kind":"confirmDeath"}));
+    let event = g["game"]["events"].as_array().unwrap().last().unwrap();
+    assert!(alive(&g, "p7"));
+    assert_eq!(
+        explanation(&g, event)[0]["reason"]["source"]["ownerPlayerId"],
+        "p7"
+    );
+    round_trip_and_undo(&g, &before, 1);
+    super::issue225_nights::begin_night(&mut g);
+    review_until(
+        &mut g,
+        "mathematician",
+        json!({"attackPlayer":{"playerIds":["p4"]}}),
+    );
+    assert_eq!(math_subjects(&g), vec!["p1"]);
+    assert_eq!(
+        replay(&g)["currentStep"]["informationPrompt"]["mathematicianAudit"]["records"][0]
+            ["evidence"][0]["outcome"]["effect"],
+        "slayerDeath"
+    );
+}

@@ -106,6 +106,15 @@ nomination preview queries this same boundary; its `protected` result still cons
 the attempted Golem use and the applicable protection. Actual nomination deaths
 create the same daytime consequences and causal Undo unit as other day deaths.
 
+The read-only death ledger also projects event-time explanations: the effective
+protection source, protection bypass, already-dead target, impaired attack, or
+Mayor redirection. The UI formats these reasons without inspecting roles or reminder
+tokens to decide protection. Explanations are recomputed from the event prefix and
+are never written to confirmed results or GameFile. Character-owned death audits
+record the attacking ability when another ability blocks a promised death, and the
+Fool when an unpreventable attack bypasses its available protection; executions alone
+do not promise a death. Prevented follow-ups retain their own ability source.
+
 BMR characters own the projected execution preview and Moonchild scheduled death.
 The Moonchild's public choice occurs immediately after announcement/confirmation;
 its alignment judgment is frozen then, and its ability is checked at night.

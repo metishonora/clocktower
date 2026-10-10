@@ -1634,11 +1634,41 @@ pub(crate) fn death_audit(
     outcome: &crate::death::Outcome,
     event: &str,
 ) -> Vec<MalfunctionEvidence> {
+    use crate::state::FailedEffect;
+    let failed =
+        killer
+            .and_then(|o| o.ability_use.as_ref())
+            .and_then(|s| match s.character_id.as_str() {
+                "gambler" => Some(FailedEffect::GamblerDeath),
+                "moonchild" => Some(FailedEffect::MoonchildDeath),
+                "grandmother" => Some(FailedEffect::GrandmotherDeath),
+                _ => None,
+            });
+    let mut audit = failed
+        .map(|effect| crate::death::prevented_failure(killer, attempt, outcome, effect, event))
+        .unwrap_or_default();
     if !outcome.died {
-        return vec![];
+        return audit;
     }
-    let mut audit = vec![];
-    if !attempt.unpreventable {
+    if attempt.unpreventable {
+        if let (Some(killer), Some(protection)) = (
+            killer.and_then(|o| o.ability_use.as_ref()),
+            fool_protection(f, attempt),
+        ) {
+            let o = ActionOccurrence::character(
+                FirstNightActionRef::character("fool", "preventDeath"),
+                protection.source,
+            )
+            .expect("fool source")
+            .in_night(f.night_number());
+            audit.extend(crate::death::ability_failure(
+                &o,
+                killer,
+                FailedEffect::FoolProtection,
+                event,
+            ));
+        }
+    } else {
         for r in &f.ability_provenance {
             let s = &r.ability_use;
             if s.owner_player_id == attempt.player_id
