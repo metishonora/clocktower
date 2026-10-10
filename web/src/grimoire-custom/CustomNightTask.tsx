@@ -1,3 +1,4 @@
+import {CustomBmrVerdicts,bmrResultVerdicts} from './CustomBmrOutcome';
 import {CustomNightDeathSources} from './CustomNightDeathSources';
 import {selectedInformationPrompt} from '../custom/grimoire/stepInputModel';
 import {CustomMarionetteTask} from './CustomMarionetteTask';
@@ -36,6 +37,11 @@ export function CustomNightTask({controller}:{controller:FirstNightController}) 
       onReveal={()=>state.proposal?controller.show():void controller.prepare({input:isDemon?{characterIds:bluffs}:null})}
       onContinue={()=>void controller.confirm()}/>;
   }
+  if(step.character==='moonchild') {
+    const planned=replay.ruleState.scheduledDeaths?.find(c=>c.night===replay.nightNumber&&c.source.abilityInstanceId===step.abilityUse?.abilityInstanceId);
+    const role=characterPresentation('moonchild')!,actor=replay.players.find(p=>p.id===step.playerId);
+    return <NightTaskCard className="bmrCurrentStep" label="예약 사망" identity={<div className="snvCurrentStepIdentity snvInformationIdentity"><img src={role.image} alt=""/><div><h3>{role.label}</h3><strong>{actor?.seat}번 {actor?.name}</strong></div></div>}><CustomBmrVerdicts replay={replay} items={bmrResultVerdicts(planned?.preview??undefined,step.playerId,[])}/><div className="snvStepActions"><button type="button" className="prominent" disabled={state.busy||state.saveStatus!=='saved'||!planned?.preview} onClick={()=>void controller.prepareCurrent()}>확정</button></div></NightTaskCard>;
+  }
   const actor=model.actor;
   const role=model.ability;
   const detailsFor=customCharacterDetail;
@@ -55,7 +61,7 @@ export function CustomNightTask({controller}:{controller:FirstNightController}) 
   const influenceBadges=<span className="snvInformationInfluenceBadges" aria-label="정보 영향">{step.simulationSource?.sourceAbilityUse.characterId==='marionette'&&<em className="snvInformationInfluenceBadge marionette">꼭두각시</em>}{influences.map(kind=><em key={kind} className={`snvInformationInfluenceBadge ${kind}`}>{influenceLabel(kind)}</em>)}</span>;
   const number=selectedInformationPrompt(step,draft.playerIds)?.numberConstraint;
   const selectionReady=!model.selection.needsPlayers||draft.zero||(draft.playerIds.length>=model.selection.minPlayers&&draft.playerIds.length<=model.selection.maxPlayers);
-  const ready=selectionReady&&(model.editor.kind==='setup'?model.editor.ready:number?draft.delivery?.kind==='number':model.choices.length?!!model.choice||!!draft.delivery:true);
+  const ready=(step.character!=='noble'||controller.selectionReady)&&selectionReady&&(model.editor.kind==='setup'?model.editor.ready:number?draft.delivery?.kind==='number':model.choices.length?!!model.choice||!!draft.delivery:true);
   return <RoleInformationTaskView className={`bmrCurrentStep${step.character==='clockmaker'?' snvClockmakerInformationTask':''}${step.character==='chambermaid'?' customChambermaidTask':''}`} ariaLabel={stepLabel(step,replay)}
     context={<><CustomBalloonistPrevious file={file} step={step} replay={replay}/>{step.actionRef?.kind==='character'&&step.actionRef.characterId==='barber'&&action==='swapCharacters'&&<div className="snvStepActions"><button type="button" disabled={state.busy||state.public||state.saveStatus!=='saved'} onClick={controller.showBarberInstruction}>이발사 안내 공개</button></div>}</>}
     identity={<>{role&&actor&&(acquired||step.simulationSource)?<>

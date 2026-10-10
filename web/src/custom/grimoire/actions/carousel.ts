@@ -1,5 +1,6 @@
 import type {ActionAdapter} from './registry';
 export const carouselActions = {
+  'noble.learnPlayers':{stage:'delivery',inputView:'information',acceptedInputs:['playerIds'],selectionContract:'information',completionContract:{afterSelection:'edit',continuationEntry:'select'},selectionLabel:'세 명 선택',revealView:'noble',revealOpen:'preview',closeDestination:'progress',cancellation:'discardInput'},
   'preacher.choosePlayer':{stage:'action',inputView:'players',acceptedInputs:['playerIds'],selectionContract:'direct',completionContract:{afterSelection:'confirm',continuationEntry:'select'},selectionLabel:'대상 선택',revealView:'none',revealOpen:'notification',resultReview:'selection',notificationBeforeResult:true,closeDestination:'board',cancellation:'discardInput'},
   'marionette.assignShownCharacter':{stage:'preparation',inputView:'ability',acceptedInputs:['characterIds'],selectionContract:'none',completionContract:{afterSelection:'edit',continuationEntry:'edit'},revealView:'none',revealOpen:'notification',closeDestination:'progress',cancellation:'discardInput'},
   'boffin.grantAbility':{stage:'preparation',inputView:'ability',acceptedInputs:['characterTransformation'],selectionContract:'none',completionContract:{afterSelection:'edit',continuationEntry:'edit'},revealView:'none',revealOpen:'notification',closeDestination:'progress',cancellation:'discardInput'},

@@ -1,3 +1,4 @@
+import {CustomNobleInformation} from './CustomNobleInformation';
 import {numericInputDraft,numericInputFeedback} from '../custom/grimoire/numericInputDraft';
 import {CustomBoffinInput} from './CustomBoffinInput';
 import {ScalarInformationEditorView,ScalarInformationConstraintView,InformationResultView} from '../shared-ui/InformationResultView';
@@ -53,6 +54,7 @@ export function CustomStepInputs({ step, replay, controller, disabled }: { step:
   const canEditPrepared = preparation?.result.kind === 'informationPrepared';
   const submit = (skip = false) => controller.prepareCurrent(skip);
   const hasTargets=playerIds.length>=minPlayers;
+  if(step.character==='noble')return <CustomNobleInformation controller={controller} location="progress"/>;
   if(step.character==='chambermaid'&&hasTargets) {
     const prompt=selectedInformationPrompt(step,playerIds)!;
     const check=step.informationPrompt?.targetChecks?.find(c=>c.targetPlayerIds.length===playerIds.length&&c.targetPlayerIds.every(id=>playerIds.includes(id)));
@@ -75,6 +77,17 @@ export function CustomStepInputs({ step, replay, controller, disabled }: { step:
     <InformationInputPresentation label="알려줄 플레이어">{playerIds.map(id=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;}).join(' · ')}</InformationInputPresentation>
     {choices.length>1&&<label className="customSetupChoice">등록 유형<select value={choiceIndex} disabled={disabled} onChange={e=>controller.updateInput({choiceIndex:e.target.value,judgments:choices[Number(e.target.value)]?.registrationJudgments??[]})}><option value="">선택 필요</option>{choices.map((c,i)=><option key={i} value={String(i)}>{c.registrationJudgments.length?c.registrationJudgments.map(j=>({townsfolk:'주민',outsider:'외지인',minion:'하수인',demon:'악마',good:'선',evil:'악'})[j.registeredAs]).join(' · '):'실제 유형'}</option>)}</select></label>}
   </>;
+  if(step.character==='grandmother'&&hasTargets) {
+    const person=(id:string)=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;};
+    const shownId=choice?.result.kind==='playerCharacter'?choice.result.playerId:playerIds[0];
+    const deliveredPlayers=[...new Set(choices.map(c=>c.result.kind==='playerCharacter'?c.result.playerId:playerIds[0]))];
+    const roles=choices.map((c,index)=>({c,index})).filter(({c})=>(c.result.kind==='playerCharacter'?c.result.playerId:playerIds[0])===shownId);
+    const roleLabel=(result:InformationResult)=>result.kind==='character'||result.kind==='playerCharacter'?characterPresentation(result.characterId)?.label??result.characterId:informationLabel(result,replay);
+    const selectChoice=(index:number)=>controller.updateInput({choiceIndex:String(index),judgments:choices[index]?.registrationJudgments??[]});
+    return <dl className="customBmrRows"><div><dt>손주</dt><dd>{playerIds.map(id=>{const p=replay.players.find(p=>p.id===id);return `${person(id)}${p?` · ${characterPresentation(p.actualCharacter)?.label??p.actualCharacter}`:''}`;}).join(' · ')}<button type="button" className="customBmrInline" disabled={disabled} onClick={()=>controller.beginSelection()}>변경</button></dd></div>
+      {deliveredPlayers.length>1&&<div><dt>전달 대상</dt><dd><select aria-label="전달 대상" value={shownId} disabled={disabled} onChange={e=>selectChoice(choices.findIndex(c=>(c.result.kind==='playerCharacter'?c.result.playerId:playerIds[0])===e.target.value))}>{deliveredPlayers.map(id=><option key={id} value={id}>{person(id)}</option>)}</select></dd></div>}
+      <div><dt>전달 직업</dt><dd>{roles.length>1?<select aria-label="전달 직업" value={choiceIndex} disabled={disabled} onChange={e=>selectChoice(Number(e.target.value))}><option value="">선택 필요</option>{roles.map(({c,index})=><option key={index} value={String(index)}>{roleLabel(c.result)}</option>)}</select>:choice?roleLabel(choice.result):'선택 필요'}</dd></div></dl>;
+  }
   if(step.character==='pixie'&&hasTargets)return <>
     <div className="customCarouselTarget"><span>집착 대상</span><strong>{playerIds.map(id=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;}).join(' · ')}</strong></div>
     {choices.length>1?<label className="customCarouselSelect">알려줄 직업<select value={choiceIndex} disabled={disabled} onChange={e=>controller.updateInput({choiceIndex:e.target.value,judgments:choices[Number(e.target.value)]?.registrationJudgments??[]})}><option value="">선택 필요</option>{choices.map((o,i)=><option key={i} value={String(i)}>{informationLabel(o.result,replay)}</option>)}</select></label>:<div className="customCarouselTarget"><span>알려줄 직업</span><strong>{choice?informationLabel(choice.result,replay):'선택 필요'}</strong></div>}
@@ -145,11 +158,12 @@ export function informationLabel(result: InformationResult, replay: ReplayState)
   const role = (id: string) => characterPresentation(id)?.label ?? id;
   switch(result.kind) {
     case 'number': return String(result.value); case 'boolean': return result.value ? '예' : '아니오';
+    case 'playerCharacter': return `${person(result.playerId)} · ${role(result.characterId)}`;
     case 'character': return role(result.characterId); case 'characterPair': return result.characterIds.map(role).join(' / ');
-    case 'player': return person(result.playerId); case 'playerPair': return result.playerIds.map(person).join(' / ');
+    case 'player': return person(result.playerId); case 'playerPair': case 'playerGroup': return result.playerIds.map(person).join(' / ');
     case 'setupInfo': return result.zeroOutsiders ? '외부인 없음' : `${result.playerIds.map(person).join(' / ')} · ${result.characterId ? role(result.characterId) : ''}`;
     case 'teamInfo': return '악의 진영 정보'; case 'spyGrimoire': return '마도서';
   }
 }
 
-function effectLabel(effect:string):string {const labels:Record<string,string>={preacherSuppression:'하수인 능력 상실 미적용',poisonerPoison:'중독 미적용',butlerMaster:'주인 지정 미적용',mutantExecution:'처형 효과 미발동',philosopherAcquisition:'능력 획득 실패',witchCurse:'저주 미적용',cerenovusMadness:'광기 미적용',evilTwinRelationship:'쌍둥이 관계 미적용',snakeCharmerSwap:'악마 선택 · 교환되지 않음',witchDeath:'저주 대상 지명 · 생존',sweetheartDrunkenness:'사망 · 취함 미적용',demonDeath:'유효 대상 공격 · 사망 없음',pitHagCharacterChange:'직업 변경 실패',noDashiiPoison:'이웃 중독 효과 해제',vigormortisOngoingEffect:'유지 중인 효과 해제',vortoxFalseInformation:'참 정보 전달',vortoxExecution:'처형 없음 효과 미발동'};return labels[effect] ?? effect;}
+function effectLabel(effect:string):string {const labels:Record<string,string>={golemDeath:'지명 대상 생존',gamblerDeath:'오답 사망 미적용',moonchildDeath:'예약 사망 미적용',assassinDeath:'암살 미적용',grandmotherDeath:'연쇄 사망 미적용',foolProtection:'최초 사망 방지 실패',devilsAdvocateProtection:'처형 보호 실패',preacherSuppression:'하수인 능력 상실 미적용',poisonerPoison:'중독 미적용',butlerMaster:'주인 지정 미적용',mutantExecution:'처형 효과 미발동',philosopherAcquisition:'능력 획득 실패',witchCurse:'저주 미적용',cerenovusMadness:'광기 미적용',evilTwinRelationship:'쌍둥이 관계 미적용',snakeCharmerSwap:'악마 선택 · 교환되지 않음',witchDeath:'저주 대상 지명 · 생존',sweetheartDrunkenness:'사망 · 취함 미적용',demonDeath:'유효 대상 공격 · 사망 없음',pitHagCharacterChange:'직업 변경 실패',noDashiiPoison:'이웃 중독 효과 해제',vigormortisOngoingEffect:'유지 중인 효과 해제',vortoxFalseInformation:'참 정보 전달',vortoxExecution:'처형 없음 효과 미발동'};return labels[effect] ?? effect;}

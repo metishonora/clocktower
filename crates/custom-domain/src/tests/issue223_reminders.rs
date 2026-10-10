@@ -10,6 +10,7 @@ use crate::{
 fn executed(f: &mut CustomGameFacts) {
     let mut day = DayProgress::new(1);
     day.execution = Some(ExecutionRecord {
+                prevention: None,
         event_id: "execution".into(),
         player_id: Some("p2".into()),
         death_event_id: Some("death".into()),
@@ -180,6 +181,7 @@ fn registered_handlers_have_unique_supported_character_ids() {
         .into_iter()
         .chain(crate::characters::sects_and_violets::reminder_handlers())
         .chain(crate::characters::carousel::reminder_handlers())
+        .chain(crate::characters::bad_moon_rising::reminder_handlers())
     {
         assert!(seen.insert(h.character_id));
         assert!(crate::characters::character_kind(h.character_id).is_some());
@@ -210,7 +212,7 @@ fn philosopher_identity_marker_requires_a_live_grant_without_an_original_charact
 #[test]
 fn every_supported_character_has_an_audited_reminder_policy() {
     // Explicit exclusions: a catalog addition must be reviewed instead of silently lacking tokens.
-    let no_automatic_token = [
+    let no_automatic_token = ["gambler",
         "chambermaid",
         "zealot",
         "chef",
@@ -237,6 +239,7 @@ fn every_supported_character_has_an_audited_reminder_policy() {
         .into_iter()
         .chain(crate::characters::sects_and_violets::reminder_handlers())
         .chain(crate::characters::carousel::reminder_handlers())
+        .chain(crate::characters::bad_moon_rising::reminder_handlers())
         .map(|h| h.character_id)
         .collect::<Vec<_>>();
     for entry in crate::characters::custom_script_catalog() {
@@ -254,7 +257,7 @@ fn every_supported_character_has_an_audited_reminder_policy() {
     }
     assert_eq!(
         handlers.len() + no_automatic_token.len() + subsequent_night_only.len(),
-        55
+        63
     );
 }
 
@@ -284,6 +287,7 @@ fn observer_markers_use_action_time_identity_and_raw_votes_then_reset_at_dawn() 
         .collect::<Vec<_>>();
     let mut day = DayProgress::new(1);
     day.nominations.push(NominationRecord {
+        golem_effects: vec![],
         event_id: "nomination".into(),
         nominator_id: "p3".into(),
         nominee_id: "p2".into(),

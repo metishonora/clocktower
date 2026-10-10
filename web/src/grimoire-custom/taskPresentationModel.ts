@@ -1,3 +1,4 @@
+import {nobleInformationDraft} from '../custom/grimoire/carouselPresentation';
 import {actionAdapter} from '../custom/grimoire/actions/registry';
 import {registrationPresentation} from '../custom/grimoire/registrationPresentation';
 import type { FirstNightController } from '../custom/grimoire/firstNightController';
@@ -50,8 +51,8 @@ export function taskPresentationModel(controller:FirstNightController) {
  const minPlayers=pairInformation?2:step?.requiredInput.minSelections??(editor.kind==='setup'?2:1);
  const maxPlayers=pairInformation?2:step?.requiredInput.maxSelections??(editor.kind==='setup'?2:1);
  const registration=registrationPresentation(step,state.replay,draft);
- const choice=pairInformation?(draft.choiceIndex!==''?choices[Number(draft.choiceIndex)]:undefined):registration.kind?registration.choice:draft.choiceIndex!==''?choices[Number(draft.choiceIndex)]:choices.length===1||choices[0]?.result.kind==='characterPair'?choices[0]:undefined;
- const registrationChoices=editor.kind==='setup'?candidates.map(c=>c.registrationJudgments):choices.map(c=>c.registrationJudgments);
+ const choice=step?.character==='noble'?nobleInformationDraft(step,draft).choice:pairInformation?(draft.choiceIndex!==''?choices[Number(draft.choiceIndex)]:undefined):registration.kind?registration.choice:draft.choiceIndex!==''?choices[Number(draft.choiceIndex)]:choices.length===1||choices[0]?.result.kind==='characterPair'?choices[0]:undefined;
+ const registrationChoices=step?.character==='noble'?(check?.alignmentOptions??[]).map(o=>o.registrationJudgments):editor.kind==='setup'?candidates.map(c=>c.registrationJudgments):choices.map(c=>c.registrationJudgments);
  return {identity:actionInputIdentity(state.file,step),actor,ability,stage,editor,result,reprepareId:reprepare?.id,warnings:editor.kind==='unavailable'?[editor.message]:[],
   actions:{confirmLabel:stage==='delivery'?'정보 공개':stage==='transition'?'낮 시작':'확인',skip:!!step&&!adapter?.emptySelection&&(step.canSkip||step.requiredInput.optional)},
   selection:{needsPlayers,minPlayers,maxPlayers},choices,choice,fixedCharacterId:check?.fixedCharacterId,

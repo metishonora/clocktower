@@ -172,7 +172,7 @@ test("the repository accepts an empty roster and rejects registry-invalid defini
   });
 
   await expectErrorCode(
-    repository.save(definitionRecord("invalid-definition", { characterIds: ["grandmother"] })),
+    repository.save(definitionRecord("invalid-definition", { characterIds: ["sailor"] })),
     "CUSTOM_DEFINITION_INVALID",
   );
   assert.deepEqual(await repository.load("invalid-definition"), { status: "missing" });

@@ -121,6 +121,10 @@ pub(crate) enum InformationResult {
     Character {
         character_id: String,
     },
+    PlayerCharacter {
+        player_id: String,
+        character_id: String,
+    },
     CharacterPair {
         character_ids: Vec<String>,
     },
@@ -132,6 +136,9 @@ pub(crate) enum InformationResult {
     },
     PlayerPair {
         player_ids: Vec<String>,
+    },
+    PlayerGroup {
+        player_ids: [String; 3],
     },
     SetupInfo {
         player_ids: Vec<String>,
@@ -344,8 +351,10 @@ pub(crate) enum AbnormalAbilityOutcome {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum AbnormalAbilityEffect {
+    GamblerDeath, MoonchildDeath, AssassinDeath, GrandmotherDeath, FoolProtection, DevilsAdvocateProtection,
     PreacherSuppression,
     NightwatchmanNotification,
+    GolemDeath,
     PoisonerPoison,
     ButlerMaster,
     MutantExecution,
@@ -375,6 +384,8 @@ pub(crate) struct BooleanInformationChoice {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct TargetInformationCheck {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) alignment_options: Vec<AlignmentInformationOption>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) number_constraint: Option<NumberInformationConstraint>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -384,6 +395,13 @@ pub(crate) struct TargetInformationCheck {
     pub(crate) target_player_ids: Vec<String>,
     pub(crate) computed_result: InformationResult,
     pub(crate) choices: Vec<TargetInformationChoice>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AlignmentInformationOption {
+    pub(crate) registration_judgments: Vec<RegistrationJudgment>,
+    pub(crate) evil_count: u8,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

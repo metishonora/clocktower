@@ -139,10 +139,12 @@ fn t13_registered_action_scope_matches_the_complete_night_contracts() {
         "spy.inspectGrimoire",
     ];
     expected.extend([
+        "grandmother.learnGrandchild", "gambler.guessCharacter", "devilsAdvocate.protectExecution", "assassin.killPlayer", "moonchild.resolveDeath",
         "nightwatchman.choosePlayer",
         "pixie.learnTownsfolk",
         "pixie.assessMadness",
         "balloonist.learnPlayer",
+        "noble.learnPlayers",
         "preacher.choosePlayer",
         "chambermaid.learnCount",
         "boffin.grantAbility",

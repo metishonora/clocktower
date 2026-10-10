@@ -1,6 +1,6 @@
 import type {CustomActionResult,GameEvent,PhaseStep} from '../core/types';
 import {actionAdapter} from './actions/registry';
-export type HandoffStep = Pick<PhaseStep,'id'|'actionRef'|'character'|'abilityUse'|'playerId'> & Partial<Pick<PhaseStep,'requiredInput'>>;
+export type HandoffStep = Pick<PhaseStep,'id'|'actionRef'|'character'|'abilityUse'|'playerId'> & Partial<Pick<PhaseStep,'requiredInput'|'abilityImpairments'>>;
 /** A Storyteller checkpoint consumes the confirmed result, never a player reveal. */
 export function reviewedAction(event:GameEvent|undefined) {
  if(event?.type!=='customActionConfirmed')return undefined;
@@ -10,13 +10,17 @@ export function reviewedAction(event:GameEvent|undefined) {
   ||policy==='selection'
   ||policy==='changedIdentity'&&((result.kind==='pitHagChange'&&result.changed)||(result.kind==='barberSwap'&&result.effective&&result.playerIds.length>0))
   ||policy==='unchangedIdentity'&&result.kind==='snakeCharmer'&&result.outcome!=='swapped';
- if(!review)return undefined;
+ if(!review||(result.kind==='assassinUsed'&&!result.spent))return undefined;
  const step:HandoffStep={id:stepId,actionRef,character:actionRef.kind==='character'?actionRef.characterId:undefined,abilityUse,playerId:abilityUse?.ownerPlayerId??simulationSource?.sourceAbilityUse.ownerPlayerId};
  const input=event.payload.input;
  return {step,result,playerIds:input&&'playerIds' in input?input.playerIds??[]:[]};
 }
 export function actionResultRows(result:CustomActionResult,person:(id:string)=>string,role:(id:string)=>string, pendingNightDeath=false) {
  switch(result.kind){
+ case 'gamblerGuessed':return [{label:'추측',value:`${person(result.targetPlayerId)} · ${role(result.characterId)}`},{label:'판정',value:result.correct?'정답':'오답'}];
+ case 'devilsAdvocateProtected':return [{label:'적용',value:result.effective?'다음 낮 처형 사망 방지':'효과 없음'}];
+ case 'assassinUsed':return [{label:'능력',value:result.spent?'사용 완료':'미사용'}];
+
  case 'preacherSelected':return [{label:'선택 대상',value:person(result.targetPlayerId)},{label:'적용 결과',value:result.effective?'하수인 선택':'아무 일도 없음'}];
  case 'nightDeathsResolved':return result.playerIds.length?result.playerIds.map(id=>({label:'사망',value:person(id)})):[{label:'결과',value:'사망 없음'}];
  case 'nightAttack':return [{label:'공격 대상',value:person(result.targetPlayerId)},{label:'결과',value:result.killedPlayerId?`${person(result.killedPlayerId)} 사망`:pendingNightDeath?'사망 결정 대기':'사망 없음'}];

@@ -28,6 +28,7 @@ pub(crate) struct CustomFactChanges {
     ability_removals: Vec<AbilityUseRef>,
     life_changes: Vec<PlayerLifeChange>,
     death_source: Option<crate::state::ActionOccurrence>,
+    resolved_deaths: crate::death::NightResolution,
     impairment_additions: Vec<ActiveImpairment>,
     impairment_removals: Vec<ActiveImpairment>,
     snv: SnvFactChanges,
@@ -109,6 +110,12 @@ impl CustomFactChanges {
         self.monk_protection.as_ref()
     }
 
+    pub(crate) fn with_resolved_deaths(mut self, resolution: crate::death::NightResolution) -> Self {
+        self.life_changes.extend(resolution.deaths().into_iter().map(|player_id| PlayerLifeChange { player_id, alive: false }));
+        self.resolved_deaths = resolution;
+        self
+    }
+    pub(crate) fn resolved_deaths(&self) -> &crate::death::NightResolution { &self.resolved_deaths }
     pub(crate) fn with_death_source(mut self, source: crate::state::ActionOccurrence) -> Self {
         self.death_source = Some(source);
         self
@@ -178,7 +185,8 @@ impl CustomFactChanges {
     }
 
     pub(crate) fn is_empty(&self) -> bool {
-        self.player_notifications.is_empty()
+        self.resolved_deaths.outcomes.is_empty()
+            && self.player_notifications.is_empty()
             && self.audit.is_empty()
             && !self.preparation
             && self.poisoner_choice.is_none()

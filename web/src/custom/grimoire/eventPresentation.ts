@@ -9,9 +9,15 @@ export function eventPresentation(file:GameFile,event:GameEvent):string {
  const person=(id:string|undefined)=>{const p=players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:undefined;};
  if(event.type==='dayConfirmed'){
   const {input,result}=event.payload;
-  if(input.kind==='nominate')return `${person(input.nominatorId)} → ${person(input.nomineeId)} · 지목`;
+  if(input.kind==='nominate')return [`${person(input.nominatorId)} → ${person(input.nomineeId)} · 지명`,...(result.golemEffects??[]).map(e=>`골렘 지명 사용 · ${e.outcome==='death'?`${person(e.targetPlayerId)} 사망`:'사망 없음'}${e.recluseAsDemon?' · 악마로 취급':''}`)].join(' · ');
   if(input.kind==='vote')return `투표 확정 · ${result.countedVoterIds.length}표`;
   if(input.kind==='confirmDeath')return `${result.deathPlayerIds.map(person).join(' · ')} · 사망 확정`;
+  if(input.kind==='confirmExecution')return result.pendingDeath?`${person(result.pendingDeath.playerId)} · 처형`:'처형 · 사망 없음';
+  if(input.kind==='resolveConsequence'){
+   const c=result.consequences.find(c=>c.id===input.consequenceId);
+   const what=c?.source.characterId==='sweetheart'?'취함 대상':c?.source.characterId==='moonchild'?'공개 선택':'선택';
+   return [person(c?.source.ownerPlayerId),c&&characterPresentation(c.source.characterId)?.label,what,input.playerId?person(input.playerId):'효과 없음'].filter(Boolean).join(' · ');
+  }
   if(input.kind==='useAbility'&&result.abilityRecord){const a=result.abilityRecord.action;return `${person(a.actorPlayerId)} · ${characterPresentation(a.characterId)?.label} · 능력 기록`;}
   return event.summary;
  }

@@ -5,13 +5,15 @@ pub(super) fn wakes_actor(action: &crate::contracts::FirstNightActionRef) -> boo
     matches!(action, crate::contracts::FirstNightActionRef::Character {character_id, action_id}
         if matches!((character_id.as_str(),action_id.as_str()),
             ("preacher", "choosePlayer") | ("boffin", "grantAbility") |
-            ("balloonist", "learnPlayer") | ("pixie", "learnTownsfolk") | ("nightwatchman", "choosePlayer")))
+            ("noble", "learnPlayers") | ("balloonist", "learnPlayer") | ("pixie", "learnTownsfolk") | ("nightwatchman", "choosePlayer")))
 }
 
 pub(super) fn custom_registry_entries() -> Vec<(&'static str, crate::model::CharacterKind)> {
     vec![
+        ("noble", crate::model::CharacterKind::Townsfolk),
         ("preacher", crate::model::CharacterKind::Townsfolk),
         ("zealot", crate::model::CharacterKind::Outsider),
+        ("golem", crate::model::CharacterKind::Outsider),
         ("nightwatchman", crate::model::CharacterKind::Townsfolk),
         ("pixie", crate::model::CharacterKind::Townsfolk),
         ("balloonist", crate::model::CharacterKind::Townsfolk),
@@ -188,6 +190,7 @@ impl Preacher {
                 })
                 .collect::<Result<Vec<_>, CoreError>>()?;
             checks.push(TargetInformationCheck {
+                alignment_options: vec![],
                 number_constraint: None,
                 wake_audit: vec![],
                 fixed_character_id: None,
@@ -1318,6 +1321,7 @@ impl Balloonist {
                     })
                     .collect::<Vec<_>>();
                 (!choices.is_empty()).then(|| TargetInformationCheck {
+                    alignment_options: vec![],
                     number_constraint: None,
                     wake_audit: vec![],
                     target_player_ids: vec![p.id.clone()],
@@ -1528,7 +1532,7 @@ impl ActionHandler for Balloonist {
 pub(crate) fn activation(
     c: &crate::first_night::ActivationContext<'_>,
 ) -> Option<crate::first_night::ActivationDecision> {
-    matches!(c.action_ref, FirstNightActionRef::Character {character_id, action_id} if character_id == "pixie" && action_id == "learnTownsfolk").then_some(crate::first_night::ActivationDecision::RunImmediately)
+    matches!(c.action_ref, FirstNightActionRef::Character {character_id, action_id} if (character_id == "pixie" && action_id == "learnTownsfolk") || (character_id == "noble" && action_id == "learnPlayers")).then_some(crate::first_night::ActivationDecision::RunImmediately)
 }
 
 pub(super) fn base_step(
@@ -1920,6 +1924,7 @@ impl Pixie {
                     character_id: p.actual_character.clone(),
                 };
                 Some(TargetInformationCheck {
+                    alignment_options: vec![],
                     number_constraint: None,
                     wake_audit: vec![],
                     target_player_ids: vec![p.id.clone()],
@@ -2322,6 +2327,20 @@ pub(crate) fn registrations() -> Vec<RegisteredAction> {
         },
         handler: Box::new(Marionette { action_ref }),
     });
+    let action_ref = FirstNightActionRef::character("noble", "learnPlayers");
+    entries.push(RegisteredAction {
+        spec: ActionSpec {
+            action_ref: action_ref.clone(),
+            prerequisites: vec![],
+            continuation_sources: vec![
+                crate::first_night::execution::DependencySource::ImmediateOrigin,
+            ],
+            participates_in_first_night: true,
+            required_input_kind: RequiredInputKind::PlayerIds,
+            support: PhaseStepSupport::Automated,
+        },
+        handler: Box::new(Noble { action_ref }),
+    });
     entries.push(preacher_registration());
     entries
 }
@@ -2334,6 +2353,50 @@ fn is_marionette_simulation(o: &ActionOccurrence) -> bool {
 
 pub(crate) fn reminder_handlers() -> Vec<crate::reminders::ReminderHandler> {
     vec![
+        crate::reminders::ReminderHandler {
+            character_id: "noble",
+            project: |c| {
+                if !c.current() {
+                    return vec![];
+                }
+                c.facts
+                    .confirmed_actions
+                    .iter()
+                    .filter(|a| c.matches_occurrence(&a.occurrence))
+                    .flat_map(|a| {
+                        let information = match &a.result {
+                            CustomActionResult::InformationDelivered { information, .. }
+                            | CustomActionResult::Simulation {
+                                information: Some(information),
+                                ..
+                            } => Some(information),
+                            _ => None,
+                        };
+                        match information.map(|i| &i.delivered_result) {
+                            Some(InformationResult::PlayerGroup { player_ids }) => player_ids
+                                .iter()
+                                .map(|id| c.token(id, "know", &a.event_id))
+                                .collect(),
+                            _ => vec![],
+                        }
+                    })
+                    .collect()
+            },
+        },
+        crate::reminders::ReminderHandler {
+            character_id: "golem",
+            project: |c| {
+                let mut tokens = c.spent();
+                if c.ability()
+                    .is_some_and(|source| !crate::effects::available(c.facts, source))
+                {
+                    for token in &mut tokens {
+                        token.inactive_reason = Some("골렘 능력 비활성".into());
+                    }
+                }
+                tokens
+            },
+        },
         crate::reminders::ReminderHandler {
             character_id: "preacher",
             project: |c| {
@@ -2561,6 +2624,7 @@ impl Nightwatchman {
                 .players
                 .iter()
                 .map(|p| TargetInformationCheck {
+                    alignment_options: vec![],
                     number_constraint: None,
                     wake_audit: vec![],
                     target_player_ids: vec![p.id.clone()],
@@ -2833,4 +2897,550 @@ pub(crate) fn forced_voter_ids(facts: &CustomGameFacts) -> Vec<String> {
         })
         .map(|p| p.id.clone())
         .collect()
+}
+
+/// The Storyteller chooses a set, not three ordered answers. All draft truth and
+/// registration alternatives originate here; the browser only selects a projection.
+struct Noble {
+    action_ref: FirstNightActionRef,
+}
+impl Noble {
+    fn candidates(&self, c: &ActionContext<'_>) -> Result<Vec<ActionOccurrence>, CoreError> {
+        let f = facts(c)?;
+        let mut os = c
+            .rule_service
+            .try_owned_instances(&self.action_ref)?
+            .into_iter()
+            .map(|i| ActionOccurrence::character(self.action_ref.clone(), i.ability_use))
+            .collect::<Result<Vec<_>, _>>()?;
+        os.extend(c.rule_service.simulation_occurrences(&self.action_ref)?);
+        os.retain(|o| {
+            o.actor_player_id()
+                .and_then(|id| f.player(id))
+                .is_some_and(|p| p.alive)
+                && !f.confirmed_actions.iter().any(|a| {
+                    a.occurrence.action_ref == self.action_ref && same_source(o, &a.occurrence)
+                })
+        });
+        Ok(os)
+    }
+    fn influences(
+        &self,
+        f: &CustomGameFacts,
+        o: &ActionOccurrence,
+    ) -> Result<(Vec<DeliveryReason>, Vec<crate::model::AbilityUseRef>), CoreError> {
+        let mut reasons = vec![];
+        let mut causes = vec![];
+        for e in &f.resolved_impairments {
+            let applies = o.ability_use.as_ref().map_or_else(
+                || Some(e.impairment.player_id.as_str()) == o.actor_player_id(),
+                |s| crate::effects::ability_impairments(f, s).contains(&&e.impairment),
+            );
+            if !applies {
+                continue;
+            }
+            let reason = match e.impairment.kind {
+                crate::contracts::ImpairmentKind::Drunk => DeliveryReason::Drunk,
+                crate::contracts::ImpairmentKind::Poisoned => DeliveryReason::Poisoned {
+                    poisoner_player_id: e.source_ability_use.owner_player_id.clone(),
+                    poison_event_id: e.impairment.source_event_id.clone(),
+                },
+            };
+            if !reasons.contains(&reason) {
+                reasons.push(reason);
+            }
+            if !causes.contains(&e.source_ability_use) {
+                causes.push(e.source_ability_use.clone());
+            }
+        }
+        if o.simulation_source.is_some() {
+            if !reasons.contains(&DeliveryReason::Drunk) {
+                reasons.push(DeliveryReason::Drunk);
+            }
+            for source in crate::jinxes::production()?.simulation_causes(o) {
+                if !causes.contains(&source) {
+                    causes.push(source);
+                }
+            }
+        }
+        if crate::simulation::townsfolk_observer(o) {
+            reasons.extend(vortox_reasons(f));
+            for source in &f.vortox_sources {
+                if !causes.contains(source) {
+                    causes.push(source.clone());
+                }
+            }
+        }
+        Ok((reasons, causes))
+    }
+    fn check(
+        &self,
+        c: &ActionContext<'_>,
+        o: &ActionOccurrence,
+        ids: &[String],
+    ) -> Result<TargetInformationCheck, CoreError> {
+        use crate::model::{
+            Alignment, AlignmentInformationOption, RegistrationJudgment, RegistrationValue,
+        };
+        let f = facts(c)?;
+        let d = c.rule_service.definition().ok_or_else(invalid)?;
+        let impaired = crate::effects::occurrence_impaired(f, o);
+        let vortox = !f.vortox_sources.is_empty() && crate::simulation::townsfolk_observer(o);
+        let actual_count = ids
+            .iter()
+            .filter(|id| f.player(id).is_some_and(|p| p.alignment == Alignment::Evil))
+            .count() as u8;
+        let mut variants = vec![vec![]];
+        if !impaired && !vortox {
+            for id in ids {
+                let p = f.player(id).ok_or_else(invalid)?;
+                let Some(source) = super::registration_source(f, id) else {
+                    continue;
+                };
+                let j = RegistrationJudgment {
+                    scope: None,
+                    player_id: id.clone(),
+                    character_id: None,
+                    registered_as: if p.alignment == Alignment::Good {
+                        RegistrationValue::Evil
+                    } else {
+                        RegistrationValue::Good
+                    },
+                };
+                if super::registration_allowed(&source.character_id, &j, d) {
+                    let extra = variants
+                        .iter()
+                        .map(|js| {
+                            let mut js: Vec<RegistrationJudgment> = js.clone();
+                            js.push(j.clone());
+                            js
+                        })
+                        .collect::<Vec<_>>();
+                    variants.extend(extra);
+                }
+            }
+        }
+        let result = InformationResult::PlayerGroup {
+            player_ids: ids.to_vec().try_into().map_err(|_| invalid())?,
+        };
+        let mut choices = vec![];
+        let mut alignment_options = vec![];
+        for js in variants {
+            let mut evil_count = 0;
+            for id in ids {
+                if super::registered_identity(d, f, id, &js)?.2 == Alignment::Evil {
+                    evil_count += 1;
+                }
+            }
+            let allowed = if vortox {
+                actual_count != 1
+            } else {
+                impaired || evil_count == 1
+            };
+            alignment_options.push(AlignmentInformationOption {
+                registration_judgments: js.clone(),
+                evil_count,
+            });
+            if allowed {
+                choices.push(TargetInformationChoice {
+                    result: result.clone(),
+                    is_computed: actual_count == 1,
+                    registration_judgments: js,
+                });
+            }
+        }
+        Ok(TargetInformationCheck {
+            alignment_options,
+            number_constraint: None,
+            wake_audit: vec![],
+            fixed_character_id: None,
+            target_player_ids: ids.to_vec(),
+            computed_result: InformationResult::Number {
+                value: u64::from(actual_count),
+            },
+            choices,
+        })
+    }
+    fn step(&self, c: &ActionContext<'_>, o: &ActionOccurrence) -> Result<PhaseStep, CoreError> {
+        let f = facts(c)?;
+        let mut players = f.players.iter().collect::<Vec<_>>();
+        players.sort_by_key(|p| p.seat);
+        let ids = players.iter().map(|p| p.id.clone()).collect::<Vec<_>>();
+        let mut checks = vec![];
+        for a in 0..ids.len() {
+            for b in a + 1..ids.len() {
+                for z in b + 1..ids.len() {
+                    checks.push(self.check(
+                        c,
+                        o,
+                        &[ids[a].clone(), ids[b].clone(), ids[z].clone()],
+                    )?);
+                }
+            }
+        }
+        let mut step = base_step(c, o, "noble")?;
+        step.required_input.kind = RequiredInputKind::PlayerIds;
+        step.required_input.target = Some(InputTarget::Player);
+        step.required_input.min_selections = Some(3);
+        step.required_input.max_selections = Some(3);
+        step.required_input.allowed_player_ids = Some(ids);
+        step.information_prompt = Some(InformationPrompt {
+            computed_result: None,
+            delivery_mode: InformationDeliveryMode::Selectable,
+            active_reasons: self.influences(f, o)?.0,
+            registration_candidate_player_ids: vec![],
+            number_choices: vec![],
+            number_constraint: None,
+            boolean_choices: vec![],
+            setup_info_registration_options: vec![],
+            target_checks: checks,
+            mathematician_audit: None,
+        });
+        Ok(step)
+    }
+    fn resolve(
+        &self,
+        c: &ActionContext<'_>,
+        o: &ActionOccurrence,
+        input: &ActionInput,
+        event: &str,
+    ) -> Result<(CustomActionResult, CustomFactChanges), CoreError> {
+        use crate::model::{ConfirmedInformation, DeliveryContext, InformationActor};
+        if !self.candidates(c)?.iter().any(|a| same_source(a, o)) {
+            return Err(invalid());
+        }
+        let f = facts(c)?;
+        let mut ids = crate::information::targets_with_policy(
+            &input.input,
+            3,
+            o.actor_player_id().ok_or_else(invalid)?,
+            true,
+        )?;
+        if ids.iter().any(|id| f.player(id).is_none()) {
+            return Err(invalid());
+        }
+        ids.sort_by_key(|id| f.player(id).map(|p| p.seat));
+        let check = self.check(c, o, &ids)?;
+        let choice = check
+            .choices
+            .iter()
+            .find(|v| {
+                v.registration_judgments.len() == input.registration_judgments.len()
+                    && v.registration_judgments
+                        .iter()
+                        .all(|j| input.registration_judgments.contains(j))
+            })
+            .ok_or_else(|| ErrorKind::InvalidDeliveredInformation.into_error())?;
+        if input
+            .delivered_result
+            .as_ref()
+            .is_some_and(|r| !crate::information::equivalent(&choice.result, r))
+        {
+            return Err(ErrorKind::InvalidDeliveredInformation.into_error());
+        }
+        let truth = matches!(
+            check.computed_result,
+            InformationResult::Number { value: 1 }
+        );
+        let (mut reasons, mut causes) = self.influences(f, o)?;
+        if !choice.registration_judgments.is_empty() {
+            reasons.push(DeliveryReason::RegistrationJudgment {
+                judgments: choice.registration_judgments.clone(),
+            });
+            for j in &choice.registration_judgments {
+                let source = super::registration_source(f, &j.player_id).ok_or_else(invalid)?;
+                if !causes.contains(&source) {
+                    causes.push(source);
+                }
+            }
+        }
+        let actor = o.actor_player_id().ok_or_else(invalid)?;
+        let audit = if !truth && !causes.is_empty() {
+            vec![MalfunctionEvidence {
+                daytime_step_id: None,
+                cause_details: reasons.clone(),
+                event_id: event.into(),
+                occurrence: o.clone(),
+                subject_player_id: actor.into(),
+                outcome: MalfunctionOutcome::IncorrectInformation {
+                    delivered_result: choice.result.clone(),
+                },
+                causes,
+            }]
+        } else {
+            vec![]
+        };
+        reasons.insert(0, DeliveryReason::AbilityChoice);
+        let information = ConfirmedInformation {
+            actor: Some(InformationActor {
+                player_id: actor.into(),
+                character_id: "noble".into(),
+            }),
+            target_player_ids: ids,
+            // A false chosen set has no corresponding true set. Never invent an unchosen answer.
+            computed_result: truth.then(|| choice.result.clone()),
+            delivered_result: choice.result.clone(),
+            delivery_context: DeliveryContext::Discretionary { reasons },
+        };
+        Ok((
+            if o.simulation_source.is_some() {
+                CustomActionResult::Simulation {
+                    information: Some(information),
+                    spent: false,
+                }
+            } else {
+                CustomActionResult::InformationDelivered {
+                    information,
+                    spent: false,
+                }
+            },
+            CustomFactChanges::default().with_audit(audit),
+        ))
+    }
+}
+impl ActionHandler for Noble {
+    fn action_ref(&self) -> &FirstNightActionRef {
+        &self.action_ref
+    }
+    fn required_occurrences(
+        &self,
+        c: &ActionContext<'_>,
+        _: &crate::state::FirstNightProgress,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        if c.night_number() > 1 {
+            self.candidates(c)
+        } else {
+            Ok(vec![])
+        }
+    }
+    fn project(&self, _: &ActionSpec, c: &ActionContext<'_>) -> Result<Vec<PhaseStep>, CoreError> {
+        self.candidates(c)?
+            .iter()
+            .map(|o| self.step(c, o))
+            .collect()
+    }
+    fn propose(
+        &self,
+        s: &ActionSpec,
+        c: &ActionContext<'_>,
+        o: &ActionOccurrence,
+        input: &StepInput,
+    ) -> Result<ActionEventDraft, CoreError> {
+        self.propose_input(
+            s,
+            c,
+            o,
+            &ActionInput {
+                input: input.clone(),
+                delivered_result: None,
+                registration_judgments: vec![],
+            },
+        )
+    }
+    fn propose_input(
+        &self,
+        _: &ActionSpec,
+        c: &ActionContext<'_>,
+        o: &ActionOccurrence,
+        input: &ActionInput,
+    ) -> Result<ActionEventDraft, CoreError> {
+        Ok(ActionEventDraft::Custom(CustomActionEventDraft {
+            step_id: o.step_id()?,
+            action_ref: self.action_ref.clone(),
+            ability_use: o.ability_use.clone(),
+            simulation_source: o.simulation_source.clone(),
+            follow_up_cause: o.follow_up_cause.clone(),
+            action_cause: o.action_cause.clone(),
+            input: input.input.clone(),
+            delivered_result: input.delivered_result.clone(),
+            registration_judgments: input.registration_judgments.clone(),
+            result: self.resolve(c, o, input, c.event_id)?.0,
+        }))
+    }
+    fn validate_event(
+        &self,
+        s: &ActionSpec,
+        c: &ActionContext<'_>,
+        o: &ActionOccurrence,
+        d: &ActionEventDraft,
+    ) -> Result<CustomFactChanges, CoreError> {
+        self.validate_event_with_id(s, c, o, d, c.event_id)
+    }
+    fn validate_event_with_id(
+        &self,
+        _: &ActionSpec,
+        c: &ActionContext<'_>,
+        o: &ActionOccurrence,
+        d: &ActionEventDraft,
+        event: &str,
+    ) -> Result<CustomFactChanges, CoreError> {
+        let ActionEventDraft::Custom(d) = d else {
+            return Err(invalid());
+        };
+        let (result, changes) = self.resolve(
+            c,
+            o,
+            &ActionInput {
+                input: d.input.clone(),
+                delivered_result: d.delivered_result.clone(),
+                registration_judgments: d.registration_judgments.clone(),
+            },
+            event,
+        )?;
+        if result != d.result {
+            return Err(invalid());
+        }
+        Ok(changes)
+    }
+}
+
+// https://wiki.bloodontheclocktower.com/Golem
+// Nomination usage belongs to the concrete ability, including an impaired use.
+fn golem_sources(f: &CustomGameFacts) -> impl Iterator<Item = &crate::model::AbilityUseRef> {
+    f.ability_provenance
+        .iter()
+        .map(|r| &r.ability_use)
+        .filter(|s| {
+            s.character_id == "golem"
+                && crate::effects::available(f, s)
+                && f.player(&s.owner_player_id).is_some_and(|p| p.alive)
+        })
+}
+pub(crate) fn golem_spent_nominator_ids(f: &CustomGameFacts) -> Vec<String> {
+    f.players
+        .iter()
+        .filter(|p| {
+            golem_sources(f).any(|s| {
+                s.owner_player_id == p.id && f.ability_uses.iter().any(|u| &u.ability_use == s)
+            })
+        })
+        .map(|p| p.id.clone())
+        .collect()
+}
+pub(crate) fn golem_nomination_options(
+    f: &CustomGameFacts,
+) -> Vec<crate::day::contracts::GolemNominationEffect> {
+    use crate::day::contracts::{GolemNominationEffect, GolemNominationOutcome as Outcome};
+    let mut options = vec![];
+    for source in golem_sources(f).filter(|s| !f.ability_uses.iter().any(|u| &u.ability_use == *s))
+    {
+        let mut impairments = vec![];
+        for effect in crate::effects::ability_impairments(f, source) {
+            if !impairments.contains(&effect.kind) {
+                impairments.push(effect.kind);
+            }
+        }
+        for target in &f.players {
+            let base = if !effective(f, source) {
+                Outcome::Impaired
+            } else if !target.alive {
+                Outcome::AlreadyDead
+            } else if super::character_kind(&target.actual_character)
+                == Some(crate::model::CharacterKind::Demon)
+            {
+                Outcome::Demon
+            } else if !crate::death::decide(f, crate::death::Attempt {
+                player_id: &target.id, execution: false, unpreventable: false,
+            }).died {
+                Outcome::Protected
+            } else {
+                Outcome::Death
+            };
+            options.push(GolemNominationEffect {
+                source: source.clone(),
+                target_player_id: target.id.clone(),
+                recluse_as_demon: false,
+                outcome: base,
+                ability_impairments: impairments.clone(),
+            });
+            if matches!(base, Outcome::Death | Outcome::Protected)
+                && super::registration_source(f, &target.id)
+                    .is_some_and(|s| s.character_id == "recluse")
+            {
+                options.push(GolemNominationEffect {
+                    source: source.clone(),
+                    target_player_id: target.id.clone(),
+                    recluse_as_demon: true,
+                    outcome: Outcome::RegisteredDemon,
+                    ability_impairments: impairments.clone(),
+                });
+            }
+        }
+    }
+    options
+}
+pub(crate) fn golem_nominate(
+    prior: &CustomGameFacts,
+    next: &mut CustomGameFacts,
+    event: &str,
+    nominator: &str,
+    nominee: &str,
+    recluse_as_demon: bool,
+) -> Result<Vec<crate::day::contracts::GolemNominationEffect>, CoreError> {
+    use crate::day::contracts::GolemNominationOutcome as Outcome;
+    let options = golem_nomination_options(prior);
+    let mut selected = vec![];
+    for source in golem_sources(prior) {
+        if source.owner_player_id != nominator {
+            continue;
+        }
+        let effect = options
+            .iter()
+            .find(|o| {
+                o.source == *source
+                    && o.target_player_id == nominee
+                    && o.recluse_as_demon == recluse_as_demon
+            })
+            .ok_or_else(invalid)?
+            .clone();
+        next.ability_uses.push(AbilityUseRecord {
+            source_event_id: event.into(),
+            ability_use: source.clone(),
+        });
+        // An impaired use is abnormal only when it actually prevented a death.
+        if effect.outcome == Outcome::Impaired
+            && prior.player(nominee).is_some_and(|p| {
+                p.alive
+                    && super::character_kind(&p.actual_character)
+                        != Some(crate::model::CharacterKind::Demon)
+            })
+            && crate::death::decide(prior, crate::death::Attempt {
+                player_id: nominee, execution: false, unpreventable: false,
+            }).died
+        {
+            let impairments = crate::effects::ability_impairments(prior, source);
+            let causes: Vec<_> = prior
+                .resolved_impairments
+                .iter()
+                .filter(|e| impairments.contains(&&e.impairment))
+                .map(|e| e.source_ability_use.clone())
+                .collect();
+            if !causes.is_empty() {
+                next.malfunction_audit.push(MalfunctionEvidence {
+                    event_id: event.into(),
+                    daytime_step_id: Some(crate::day::step_id(prior)?),
+                    subject_player_id: nominator.into(),
+                    occurrence: ActionOccurrence::from_parts(
+                        FirstNightActionRef::Character {
+                            character_id: "golem".into(),
+                            action_id: "nominate".into(),
+                        },
+                        Some(source.clone()),
+                        None,
+                        None,
+                    )?,
+                    outcome: MalfunctionOutcome::EffectFailure {
+                        effect: FailedEffect::GolemDeath,
+                    },
+                    causes,
+                    cause_details: super::sects_and_violets::impairment_details(prior, nominator),
+                });
+            }
+        }
+        selected.push(effect);
+    }
+    if recluse_as_demon && selected.is_empty() {
+        return Err(invalid());
+    }
+    Ok(selected)
 }

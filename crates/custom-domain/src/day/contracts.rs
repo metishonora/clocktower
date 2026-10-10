@@ -34,6 +34,8 @@ pub(crate) enum DayInput {
         nominee_id: String,
         #[serde(default)]
         spy_as_townsfolk: bool,
+        #[serde(default, skip_serializing_if = "is_false")]
+        recluse_as_demon: bool,
     },
     Vote {
         voter_ids: Vec<String>,
@@ -56,12 +58,18 @@ pub(crate) enum DayInput {
     ResolveConsequence {
         consequence_id: String,
         player_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        registration_judgments: Vec<crate::model::RegistrationJudgment>,
     },
     ConfirmGameEnd,
     EndGame {
         winning_alignment: Alignment,
     },
 }
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct DayCommand {
@@ -84,6 +92,8 @@ pub(crate) struct DayParticipant {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct DayOutcome {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) golem_effects: Vec<GolemNominationEffect>,
     pub(crate) stage: DayStage,
     pub(crate) participants: Vec<DayParticipant>,
     pub(crate) counted_voter_ids: Vec<String>,
@@ -109,6 +119,7 @@ pub(crate) struct NominationRecord {
     pub(crate) nominator_id: String,
     pub(crate) nominee_id: String,
     pub(crate) nomination_participants: Vec<DayParticipant>,
+    pub(crate) golem_effects: Vec<GolemNominationEffect>,
     pub(crate) vote_participants: Option<Vec<DayParticipant>>,
     #[serde(skip)]
     pub(crate) vote_event_id: Option<String>,
@@ -119,6 +130,8 @@ pub(crate) struct NominationRecord {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ExecutionRecord {
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub(crate) prevention: Option<crate::death::Prevention>,
     pub(crate) event_id: String,
     pub(crate) player_id: Option<String>,
     pub(crate) death_event_id: Option<String>,
@@ -167,6 +180,10 @@ impl DayProgress {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DayView {
+    pub(crate) execution_preview: Option<crate::characters::bad_moon_rising::ExecutionPreview>,
+    pub(crate) alignment_registration_options: Vec<crate::model::RegistrationJudgment>,
+    pub(crate) golem_nomination_options: Vec<GolemNominationEffect>,
+    pub(crate) golem_spent_nominator_ids: Vec<String>,
     pub(crate) forced_voter_ids: Vec<String>,
     pub(crate) vote_dependencies: Vec<DayVoteDependency>,
     pub(crate) townsfolk_registration_nominator_ids: Vec<String>,
@@ -257,6 +274,7 @@ pub(crate) enum DayDeathCause {
     Madness,
     Witch,
     Slayer,
+    Golem,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -306,4 +324,25 @@ pub(crate) struct DayMadness {
 pub(crate) struct DayVoteDependency {
     pub(crate) voter_id: String,
     pub(crate) required_voter_id: String,
+}
+
+/// Frozen nomination evidence and the matching read-only draft choices.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct GolemNominationEffect {
+    pub(crate) source: AbilityUseRef,
+    pub(crate) target_player_id: String,
+    pub(crate) recluse_as_demon: bool,
+    pub(crate) outcome: GolemNominationOutcome,
+    pub(crate) ability_impairments: Vec<crate::contracts::ImpairmentKind>,
+}
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum GolemNominationOutcome {
+    Death,
+    Protected,
+    Demon,
+    RegisteredDemon,
+    Impaired,
+    AlreadyDead,
 }

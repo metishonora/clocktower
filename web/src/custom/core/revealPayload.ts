@@ -24,6 +24,7 @@ export function proposalRevealPayload(proposal?: Proposal): RevealPayload | unde
 export function isRevealPayload(value: unknown): value is RevealPayload {
   if (!value || typeof value !== "object") return false;
   const payload = value as Record<string, unknown>;
+  if(payload.kind==='nobleInformation')return hasExactKeys(payload,['candidatePlayers','kind'])&&isRevealPlayers(payload.candidatePlayers,3);
   if(payload.kind==='preacherInformation')return hasExactKeys(payload,['kind','recipientPlayer'])&&isRevealPlayer(payload.recipientPlayer);
   if(payload.kind==='chambermaidInformation')return hasExactKeys(payload,['kind','targetPlayers','value'])&&isRevealPlayers(payload.targetPlayers,2)&&Number.isSafeInteger(payload.value)&&Number(payload.value)>=0;
   if(payload.kind==='marionetteInformation')return hasExactKeys(payload,['kind','marionettePlayer','recipientPlayer'])&&isRevealPlayer(payload.recipientPlayer)&&isRevealPlayer(payload.marionettePlayer);
@@ -111,7 +112,7 @@ export function isRoleInformationRevealPayload(value: unknown): value is RoleInf
       && typeof payload.hasDemon === "boolean" && isRevealPlayers(payload.targetPlayers, 2);
   }
   if (payload.kind === "characterInformation") {
-    return (payload.characterId === "undertaker" || payload.characterId === "ravenkeeper")
+    return (payload.characterId === "undertaker" || payload.characterId === "ravenkeeper" || payload.characterId === "grandmother")
       && characterIds.has(payload.revealedCharacterId as string)
       && isRevealPlayer(payload.targetPlayer)
       && hasExactKeys(payload, ["characterId", "kind", "revealedCharacterId", "targetPlayer"]);

@@ -9,6 +9,28 @@ pub(crate) use trouble_brewing::{
     registration_sources,
 };
 
+pub(crate) fn death_follow_up_rules() -> Vec<crate::death::FollowUpRule> {
+    #[cfg(feature = "custom-runtime-fixtures")]
+    {
+        vec![]
+    }
+    #[cfg(not(feature = "custom-runtime-fixtures"))]
+    {
+        vec![bad_moon_rising::grandmother_death]
+    }
+}
+
+pub(crate) fn death_protection_rules() -> Vec<crate::death::ProtectionRule> {
+    #[cfg(feature = "custom-runtime-fixtures")]
+    {
+        vec![]
+    }
+    #[cfg(not(feature = "custom-runtime-fixtures"))]
+    {
+        bad_moon_rising::death_protection_rules()
+    }
+}
+
 pub(crate) fn night_death_rules() -> Vec<crate::night_deaths::SourceRule> {
     #[cfg(feature = "custom-runtime-fixtures")]
     {
@@ -30,4 +52,26 @@ pub(crate) fn character_kind(id: &str) -> Option<crate::model::CharacterKind> {
 pub(crate) fn notifies_identity_change(result: &crate::contracts::CustomActionResult) -> bool {
     trouble_brewing::notifies_identity_change(result)
         || sects_and_violets::notifies_identity_change(result)
+}
+
+pub(crate) fn death_audit_rules() -> Vec<crate::death::AuditRule> {
+    #[cfg(feature = "custom-runtime-fixtures")]
+    {
+        vec![]
+    }
+    #[cfg(not(feature = "custom-runtime-fixtures"))]
+    {
+        vec![bad_moon_rising::death_audit]
+    }
+}
+
+pub(crate) fn death_consumption_rules() -> Vec<crate::death::ConsumptionRule> {
+    #[cfg(feature = "custom-runtime-fixtures")]
+    {
+        vec![]
+    }
+    #[cfg(not(feature = "custom-runtime-fixtures"))]
+    {
+        vec![bad_moon_rising::fool_death_consumption]
+    }
 }

@@ -21,6 +21,8 @@ pub(crate) struct CustomGameFacts {
     pub(crate) pixie_resolutions: Vec<crate::characters::carousel::PixieResolution>,
     pub(crate) canonical_event_index: Option<usize>,
     pub(crate) night_deaths: Vec<NightDeathRecord>,
+    pub(crate) death_resolutions: Vec<crate::death::Record>,
+    pub(crate) moonchild_choices: Vec<crate::characters::bad_moon_rising::MoonchildChoice>,
     pub(crate) monk_protections: Vec<crate::contracts::TargetAssignment>,
     pub(crate) day: Option<crate::day::contracts::DayProgress>,
     pub(crate) scarlet_day_reveals: Vec<crate::contracts::PendingIdentityReveal>,
@@ -140,8 +142,10 @@ pub(crate) enum MalfunctionOutcome {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FailedEffect {
+    GamblerDeath, MoonchildDeath, AssassinDeath, GrandmotherDeath, FoolProtection, DevilsAdvocateProtection,
     PreacherSuppression,
     NightwatchmanNotification,
+    GolemDeath,
     DemonDeath,
     PitHagCharacterChange,
     PoisonerPoison,

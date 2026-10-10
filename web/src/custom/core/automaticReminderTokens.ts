@@ -1,9 +1,12 @@
 // Presentation validation only; character handlers own generation and lifetime.
 export const automaticReminderPairs = new Set([
   'preacher:noAbility',
+  'grandmother:grandchild','fool:noAbility','assassin:noAbility','moonchild:diesTonight','devilsAdvocate:executionProtected',
+  'golem:noAbility',
   'marionette:isTheMarionette',
   'boffin:grantedAbility',
   'balloonist:know',
+  'noble:know',
   "nightwatchman:noAbility",
   "pixie:mad",
   "pixie:hasAbility",

@@ -15,7 +15,7 @@ export type ActionAdapter={
  acceptedInputs:readonly string[];
  selectionContract:'none'|'direct'|'information'|'setup';
  completionContract:{afterSelection:'confirm'|'edit';continuationEntry:'select'|'prepare'|'edit'};
- revealView:'team'|'tb'|'snv'|'identity'|'twin'|'madness'|'spy'|'none'|'learnedCharacter'|'learnedPlayer'|'chambermaid';
+ revealView:'team'|'tb'|'snv'|'identity'|'twin'|'madness'|'spy'|'none'|'learnedCharacter'|'learnedPlayer'|'chambermaid'|'noble';
  revealOpen:'preview'|'notification'|'result';
  closeDestination:'board'|'progress';
  cancellation:'discardInput';
@@ -27,6 +27,7 @@ export function actionAdapter(step:Pick<PhaseStep,'actionRef'>):ActionAdapter|un
 export function revealDisposition(adapter:ActionAdapter,payload:RevealPayload|undefined) {
  if(!payload)return 'none';
  const allowed:Record<ActionAdapter['revealView'],readonly string[]>={
+  noble:['nobleInformation'],
   chambermaid:['chambermaidInformation'],
   team:['minionInformation','demonInformation'],tb:['setupInformation','numericInformation','fortuneTellerInformation','characterInformation'],
   learnedCharacter:['learnedCharacter'],

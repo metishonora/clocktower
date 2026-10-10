@@ -53,6 +53,19 @@ Execution/death/consequence confirmations share a causal Undo unit. Canonical fi
 store the same events, and failed saves block further live actions until retry succeeds.
 The next-night transition expires day-limited effects; night action execution remains in #204.
 
+### Golem nominations
+
+Carousel owns Golem nomination eligibility, registration options and source-bound use.
+The day view projects typed target outcomes; the browser selects an option without
+calculating character rules. A nomination atomically records its Golem effects and any
+immediate death, then resumes voting after other triggered deaths/consequences and victory
+checks. All triggers observe the nomination prefix, including Witch and Virgin. These deaths
+share the existing participant snapshots, consequences and causal Undo path.
+The optional `recluseAsDemon` input and optional `golemEffects` evidence extend custom
+GameFile v5 without changing old event contents or schema version. Missing values retain
+the old contract. Real acquired abilities retain their own use history; unavailable grants
+impose no restriction, and simulated identities acquire no real Golem effect.
+
 ### Custom automatic reminders (#223)
 
 Automatic tokens are read-only projections, never reducer inputs or saved facts. The common
@@ -79,6 +92,26 @@ Production reminder handlers remain disabled in the isolated fixture runtime. Ne
 must be registered in their owning script module and tested for source and lifetime boundaries;
 adding a global post-processing token rule in `projection.rs`, day orchestration or TypeScript is
 not supported. GameFile/schema and confirmed events remain unchanged.
+
+## Custom death attempts and BMR (#271)
+
+`death.rs` dispatches registered protection, use consumption, death follow-ups and
+malfunction evidence. Character-specific policies remain in their script module.
+Demon attacks, executions, daytime ability deaths and scheduled night deaths query
+this boundary. Existing Soldier/Monk/Mayor handling runs before the shared attempt;
+Assassin declares an unpreventable attempt. Each actual death retains its own
+ability source while a Grandmother chain shares the initiating event's Undo unit.
+Fool consumption survives both prevention and an actual first death. Golem's
+nomination preview queries this same boundary; its `protected` result still consumes
+the attempted Golem use and the applicable protection. Actual nomination deaths
+create the same daytime consequences and causal Undo unit as other day deaths.
+
+BMR characters own the projected execution preview and Moonchild scheduled death.
+The Moonchild's public choice occurs immediately after announcement/confirmation;
+its alignment judgment is frozen then, and its ability is checked at night.
+`resolveConsequence` accepts optional `registrationJudgments` (default/omitted empty)
+with GameFile v5 retained. Preview/outcome ledgers and reminders are read-only
+projections, never UI-authored rule state. See [#271 acceptance](fixtures/acceptance/issue271/README.md).
 
 ## Independent official and custom runtimes (#207)
 
@@ -114,6 +147,15 @@ ability and Marionette notifications use the existing saved recipient-by-recipie
 continuation, not extra scheduler phases. Balloonist setup discretion and the
 initial Boffin grant are canonical setup inputs; Marionette's believed role remains
 separate from its real identity. UI does not compute eligibility or Jinx results.
+
+Noble delivers one set of three distinct players per concrete ability, including on
+its first night after acquisition. Core projects legal choices and read-only
+`alignmentOptions` for Storyteller registration controls; the UI never counts
+alignments or decides whether a set is valid. The additive `playerGroup` information
+result records exactly three IDs in existing confirmed information events. Its
+`nobleInformation` reveal contains only frozen seat/name identities. GameFile stays
+at version 5; existing files omit the new result and remain valid. Registration,
+impairment, Vortox, reminders, history and Undo share the canonical event path.
 
 Night steps and overview entries expose Core-derived `abilityImpairments` for the
 acting ability, not its owner's unrelated impairments. This presentation metadata
@@ -175,7 +217,7 @@ The UI receives read-only per-target evidence and Core-owned numeric delivery co
 Product-specific Jinx registrations retain their issue provenance internally and share the
 ordinary Jinx presentation; Boffin-origin acquisition restrictions follow nested grant provenance.
 
-Production registers 23 ordered TB/SnV/Carousel/BMR character actions and ten additional preparation or optional actions; fixture builds separately register only system
+Production registers ordered TB/SnV/Carousel/BMR character actions and additional preparation or optional actions; fixture builds separately register only system
 and test handlers. `scripts/check-custom-boundaries.mjs` rejects imports across the boundary,
 including indirect Cargo/TypeScript and source-include dependencies. Run its negative tests with
 `node --test scripts/check-custom-boundaries.test.mjs`.
@@ -1176,7 +1218,7 @@ precedence. Replay alone admits an old leading Setup-preparation prefix, validat
 source, owner, input and historical snapshot. New proposals cannot use that compatibility path.
 
 `custom/grimoire/firstNightController` owns drafts, raw number text, selection handoff, proposals
-and reveal state. `grimoire-custom/actions/registry` explicitly maps all 29 supported action references to input, selection, completion, reveal and cancellation adapters without scheduling them. `grimoire-custom/taskPresentationModel` adapts that state and Core
+and reveal state. `grimoire-custom/actions/registry` explicitly maps all supported action references to input, selection, completion, reveal and cancellation adapters without scheduling them. `grimoire-custom/taskPresentationModel` adapts that state and Core
 projections to identity, actor, ability, stage, editor, result, warnings and actions. The task and
 board consume this model. Missing candidate contracts block confirmation instead of creating
 raw fallback forms. Setup choices carry the correct reminder owner and registration provenance;

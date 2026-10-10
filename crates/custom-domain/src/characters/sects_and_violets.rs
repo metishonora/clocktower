@@ -805,7 +805,8 @@ impl SnvHandler {
             }
             let source = occurrence.ability_use.as_ref().ok_or_else(invalid)?;
             let executed = execute && effective(facts, source);
-            let died = executed && actor.alive;
+            let death = (executed && actor.alive).then(|| crate::death::decide(facts, crate::death::Attempt { player_id: &actor.id, execution: true, unpreventable: false }));
+            let died = death.as_ref().is_some_and(|d| d.died);
             let causes = impairment_causes(facts, &actor.id);
             let audit = if execute && !executed && !causes.is_empty() {
                 vec![MalfunctionEvidence {
@@ -844,17 +845,8 @@ impl SnvHandler {
                     died,
                 },
                 CustomFactChanges::default()
-                    .with_execution(
-                        if died {
-                            Some(crate::event::PlayerLifeChange {
-                                player_id: actor.id.clone(),
-                                alive: false,
-                            })
-                        } else {
-                            None
-                        },
-                        end,
-                    )
+                    .with_execution(None, end)
+                    .with_resolved_deaths(crate::death::NightResolution { unpreventable_player_ids:vec![], outcomes: death.into_iter().collect(), sources: vec![(actor.id.clone(), occurrence.clone())] })
                     .with_audit(audit),
             ));
         }
@@ -2097,6 +2089,7 @@ impl SnvHandler {
                     None
                 };
                 prompt.target_checks.push(TargetInformationCheck {
+                    alignment_options: vec![],
                     number_constraint: None,
                     wake_audit: vec![],
                     fixed_character_id,
@@ -2164,10 +2157,18 @@ fn mathematician_audit(
             }
             MalfunctionOutcome::EffectFailure { effect } => AbnormalAbilityOutcome::EffectFailure {
                 effect: match effect {
+                    FailedEffect::GamblerDeath => AbnormalAbilityEffect::GamblerDeath,
+                    FailedEffect::MoonchildDeath => AbnormalAbilityEffect::MoonchildDeath,
+                    FailedEffect::AssassinDeath => AbnormalAbilityEffect::AssassinDeath,
+                    FailedEffect::GrandmotherDeath => AbnormalAbilityEffect::GrandmotherDeath,
+                    FailedEffect::FoolProtection => AbnormalAbilityEffect::FoolProtection,
+                    FailedEffect::DevilsAdvocateProtection => AbnormalAbilityEffect::DevilsAdvocateProtection,
+
                     FailedEffect::PreacherSuppression => AbnormalAbilityEffect::PreacherSuppression,
                     FailedEffect::NightwatchmanNotification => {
                         AbnormalAbilityEffect::NightwatchmanNotification
                     }
+                    FailedEffect::GolemDeath => AbnormalAbilityEffect::GolemDeath,
                     FailedEffect::DemonDeath => AbnormalAbilityEffect::DemonDeath,
                     FailedEffect::PitHagCharacterChange => {
                         AbnormalAbilityEffect::PitHagCharacterChange
@@ -2653,26 +2654,6 @@ pub(crate) fn day_record_malfunctions(
                 }
             }
         }
-        DayInput::ConfirmDeath => {
-            if let Some(death) = prior.day.as_ref().and_then(|d| d.pending_death.as_ref()) {
-                for r in &prior.ability_provenance {
-                    if r.ability_use.character_id == "sweetheart"
-                        && r.ability_use.owner_player_id == death.player_id
-                        && current_ability_instance(prior, &r.ability_use)
-                        && crate::characters::carousel::grant_enabled(prior, &r.ability_use)
-                        && crate::effects::ability_impaired(prior, &r.ability_use)
-                    {
-                        failures.push((
-                            r.ability_use.clone(),
-                            MalfunctionOutcome::EffectFailure {
-                                effect: FailedEffect::SweetheartDrunkenness,
-                            },
-                            false,
-                        ));
-                    }
-                }
-            }
-        }
         DayInput::ConfirmExecution {}
             if crate::day::view(prior).is_some_and(|d| d.execution_candidate_id.is_none()) =>
         {
@@ -2695,6 +2676,22 @@ pub(crate) fn day_record_malfunctions(
             }
         }
         _ => {}
+    }
+    // Immediate nomination deaths use the same frozen impairment evidence as
+    // separately confirmed deaths.
+    for r in &prior.ability_provenance {
+        let source = &r.ability_use;
+        if source.character_id == "sweetheart"
+            && prior.player(&source.owner_player_id).is_some_and(|p| p.alive)
+            && next.player(&source.owner_player_id).is_some_and(|p| !p.alive)
+            && current_ability_instance(prior, source)
+            && crate::characters::carousel::grant_enabled(prior, source)
+            && crate::effects::ability_impaired(prior, source)
+        {
+            failures.push((source.clone(), MalfunctionOutcome::EffectFailure {
+                effect: FailedEffect::SweetheartDrunkenness,
+            }, false));
+        }
     }
     for (source, outcome, information) in failures {
         let mut causes = impairment_causes(prior, &source.owner_player_id);
@@ -3344,6 +3341,7 @@ impl SnvNightHandler {
                 target_checks: computed
                     .map(|computed_result| {
                         vec![TargetInformationCheck {
+                            alignment_options: vec![],
                             number_constraint: None,
                             wake_audit: vec![],
                             fixed_character_id: None,
@@ -3605,21 +3603,10 @@ impl SnvNightHandler {
             {
                 return Err(invalid());
             }
-            return Ok((
-                CustomActionResult::ArbitraryDeaths {
-                    player_ids: targets.clone(),
-                },
-                CustomFactChanges::default().with_life_changes(
-                    targets
-                        .into_iter()
-                        .map(|player_id| crate::event::PlayerLifeChange {
-                            player_id,
-                            alive: false,
-                        })
-                        .collect(),
-                ),
-            ));
+            let deaths = crate::death::night(facts, o, &targets, false);
+            return Ok((CustomActionResult::ArbitraryDeaths { player_ids: deaths.deaths() }, CustomFactChanges::default().with_resolved_deaths(deaths)));
         }
+
         if self.id() == "choosePoison" {
             let Some(ActionCause::Effect {
                 effect_event_id, ..
@@ -3779,15 +3766,13 @@ impl SnvNightHandler {
                 ability_use: source.clone(),
             });
         }
-        let changes = CustomFactChanges::resolved(identities.clone(), vec![], snv)
-            .with_life_changes(
-                dead.iter()
-                    .map(|id| crate::event::PlayerLifeChange {
-                        player_id: id.clone(),
-                        alive: false,
-                    })
-                    .collect(),
-            );
+        let deaths = crate::death::night(facts, o, &dead.clone().into_iter().collect::<Vec<_>>(), false);
+        if dead.is_some() && deaths.deaths().is_empty() {
+            dead = None;
+            identities.clear();
+            snv.spent = None;
+        }
+        let changes = CustomFactChanges::resolved(identities.clone(), vec![], snv).with_resolved_deaths(deaths);
         Ok((
             CustomActionResult::NightAttack {
                 target_player_id: target.id.clone(),
@@ -4169,9 +4154,6 @@ pub(crate) fn night_impairment_failure(
     event_id: &str,
     effect: FailedEffect,
 ) -> Vec<MalfunctionEvidence> {
-    let Some(actor) = o.actor_player_id() else {
-        return vec![];
-    };
     let mut frozen;
     let facts = if let Some(ActionCause::Death { death_event_id }) = &o.action_cause {
         if let Some(death) = facts
@@ -4187,6 +4169,19 @@ pub(crate) fn night_impairment_failure(
         }
     } else {
         facts
+    };
+    current_night_impairment_failure(facts, o, event_id, effect)
+}
+
+// Select the impairment facts independently of the canonical action provenance.
+pub(crate) fn current_night_impairment_failure(
+    facts: &CustomGameFacts,
+    o: &ActionOccurrence,
+    event_id: &str,
+    effect: FailedEffect,
+) -> Vec<MalfunctionEvidence> {
+    let Some(actor) = o.actor_player_id() else {
+        return vec![];
     };
     let mut causes = impairment_causes(facts, actor);
     if let Ok(jinxes) = crate::jinxes::production() {
@@ -4379,6 +4374,7 @@ pub(crate) fn arbitrary_death_rule() -> crate::night_deaths::SourceRule {
             action("noDashii", "attackPlayer"),
             action("vigormortis", "attackPlayer"),
             action("vortox", "attackPlayer"),
+            action("assassin", "killPlayer"),
         ],
         sources: arbitrary_death_sources,
     }

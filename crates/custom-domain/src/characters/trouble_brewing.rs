@@ -965,6 +965,7 @@ impl TbHandler {
             }
             prompt.computed_result = Some(actual.clone());
             prompt.target_checks.push(TargetInformationCheck {
+                alignment_options: vec![],
                 number_constraint: None,
                 wake_audit: vec![],
                 fixed_character_id: None,
@@ -1022,6 +1023,7 @@ impl TbHandler {
                     }
                 }
                 prompt.target_checks.push(TargetInformationCheck {
+                    alignment_options: vec![],
                     number_constraint: None,
                     wake_audit: vec![],
                     fixed_character_id: None,
@@ -1183,6 +1185,7 @@ impl TbHandler {
             }
             if self.character() == "fortuneTeller" {
                 prompt.target_checks.push(TargetInformationCheck {
+                    alignment_options: vec![],
                     number_constraint: None,
                     wake_audit: vec![],
                     fixed_character_id: None,
@@ -1715,7 +1718,9 @@ impl TbHandler {
                     }),
                 ));
             }
-            let killed = demon_attack_target(facts, source, player, &fields.mayor_decision)?;
+            let attempted = demon_attack_target(facts, source, player, &fields.mayor_decision)?;
+            let deaths = crate::death::night(facts, o, &attempted.into_iter().collect::<Vec<_>>(), false);
+            let killed = deaths.deaths().first().cloned();
             let mut identities = vec![];
             let mut eligible: Vec<_> = facts
                 .players
@@ -1781,15 +1786,7 @@ impl TbHandler {
                             vec![]
                         },
                     )
-                    .with_life_changes(
-                        killed
-                            .into_iter()
-                            .map(|player_id| crate::event::PlayerLifeChange {
-                                player_id,
-                                alive: false,
-                            })
-                            .collect(),
-                    ),
+                    .with_resolved_deaths(deaths),
             ));
         }
         if self.id() == regular_id(self.character()) {
@@ -2996,8 +2993,11 @@ pub(crate) fn enrich_attack_input(
                                 .collect(),
                         });
                     }
-                    if killed.ok().flatten().as_deref() == Some(source.owner_player_id.as_str())
-                        && target.id == source.owner_player_id
+                    if killed.ok().flatten().is_some_and(|id| {
+                        id == source.owner_player_id && crate::death::decide(facts, crate::death::Attempt {
+                            player_id: &id, execution: false, unpreventable: false,
+                        }).died
+                    }) && target.id == source.owner_player_id
                     {
                         successor_player_ids = successors
                             .iter()
