@@ -1,3 +1,4 @@
+import {isDeathOutcomes} from './customActionResultValidationBase.js';
 import { automaticReminderPairs } from "./automaticReminderTokens.js";
 import {isDayConfirmed,isDayView} from './dayValidation.js';
 import { isActionCause, isGuidanceCause, isCustomGameEnd } from "./customActionResultValidationBase.js";
@@ -517,7 +518,7 @@ function isMathematicianAuditOutcome(value: unknown): boolean {
       "poisonerPoison", "butlerMaster", "mutantExecution", "philosopherAcquisition", "witchCurse", "cerenovusMadness", "evilTwinRelationship",
       "snakeCharmerSwap", "witchDeath", "sweetheartDrunkenness", "demonDeath",
       "pitHagCharacterChange", "noDashiiPoison", "vigormortisOngoingEffect",
-      "vortoxFalseInformation", "vortoxExecution", "nightwatchmanNotification", "preacherSuppression",
+      "vortoxFalseInformation", "vortoxExecution", "golemDeath","slayerDeath","gamblerDeath","moonchildDeath","assassinDeath","grandmotherDeath","foolProtection","devilsAdvocateProtection", "nightwatchmanNotification", "preacherSuppression",
     ].includes(String(value.effect));
 }
 
@@ -576,11 +577,16 @@ function isInformationResult(value: unknown): value is InformationResult {
       return typeof value.value === "boolean";
     case "character":
       return isKnownCharacter(value.characterId);
+    case "playerCharacter":
+      return typeof value.playerId === "string" && value.playerId.length > 0 && isKnownCharacter(value.characterId);
     case "characterPair":
       return Array.isArray(value.characterIds) && value.characterIds.length === 2
         && value.characterIds.every(isKnownCharacter);
     case "player":
       return typeof value.playerId === "string";
+    case "playerGroup":
+      return Array.isArray(value.playerIds) && value.playerIds.length === 3
+        && value.playerIds.every(isString) && new Set(value.playerIds).size === 3;
     case "playerPair":
       return Array.isArray(value.playerIds) && value.playerIds.length === 2
         && value.playerIds.every(isString) && new Set(value.playerIds).size === 2;
@@ -816,15 +822,16 @@ function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
 function isTargetCheck(value: unknown): boolean {
   return (
     isRecord(value) &&
-    hasExactKeys(value, ["targetPlayerIds", "computedResult", "choices", ...(value.fixedCharacterId === undefined ? [] : ["fixedCharacterId"]), ...(value.numberConstraint===undefined?[]:['numberConstraint']), ...(value.wakeAudit===undefined?[]:['wakeAudit'])]) &&
+    hasExactKeys(value, ["targetPlayerIds", "computedResult", "choices", ...(value.fixedCharacterId === undefined ? [] : ["fixedCharacterId"]), ...(value.numberConstraint===undefined?[]:['numberConstraint']), ...(value.wakeAudit===undefined?[]:['wakeAudit']), ...(value.alignmentOptions===undefined?[]:['alignmentOptions'])]) &&
     (value.numberConstraint===undefined||isNumberConstraint(value.numberConstraint)) &&
     (value.wakeAudit===undefined||Array.isArray(value.wakeAudit)&&value.wakeAudit.every(isWakeAudit)) &&
+    (value.alignmentOptions===undefined||Array.isArray(value.alignmentOptions)&&value.alignmentOptions.length>0&&value.alignmentOptions.every(isAlignmentInformationOption)) &&
     (value.fixedCharacterId === undefined || isKnownCharacter(value.fixedCharacterId)) &&
     Array.isArray(value.targetPlayerIds) &&
     value.targetPlayerIds.every(isString) &&
     isInformationResult(value.computedResult) &&
     Array.isArray(value.choices) &&
-    (value.numberConstraint===undefined?value.choices.length>0:value.choices.length===0) &&
+    (value.numberConstraint===undefined?value.alignmentOptions!==undefined||value.choices.length>0:value.choices.length===0) &&
     value.choices.every((choice) =>
       isRecord(choice) &&
       hasExactKeys(choice, ["result", "isComputed", "registrationJudgments"]) &&
@@ -835,6 +842,9 @@ function isTargetCheck(value: unknown): boolean {
     )
   );
 }
+function isAlignmentInformationOption(value:unknown):boolean {
+ return isRecord(value)&&hasExactKeys(value,['registrationJudgments','evilCount'])&&Array.isArray(value.registrationJudgments)&&value.registrationJudgments.every(isRegistrationJudgment)&&Number.isInteger(value.evilCount)&&Number(value.evilCount)>=0&&Number(value.evilCount)<=3;
+}
 function isWakeAudit(value:unknown):boolean {
  return isRecord(value)&&hasExactKeys(value,['playerId','woke','evidence'])&&nonempty(value.playerId)&&typeof value.woke==='boolean'&&Array.isArray(value.evidence)&&value.woke===(value.evidence.length>0)&&value.evidence.every(e=>isRecord(e)&&hasExactKeys(e,['characterId','eventId','forecast'])&&isKnownCharacter(e.characterId)&&typeof e.forecast==='boolean'&&(e.forecast?e.eventId===null:nonempty(e.eventId)));
 }
@@ -844,8 +854,17 @@ function isTargetAssignment(value: unknown): boolean {
 function isPreparationRecord(value: unknown): boolean {
   return isRecord(value) && hasOnlyKeys(value,["sourceEventId","actionRef","abilityUse","simulationSource","result","registrationJudgments"]) && nonempty(value.sourceEventId) && isFirstNightActionRef(value.actionRef) && ((value.abilityUse !== undefined && isAbilityUseRef(value.abilityUse) && value.simulationSource === undefined) || (value.abilityUse === undefined && isSimulationSource(value.simulationSource))) && validateCustomActionResult(value.result,isKnownCharacter,isSpyGrimoirePlayer) && Array.isArray(value.registrationJudgments) && value.registrationJudgments.every(isRegistrationJudgment);
 }
+function isDeathExplanation(value: unknown): boolean {
+  if(!isRecord(value)||!hasExactKeys(value,['playerId','reason'])||!nonempty(value.playerId)||!isRecord(value.reason))return false;
+  const r=value.reason;
+  if(r.kind==='alreadyDead')return hasExactKeys(r,['kind']);
+  if(['protection','bypassedProtection','redirected'].includes(String(r.kind)))return hasExactKeys(r,['kind','source'])&&isAbilityUseRef(r.source);
+  return r.kind==='impaired'&&hasExactKeys(r,['kind','source','impairments'])&&isAbilityUseRef(r.source)&&Array.isArray(r.impairments)&&r.impairments.every(k=>k==='drunk'||k==='poisoned');
+}
 function isRuleState(value: unknown): boolean {
-  return isRecord(value) && hasOnlyKeys(value, ["automaticReminders", "unannouncedNightDeathPlayerIds", "activeImpairments", "abilityGrants", "abilityUses", "philosopherChoices", "witchCurses", "twinRelationships", "preparations", "poisonerChoices", "masterChoices", "guidance"]) &&
+  return isRecord(value) && hasOnlyKeys(value, ["deathResolutions", "scheduledDeaths", "automaticReminders", "unannouncedNightDeathPlayerIds", "activeImpairments", "abilityGrants", "abilityUses", "philosopherChoices", "witchCurses", "twinRelationships", "preparations", "poisonerChoices", "masterChoices", "guidance"]) &&
+    optionalList(value.deathResolutions,v=>isRecord(v)&&hasOnlyKeys(v,['eventId','outcomes','explanations'])&&isString(v.eventId)&&isDeathOutcomes(v.outcomes,isKnownCharacter)&&optionalList(v.explanations,isDeathExplanation)) &&
+    optionalList(value.scheduledDeaths,v=>isRecord(v)&&hasExactKeys(v,['source','eventId','targetPlayerId','chosenGood','night','preview'])&&isAbilityUseRef(v.source)&&isString(v.eventId)&&isString(v.targetPlayerId)&&typeof v.chosenGood==='boolean'&&Number.isSafeInteger(v.night)&&(v.preview===null||validateCustomActionResult(v.preview,isKnownCharacter,isSpyGrimoirePlayer))) &&
     optionalList(value.automaticReminders, isAutomaticReminder) &&
     Array.isArray(value.unannouncedNightDeathPlayerIds) && value.unannouncedNightDeathPlayerIds.every(isString) &&
     optionalList(value.activeImpairments, isActiveImpairment) && optionalList(value.abilityGrants, isAbilityGrant) &&

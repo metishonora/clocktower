@@ -5,7 +5,7 @@ use crate::{
     characters::ResolvedScriptContext,
     contracts::{CustomActionResult, FirstNightActionRef},
     error::{CoreError, ErrorKind},
-    event::{CustomFactChanges, PlayerLifeChange},
+    event::CustomFactChanges,
     model::{AbilityUseRef, StepInput, StepInputFields},
     state::{ConfirmedActionFact, CustomGameFacts},
 };
@@ -71,22 +71,13 @@ pub(crate) fn resolve(
     {
         return Err(invalid());
     }
+    let deaths = crate::death::night(facts, &source.occurrence, &targets, false);
     Ok((
         CustomActionResult::NightDeathsResolved {
-            player_ids: targets.clone(),
+            player_ids: deaths.deaths(),
             source_event_ids: sources.iter().map(|s| s.event_id.clone()).collect(),
         },
-        CustomFactChanges::default()
-            .with_death_source(source.occurrence.clone())
-            .with_life_changes(
-                targets
-                    .into_iter()
-                    .map(|player_id| PlayerLifeChange {
-                        player_id,
-                        alive: false,
-                    })
-                    .collect(),
-            ),
+        CustomFactChanges::default().with_resolved_deaths(deaths),
     ))
 }
 

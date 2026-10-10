@@ -1,5 +1,5 @@
 import type {DayConfirmed,DayView} from './dayTypes.js';
-import {isCustomGameEnd} from './customActionResultValidationBase.js';
+import {isCustomGameEnd,isDeathOutcomes} from './customActionResultValidationBase.js';
 const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const keys=(v:Record<string,unknown>, k:string[])=>Object.keys(v).length===k.length&&k.every(key=>key in v);
 const id=(v:unknown):v is string=>typeof v==='string'&&v.trim().length>0;
@@ -26,13 +26,13 @@ function input(v:unknown):boolean {
   if(!obj(v))return false;
   switch(v.kind){
     case 'advance':case 'closeNominations':case 'confirmDeath':case 'confirmExecution':case 'beginNight':case 'confirmGameEnd':return keys(v,['kind']);
-    case 'nominate':return keys(v,['kind','nominatorId','nomineeId','spyAsTownsfolk'])&&id(v.nominatorId)&&id(v.nomineeId)&&bool(v.spyAsTownsfolk);
+    case 'nominate':return keys(v,['kind','nominatorId','nomineeId','spyAsTownsfolk',...(v.recluseAsDemon===undefined?[]:['recluseAsDemon'])])&&id(v.nominatorId)&&id(v.nomineeId)&&bool(v.spyAsTownsfolk)&&(v.recluseAsDemon===undefined||bool(v.recluseAsDemon));
     case 'vote':return keys(v,['kind','voterIds'])&&ids(v.voterIds);
     case 'endGame':return keys(v,['kind','winningAlignment'])&&alignment(v.winningAlignment);
     case 'useAbility':return keys(v,['kind','actionId','record'])&&id(v.actionId)&&abilityInput(v.record);
     case 'checkMadness':return keys(v,['kind','assignmentId','violation'])&&id(v.assignmentId)&&bool(v.violation);
     case 'executeMadness':return keys(v,['kind','assignmentId'])&&id(v.assignmentId);
-    case 'resolveConsequence':return keys(v,['kind','consequenceId','playerId'])&&id(v.consequenceId)&&optionalId(v.playerId);
+    case 'resolveConsequence':return keys(v,['kind','consequenceId','playerId',...(v.registrationJudgments===undefined?[]:['registrationJudgments'])])&&(v.registrationJudgments===undefined||list(v.registrationJudgments,alignmentJudgment))&&id(v.consequenceId)&&optionalId(v.playerId);
     default:return false;
   }
 }
@@ -40,7 +40,7 @@ function participant(p:unknown,check:Validators):boolean{
  return obj(p)&&keys(p,['playerId','characterId','alignment','characterKind','alive','ghostVoteUsed','abilities','impairments'])&&id(p.playerId)&&check.character(p.characterId)&&alignment(p.alignment)&&['Townsfolk','Outsider','Minion','Demon'].includes(p.characterKind as string)&&bool(p.alive)&&bool(p.ghostVoteUsed)&&list(p.abilities,check.ability)&&list(p.impairments,check.impairment);
 }
 const participants=(v:unknown,c:Validators)=>list(v,p=>participant(p,c));
-function pendingDeath(v:unknown,c:Validators):boolean{return obj(v)&&keys(v,['playerId','cause','source','rootEventId','resumeStage'])&&id(v.playerId)&&['execution','virgin','madness','witch','slayer'].includes(v.cause as string)&&(v.source===null||c.ability(v.source))&&id(v.rootEventId)&&stages.includes(v.resumeStage as string);}
+function pendingDeath(v:unknown,c:Validators):boolean{return obj(v)&&keys(v,['playerId','cause','source','rootEventId','resumeStage'])&&id(v.playerId)&&['execution','virgin','madness','witch','slayer','golem'].includes(v.cause as string)&&(v.source===null||c.ability(v.source))&&id(v.rootEventId)&&stages.includes(v.resumeStage as string);}
 function consequence(v:unknown,c:Validators):boolean{return obj(v)&&keys(v,['id','deathEventId','source','impairedAtDeath','alignmentAtDeath','resolved','targetPlayerId'])&&id(v.id)&&id(v.deathEventId)&&c.ability(v.source)&&bool(v.impairedAtDeath)&&alignment(v.alignmentAtDeath)&&bool(v.resolved)&&optionalId(v.targetPlayerId);}
 function action(v:unknown,c:Validators):boolean{return obj(v)&&keys(v,['id','actorPlayerId','characterId','abilityUse','simulationSource','effective','impaired','vortox'])&&id(v.id)&&id(v.actorPlayerId)&&c.character(v.characterId)&&((v.abilityUse===null&&c.simulation(v.simulationSource))||(c.ability(v.abilityUse)&&v.simulationSource===null))&&[v.effective,v.impaired,v.vortox].every(bool);}
 function record(v:unknown,c:Validators):boolean{return obj(v)&&keys(v,['eventId','day','action','record'])&&id(v.eventId)&&integer(v.day)&&Number(v.day)>0&&action(v.action,c)&&abilityInput(v.record);}
@@ -49,14 +49,25 @@ function pending(v:Record<string,unknown>,c:Validators):boolean{return (v.pendin
 export function isDayConfirmed(v:unknown,check:Validators):v is DayConfirmed {
   if(!obj(v)||!keys(v,['stepId','day','input','result'])||!id(v.stepId)||!integer(v.day)||Number(v.day)<1||!input(v.input)||!obj(v.result))return false;
   const r=v.result;
-  return keys(r,['stage','participants','countedVoterIds','ghostVoteSpentPlayerIds','deathPlayerIds','abilityRecord','pendingDeath','pendingGameEnd','consequences'])&&stages.includes(r.stage as string)&&participants(r.participants,check)&&ids(r.countedVoterIds)&&ids(r.ghostVoteSpentPlayerIds)&&ids(r.deathPlayerIds)&&(r.abilityRecord===null||record(r.abilityRecord,check))&&pending(r,check);
+  return (r.golemEffects===undefined||list(r.golemEffects,e=>golemEffect(e,check)))&&keys(r,[...(r.golemEffects===undefined?[]:['golemEffects']),'stage','participants','countedVoterIds','ghostVoteSpentPlayerIds','deathPlayerIds','abilityRecord','pendingDeath','pendingGameEnd','consequences'])&&stages.includes(r.stage as string)&&participants(r.participants,check)&&ids(r.countedVoterIds)&&ids(r.ghostVoteSpentPlayerIds)&&ids(r.deathPlayerIds)&&(r.abilityRecord===null||record(r.abilityRecord,check))&&pending(r,check);
 }
 export function isDayView(v:unknown,check:Validators):v is DayView {
-  if(!obj(v)||!keys(v,['forcedVoterIds','voteDependencies','townsfolkRegistrationNominatorIds','firstNominationTargetIds','demonRegistrationTargetIds','day','stage','stepId','nominations','execution','eligibleNominatorIds','eligibleNomineeIds','eligibleVoterIds','executionVoteThreshold','highestVoteCount','executionCandidateId','availableActions','abilityRecords','madness','pendingDeath','pendingGameEnd','consequences','deaths']))return false;
+  if(!obj(v)||!keys(v,[...(v.executionPreview===undefined?[]:['executionPreview']),...(v.alignmentRegistrationOptions===undefined?[]:['alignmentRegistrationOptions']),'golemNominationOptions','golemSpentNominatorIds','forcedVoterIds','voteDependencies','townsfolkRegistrationNominatorIds','firstNominationTargetIds','demonRegistrationTargetIds','day','stage','stepId','nominations','execution','eligibleNominatorIds','eligibleNomineeIds','eligibleVoterIds','executionVoteThreshold','highestVoteCount','executionCandidateId','availableActions','abilityRecords','madness','pendingDeath','pendingGameEnd','consequences','deaths']))return false;
+  if(v.executionPreview!==undefined&&v.executionPreview!==null&&(!obj(v.executionPreview)||!keys(v.executionPreview,['outcome','effects'])||!isDeathOutcomes([v.executionPreview.outcome],(v):v is string=>typeof v==='string'&&check.character(v))||!list(v.executionPreview.effects,e=>obj(e)&&keys(e,['source','spent'])&&check.ability(e.source)&&bool(e.spent))))return false;
+  if(v.alignmentRegistrationOptions!==undefined&&!list(v.alignmentRegistrationOptions,alignmentJudgment))return false;
   const forced=v.forcedVoterIds,eligible=v.eligibleVoterIds;
   if(!ids(forced)||!ids(eligible)||!forced.every(id=>eligible.includes(id)))return false;
   const e=v.execution;
-  return ids(v.townsfolkRegistrationNominatorIds)&&ids(v.firstNominationTargetIds)&&ids(v.demonRegistrationTargetIds)&&list(v.voteDependencies,d=>obj(d)&&keys(d,['voterId','requiredVoterId'])&&id(d.voterId)&&id(d.requiredVoterId))&&integer(v.day)&&Number(v.day)>0&&stages.includes(v.stage as string)&&id(v.stepId)&&ids(v.eligibleNominatorIds)&&ids(v.eligibleNomineeIds)&&ids(v.eligibleVoterIds)&&integer(v.executionVoteThreshold)&&integer(v.highestVoteCount)&&optionalId(v.executionCandidateId)&&pending(v,check)&&list(v.availableActions,a=>action(a,check))&&list(v.abilityRecords,r=>record(r,check))&&list(v.madness,m=>madness(m,check))&&list(v.deaths,d=>obj(d)&&keys(d,['eventId','day','cause','participant'])&&id(d.eventId)&&integer(d.day)&&Number(d.day)>0&&pendingDeath(d.cause,check)&&participant(d.participant,check))&&
-    (e===null||(obj(e)&&keys(e,['eventId','playerId','deathEventId','died'])&&id(e.eventId)&&optionalId(e.playerId)&&optionalId(e.deathEventId)&&bool(e.died)))&&
-    Array.isArray(v.nominations)&&v.nominations.every(n=>obj(n)&&keys(n,['eventId','nominatorId','nomineeId','nominationParticipants','voteParticipants','voterIds','countedVoterIds','ghostVoteSpentPlayerIds'])&&id(n.eventId)&&id(n.nominatorId)&&id(n.nomineeId)&&participants(n.nominationParticipants,check)&&(n.voteParticipants===null||participants(n.voteParticipants,check))&&(n.voterIds===null||ids(n.voterIds))&&(n.countedVoterIds===null||ids(n.countedVoterIds))&&ids(n.ghostVoteSpentPlayerIds));
+  return list(v.golemNominationOptions,e=>golemEffect(e,check))&&ids(v.golemSpentNominatorIds)&&ids(v.townsfolkRegistrationNominatorIds)&&ids(v.firstNominationTargetIds)&&ids(v.demonRegistrationTargetIds)&&list(v.voteDependencies,d=>obj(d)&&keys(d,['voterId','requiredVoterId'])&&id(d.voterId)&&id(d.requiredVoterId))&&integer(v.day)&&Number(v.day)>0&&stages.includes(v.stage as string)&&id(v.stepId)&&ids(v.eligibleNominatorIds)&&ids(v.eligibleNomineeIds)&&ids(v.eligibleVoterIds)&&integer(v.executionVoteThreshold)&&integer(v.highestVoteCount)&&optionalId(v.executionCandidateId)&&pending(v,check)&&list(v.availableActions,a=>action(a,check))&&list(v.abilityRecords,r=>record(r,check))&&list(v.madness,m=>madness(m,check))&&list(v.deaths,d=>obj(d)&&keys(d,['eventId','day','cause','participant'])&&id(d.eventId)&&integer(d.day)&&Number(d.day)>0&&pendingDeath(d.cause,check)&&participant(d.participant,check))&&
+    (e===null||(obj(e)&&keys(e,['eventId','playerId','deathEventId','died',...(e.prevention===undefined?[]:['prevention'])])&&(e.prevention===undefined||(obj(e.prevention)&&keys(e.prevention,['source','consumed'])&&check.ability(e.prevention.source)&&bool(e.prevention.consumed)))&&id(e.eventId)&&optionalId(e.playerId)&&optionalId(e.deathEventId)&&bool(e.died)))&&
+    Array.isArray(v.nominations)&&v.nominations.every(n=>obj(n)&&list(n.golemEffects,e=>golemEffect(e,check))&&keys(n,['golemEffects','eventId','nominatorId','nomineeId','nominationParticipants','voteParticipants','voterIds','countedVoterIds','ghostVoteSpentPlayerIds'])&&id(n.eventId)&&id(n.nominatorId)&&id(n.nomineeId)&&participants(n.nominationParticipants,check)&&(n.voteParticipants===null||participants(n.voteParticipants,check))&&(n.voterIds===null||ids(n.voterIds))&&(n.countedVoterIds===null||ids(n.countedVoterIds))&&ids(n.ghostVoteSpentPlayerIds));
+
 }
+
+function golemEffect(v:unknown,c:Validators):boolean {
+ return obj(v)&&keys(v,['source','targetPlayerId','recluseAsDemon','outcome','abilityImpairments'])&&c.ability(v.source)
+  &&id(v.targetPlayerId)&&bool(v.recluseAsDemon)&&['death','protected','demon','registeredDemon','impaired','alreadyDead'].includes(v.outcome as string)
+  &&Array.isArray(v.abilityImpairments)&&v.abilityImpairments.every(x=>['drunk','poisoned'].includes(x))&&new Set(v.abilityImpairments).size===v.abilityImpairments.length;
+}
+
+function alignmentJudgment(v:unknown):boolean{return obj(v)&&keys(v,["playerId","registeredAs"])&&id(v.playerId)&&alignment(v.registeredAs);}

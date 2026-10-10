@@ -50,6 +50,7 @@ impl ActivationRule for CharacterActivation {
         if let Some(decision) = crate::characters::trouble_brewing::activation(context) {
             return Ok(decision);
         }
+        if let Some(decision) = crate::characters::bad_moon_rising::activation(context) { return Ok(decision); }
         if let Some(decision) = crate::characters::carousel::activation(context) {
             return Ok(decision);
         }

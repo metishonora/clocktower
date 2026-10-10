@@ -82,7 +82,13 @@ pub(crate) fn view(facts: &CustomGameFacts) -> Option<DayView> {
                 .is_some_and(|v| v.len() == highest)
         })
         .collect();
+    let candidate = if highest >= threshold && leaders.len() == 1 {Some(leaders[0].nominee_id.clone())} else {None};
+    let golem_spent = crate::characters::carousel::golem_spent_nominator_ids(facts);
     Some(DayView {
+        execution_preview: candidate.as_ref().and_then(|id| crate::characters::bad_moon_rising::execution_preview(facts,id)),
+        alignment_registration_options: crate::characters::bad_moon_rising::alignment_registrations(facts),
+        golem_nomination_options: crate::characters::carousel::golem_nomination_options(facts),
+        golem_spent_nominator_ids: golem_spent.clone(),
         forced_voter_ids: crate::characters::carousel::forced_voter_ids(facts),
         vote_dependencies: crate::characters::trouble_brewing::day_vote_dependencies(facts),
         townsfolk_registration_nominator_ids:
@@ -113,7 +119,11 @@ pub(crate) fn view(facts: &CustomGameFacts) -> Option<DayView> {
         eligible_nominator_ids: facts
             .players
             .iter()
-            .filter(|p| p.alive && !day.nominations.iter().any(|n| n.nominator_id == p.id))
+            .filter(|p| {
+                p.alive
+                    && !golem_spent.contains(&p.id)
+                    && !day.nominations.iter().any(|n| n.nominator_id == p.id)
+            })
             .map(|p| p.id.clone())
             .collect(),
         eligible_nominee_ids: facts
@@ -213,6 +223,7 @@ fn resolve(
         && !matches!(
             input,
             DayInput::ResolveConsequence { .. }
+                | DayInput::ConfirmDeath
                 | DayInput::ConfirmGameEnd
                 | DayInput::EndGame { .. }
         )
@@ -231,6 +242,7 @@ fn resolve(
         );
     }
     let mut result = DayOutcome {
+        golem_effects: vec![],
         stage: day.stage,
         participants: participants(context, facts)?,
         counted_voter_ids: vec![],
@@ -246,6 +258,7 @@ fn resolve(
         DayInput::Advance => {
             day.stage = match day.stage {
                 DayStage::Announcement => {
+                    crate::characters::bad_moon_rising::announced_deaths(facts, &mut day);
                     for p in &mut next.facts.players {
                         if !p.alive {
                             p.death_announced = true;
@@ -262,6 +275,7 @@ fn resolve(
             nominator_id,
             nominee_id,
             spy_as_townsfolk,
+            recluse_as_demon,
         } => {
             if day.stage != DayStage::Nomination
                 || !current.eligible_nominator_ids.contains(nominator_id)
@@ -270,7 +284,16 @@ fn resolve(
                 return Err(invalid());
             }
             result.participants = participants(context, facts)?;
+            result.golem_effects = crate::characters::carousel::golem_nominate(
+                facts,
+                &mut next.facts,
+                event_id,
+                nominator_id,
+                nominee_id,
+                *recluse_as_demon,
+            )?;
             day.nominations.push(NominationRecord {
+                golem_effects: result.golem_effects.clone(),
                 event_id: event_id.into(),
                 nominator_id: nominator_id.clone(),
                 nominee_id: nominee_id.clone(),
@@ -299,6 +322,44 @@ fn resolve(
                     nominator_id,
                     event_id,
                 )?;
+            }
+            // All nomination triggers observe the same prefix. An execution still ends
+            // nominations; a Witch death still resumes this ballot after its confirmation.
+            for effect in result.golem_effects.clone() {
+                if !matches!(effect.outcome, GolemNominationOutcome::Death | GolemNominationOutcome::Protected)
+                    || !next
+                        .facts
+                        .player(&effect.target_player_id)
+                        .is_some_and(|p| p.alive)
+                {
+                    continue;
+                }
+                let death = PendingDayDeath {
+                    player_id: effect.target_player_id,
+                    cause: DayDeathCause::Golem,
+                    source: Some(effect.source),
+                    root_event_id: event_id.into(),
+                    resume_stage: DayStage::Voting,
+                };
+                apply_death(
+                    context,
+                    facts,
+                    &mut next.facts,
+                    &mut day,
+                    &mut result,
+                    &death,
+                    event_id,
+                )?;
+                // A self-nomination can satisfy both death triggers only once.
+                if day
+                    .pending_death
+                    .as_ref()
+                    .is_some_and(|p| p.player_id == death.player_id)
+                    && !next.facts.player(&death.player_id).is_some_and(|p| p.alive)
+                {
+                    let pending = day.pending_death.take().expect("matching pending death");
+                    day.stage = pending.resume_stage;
+                }
             }
         }
         DayInput::Vote { voter_ids } => {
@@ -353,6 +414,7 @@ fn resolve(
             }
             let player_id = &current.execution_candidate_id;
             day.execution = Some(ExecutionRecord {
+                prevention: None,
                 event_id: event_id.into(),
                 player_id: player_id.clone(),
                 death_event_id: None,
@@ -362,17 +424,27 @@ fn resolve(
                 .as_ref()
                 .filter(|id| facts.player(id).is_some_and(|p| p.alive))
             {
-                pending_death(
-                    &mut day,
-                    id,
-                    DayDeathCause::Execution,
-                    None,
-                    event_id,
-                    DayStage::NightReady,
-                )?;
+                let outcome = crate::death::decide(facts, crate::death::Attempt { player_id: id, execution: true, unpreventable: false });
+                if outcome.died {
+                    pending_death(&mut day, id, DayDeathCause::Execution, None, event_id, DayStage::NightReady)?;
+                } else {
+                    crate::death::consume(&mut next.facts, &outcome, event_id);
+                    day.execution.as_mut().expect("execution").prevention=outcome.prevention.clone();
+                    next.facts.death_resolutions.push(crate::death::Record {
+                        event_id: event_id.into(),
+                        explanations: crate::death::explanations(facts, &crate::death::Attempt {
+                            player_id: id, execution: true, unpreventable: false,
+                        }, &outcome),
+                        outcomes: vec![outcome],
+                    });
+                    day.stage = DayStage::NightReady;
+                    day.pending_game_end = crate::characters::sects_and_violets::day_execution_end(facts, id, event_id);
+                }
             } else {
                 day.stage = DayStage::NightReady;
-                if player_id.is_none() {
+                if let Some(id) = player_id {
+                    day.pending_game_end = crate::characters::sects_and_violets::day_execution_end(facts, id, event_id);
+                } else {
                     day.pending_game_end =
                         crate::characters::trouble_brewing::day_no_execution(facts, event_id)
                             .filter(|end| {
@@ -391,56 +463,15 @@ fn resolve(
         }
         DayInput::ConfirmDeath => {
             let pending = day.pending_death.take().ok_or_else(invalid)?;
-            let id = &pending.player_id;
-            let player = next
-                .facts
-                .players
-                .iter_mut()
-                .find(|p| &p.id == id)
-                .ok_or_else(invalid)?;
-            if !player.alive {
-                return Err(invalid());
-            }
-            player.alive = false;
-            player.death_announced = true;
-            let execution = matches!(
-                pending.cause,
-                DayDeathCause::Execution | DayDeathCause::Virgin | DayDeathCause::Madness
-            );
-            if execution {
-                let record = day.execution.as_mut().ok_or_else(invalid)?;
-                record.died = true;
-                record.death_event_id = Some(event_id.into());
-                day.pending_game_end =
-                    crate::characters::trouble_brewing::day_execution_end(facts, id, event_id)
-                        .or_else(|| {
-                            crate::characters::sects_and_violets::day_execution_end(
-                                facts, id, event_id,
-                            )
-                        });
-            }
-            result.death_player_ids.push(id.clone());
             root_event_id = pending.root_event_id.clone();
             day.stage = pending.resume_stage;
-            day.deaths.push(DayDeathRecord {
-                event_id: event_id.into(),
-                day: day.day,
-                cause: pending.clone(),
-                participant: result
-                    .participants
-                    .iter()
-                    .find(|p| &p.player_id == id)
-                    .ok_or_else(invalid)?
-                    .clone(),
-            });
-            crate::characters::sects_and_violets::day_death_consequences(
-                facts, &mut day, id, event_id,
-            );
-            crate::characters::trouble_brewing::death_succession(
+            apply_death(
                 context,
                 facts,
                 &mut next.facts,
-                id,
+                &mut day,
+                &mut result,
+                &pending,
                 event_id,
             )?;
         }
@@ -505,31 +536,19 @@ fn resolve(
                 DayStage::NightReady,
             )?;
         }
-        DayInput::ResolveConsequence {
-            consequence_id,
-            player_id,
-        } => {
-            let consequence = day
-                .consequences
-                .iter()
-                .find(|c| &c.id == consequence_id && !c.resolved)
+        DayInput::ResolveConsequence { consequence_id, player_id, registration_judgments } => {
+            let consequence = day.consequences.iter().find(|c| &c.id == consequence_id && !c.resolved).ok_or_else(invalid)?;
+            let moonchild = consequence.source.character_id == "moonchild";
+            root_event_id = day.deaths.iter().find(|d| d.event_id == consequence.death_event_id)
+                .map(|d| d.cause.root_event_id.clone())
+                .or_else(|| moonchild.then(|| day.history.first().map(|h| h.root_event_id.clone())).flatten())
                 .ok_or_else(invalid)?;
-            root_event_id = day
-                .deaths
-                .iter()
-                .find(|d| d.event_id == consequence.death_event_id)
-                .ok_or_else(invalid)?
-                .cause
-                .root_event_id
-                .clone();
-            crate::characters::sects_and_violets::day_resolve_consequence(
-                facts,
-                &mut next.facts,
-                &mut day,
-                consequence_id,
-                player_id,
-                event_id,
-            )?;
+            if moonchild {
+                crate::characters::bad_moon_rising::resolve_moonchild(context, facts, &mut next.facts, &mut day, consequence_id, player_id, registration_judgments, event_id)?;
+            } else {
+                if !registration_judgments.is_empty() { return Err(invalid()); }
+                crate::characters::sects_and_violets::day_resolve_consequence(facts, &mut next.facts, &mut day, consequence_id, player_id, event_id)?;
+            }
         }
         DayInput::EndGame { winning_alignment } => {
             next.facts.game_end = Some(
@@ -575,10 +594,11 @@ fn resolve(
     crate::characters::carousel::resolve_pixie_deaths(facts, &mut next.facts, event_id);
     crate::effects::resolve_effects(context, &mut next.facts)?;
     crate::characters::carousel::notify_new_demons(context, facts, &mut next.facts, event_id);
-    if matches!(
+    if (matches!(
         input,
         DayInput::ConfirmDeath | DayInput::ResolveConsequence { .. }
-    ) && day.pending_game_end.is_none()
+    ) || !result.death_player_ids.is_empty())
+        && day.pending_game_end.is_none()
     {
         day.pending_game_end = common_game_end(context, &next.facts, &day, event_id);
     }
@@ -809,6 +829,7 @@ pub(crate) fn pending_death(
     );
     if execution {
         day.execution = Some(ExecutionRecord {
+                prevention: None,
             event_id: root.into(),
             player_id: Some(player_id.into()),
             death_event_id: None,
@@ -839,7 +860,7 @@ fn common_game_end(
         contracts::{CustomGameEnd, CustomGameEndReason},
         model::{Alignment, CharacterKind},
     };
-    if crate::characters::sects_and_violets::day_waits_for_win(day) {
+    if day.pending_death.is_some() || crate::characters::sects_and_violets::day_waits_for_win(day) {
         return None;
     }
     let alive = facts.players.iter().filter(|p| p.alive).count();
@@ -859,4 +880,102 @@ fn common_game_end(
         reason,
         source_event_id: event_id.into(),
     })
+}
+
+fn apply_death(
+    context: &ResolvedScriptContext,
+    prior: &CustomGameFacts,
+    next: &mut CustomGameFacts,
+    day: &mut DayProgress,
+    result: &mut DayOutcome,
+    pending: &PendingDayDeath,
+    event_id: &str,
+) -> Result<(), CoreError> {
+    let id = &pending.player_id;
+    let execution = matches!(
+        pending.cause,
+        DayDeathCause::Execution | DayDeathCause::Virgin | DayDeathCause::Madness
+    );
+    let before = next.clone();
+    let attempt = crate::death::Attempt {
+        player_id: id,
+        execution,
+        unpreventable: false,
+    };
+    let outcome = crate::death::decide(
+        &before,
+        crate::death::Attempt {
+            player_id: id,
+            execution,
+            unpreventable: false,
+        },
+    );
+    // Day evidence keeps the causing ability; its displayed step is this day confirmation.
+    let source = pending.source.as_ref().map(|source| {
+        crate::state::ActionOccurrence::character(
+            crate::contracts::FirstNightActionRef::character(&source.character_id, "daytimeAbility"),
+            source.clone(),
+        )
+        .expect("day death source")
+        .in_night(before.night_number())
+    });
+    next.malfunction_audit.extend(
+        crate::death::audit(&before, source.as_ref(), &attempt, &outcome, event_id)
+            .into_iter()
+            .map(|mut e| {
+                e.daytime_step_id = Some(step_id(prior).expect("day step"));
+                e
+            }),
+    );
+    crate::death::consume(next, &outcome, event_id);
+    if execution {
+        day.execution.as_mut().ok_or_else(invalid)?.prevention = outcome.prevention.clone();
+        // Saint requires a death; the good twin only requires execution.
+        day.pending_game_end = outcome
+            .died
+            .then(|| crate::characters::trouble_brewing::day_execution_end(prior, id, event_id))
+            .flatten()
+            .or_else(|| {
+                crate::characters::sects_and_violets::day_execution_end(prior, id, event_id)
+            });
+    }
+    next.death_resolutions.push(crate::death::Record {
+        event_id: event_id.into(),
+        explanations: crate::death::explanations(&before, &attempt, &outcome),
+        outcomes: vec![outcome.clone()],
+    });
+    if !outcome.died {
+        return Ok(());
+    }
+    let player = next
+        .players
+        .iter_mut()
+        .find(|p| &p.id == id)
+        .ok_or_else(invalid)?;
+    if !player.alive {
+        return Err(invalid());
+    }
+    player.alive = false;
+    player.death_announced = true;
+    if execution {
+        let record = day.execution.as_mut().ok_or_else(invalid)?;
+        record.died = true;
+        record.death_event_id = Some(event_id.into());
+    }
+    result.death_player_ids.push(id.clone());
+    day.deaths.push(DayDeathRecord {
+        event_id: event_id.into(),
+        day: day.day,
+        cause: pending.clone(),
+        participant: result
+            .participants
+            .iter()
+            .find(|p| &p.player_id == id)
+            .ok_or_else(invalid)?
+            .clone(),
+    });
+    crate::characters::sects_and_violets::day_death_consequences(prior, day, id, event_id);
+    crate::characters::bad_moon_rising::day_death_consequences(prior, day, id, event_id);
+    crate::characters::trouble_brewing::death_succession(context, prior, next, id, event_id)?;
+    Ok(())
 }

@@ -80,6 +80,8 @@ pub(crate) fn rule_state(facts: &CustomGameFacts) -> RuleState {
     if !current_grants.is_empty() {
         state.ability_grants = Some(current_grants);
     }
+    state.death_resolutions = facts.death_resolutions.clone();
+    state.scheduled_deaths = crate::characters::bad_moon_rising::scheduled_deaths(facts);
     state.ability_uses = facts.ability_uses.clone();
     state.philosopher_choices = facts.philosopher_choices.clone();
     state.witch_curses = facts.witch_curses.clone();
@@ -353,7 +355,8 @@ pub(crate) fn event_reveal(
         Some(crate::contracts::CustomActionResult::Information { value }) => {
             custom_information_reveal(action_ref, value, None)
         }
-        Some(crate::contracts::CustomActionResult::InformationDelivered {
+        Some(crate::contracts::CustomActionResult::GrandmotherLearned { information, .. })
+        | Some(crate::contracts::CustomActionResult::InformationDelivered {
             information, ..
         })
         | Some(crate::contracts::CustomActionResult::PreparedInformationDelivered {
@@ -389,6 +392,8 @@ pub(crate) fn event_reveal(
             }
             if let crate::model::InformationResult::Character {
                 character_id: revealed,
+            } | crate::model::InformationResult::PlayerCharacter {
+                character_id: revealed, ..
             } = &information.delivered_result
             {
                 let FirstNightActionRef::Character { character_id, .. } = action_ref else {
@@ -403,6 +408,17 @@ pub(crate) fn event_reveal(
                     character_id: character_id.clone(),
                     target_player: target,
                     revealed_character_id: revealed.clone(),
+                });
+            }
+            if let crate::model::InformationResult::PlayerGroup { player_ids } =
+                &information.delivered_result
+            {
+                return Some(RevealPayload::NobleInformation {
+                    kind: "nobleInformation",
+                    candidate_players: player_ids
+                        .iter()
+                        .filter_map(|id| reveal_player(id))
+                        .collect(),
                 });
             }
             if let crate::model::InformationResult::PlayerPair { player_ids } =

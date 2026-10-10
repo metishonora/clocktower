@@ -22,7 +22,7 @@ it('night attack screen requires a Mayor judgment, then restores private success
  await act(async()=>{await c.undo();});await waitFor(()=>expect(c.getSnapshot().saveStatus).toBe('saved'));
  fireEvent.click(screen.getByRole('button',{name:'진행'}));fireEvent.click(screen.getByRole('button',{name:'공격 대상 선택'}));fireEvent.click(screen.getByRole('button',{name:/^7번 P7,/}));
  fireEvent.change(screen.getByRole('combobox',{name:'임프 승계'}),{target:{value:'p6'}});fireEvent.click(screen.getByRole('button',{name:'선택 확정'}));
- await waitFor(()=>expect(c.getSnapshot().handoff?.stage).toBe('result'));expect(screen.getByRole('heading',{name:'악마 공격 결과'})).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'다음 →'}));await waitFor(()=>expect(c.getSnapshot().handoff?.stage).toBe('notification'));expect(screen.queryByRole('dialog',{name:'플레이어 정보'})).toBeNull();
+ await waitFor(()=>expect(c.getSnapshot().handoff?.stage).toBe('result'));expect(screen.getByRole('heading',{name:'악마 공격 결과'})).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'진행으로 →'}));await waitFor(()=>expect(c.getSnapshot().handoff?.stage).toBe('notification'));expect(screen.queryByRole('dialog',{name:'플레이어 정보'})).toBeNull();
  const {FirstNightController}=await import('../src/custom/grimoire/firstNightController');const restored=new FirstNightController(session,realWasmCore());
  expect(restored.getSnapshot().public).toBe(false);expect(restored.getSnapshot().handoff?.notifications.length).toBeGreaterThan(0);restored.dispose();
  }finally{c.dispose();}

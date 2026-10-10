@@ -1,3 +1,5 @@
+import {judgmentsEqual} from './stepInputModel';
+import type {CurrentInputDraft} from './firstNightController';
 import type {GameFile,PhaseStep} from '../core/types';
 import type {FirstNightState} from './firstNightController';
 
@@ -27,4 +29,12 @@ export function marionetteProgressNotification(state:FirstNightState) {
   if(last?.type!=='customActionConfirmed'||last.payload.result.kind!=='marionetteShown')return;
   const payload=h.notifications[h.notificationIndex];
   if(payload&&'kind' in payload&&(payload.kind==='characterChange'||payload.kind==='marionetteInformation'))return payload;
+}
+
+/** Both the count and the allowed judgment come from Core's selected-set projection. */
+export function nobleInformationDraft(step:PhaseStep|undefined,draft:Pick<CurrentInputDraft,'playerIds'|'judgments'>) {
+ const check=step?.character==='noble'?step.informationPrompt?.targetChecks?.find(c=>c.targetPlayerIds.length===draft.playerIds.length&&c.targetPlayerIds.every(id=>draft.playerIds.includes(id))):undefined;
+ const option=check?.alignmentOptions?.find(o=>judgmentsEqual(o.registrationJudgments,draft.judgments));
+ const choice=check?.choices.find(c=>judgmentsEqual(c.registrationJudgments,draft.judgments));
+ return {check,option,choice,index:choice?check!.choices.indexOf(choice):-1};
 }

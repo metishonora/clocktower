@@ -109,9 +109,11 @@ export type InformationResult =
   | { kind: "number"; value: number }
   | { kind: "boolean"; value: boolean }
   | { kind: "character"; characterId: string }
+  | { kind: "playerCharacter"; playerId: string; characterId: string }
   | { kind: "characterPair"; characterIds: [string, string] }
   | { kind: "player"; playerId: string }
   | { kind: "playerPair"; playerIds: [string, string] }
+  | { kind: "playerGroup"; playerIds: [string, string, string] }
   | {
     kind: "setupInfo";
     playerIds: string[];
@@ -185,11 +187,18 @@ export type MathematicianAuditOutcome =
     | "witchDeath"
     | "sweetheartDrunkenness"
     | "demonDeath"
+    | "gamblerDeath"
+    | "moonchildDeath"
+    | "assassinDeath"
+    | "grandmotherDeath"
+    | "foolProtection"
+    | "devilsAdvocateProtection"
+
     | "pitHagCharacterChange"
     | "noDashiiPoison"
     | "vigormortisOngoingEffect"
     | "vortoxFalseInformation"
-    | "vortoxExecution" | "nightwatchmanNotification";
+    | "vortoxExecution" | "nightwatchmanNotification" | "golemDeath" | "slayerDeath";
   };
 
 
@@ -260,6 +269,7 @@ export type InformationPrompt = {
 
 
 export type TargetCheck = {
+  alignmentOptions?: {registrationJudgments:RegistrationJudgment[];evilCount:number}[];
   numberConstraint?: InformationPrompt['numberConstraint'];
   wakeAudit?: {playerId:string;woke:boolean;evidence:{characterId:string;eventId:string|null;forecast:boolean}[]}[];
   fixedCharacterId?: string;
@@ -304,6 +314,8 @@ export type PendingIdentityReveal = {
   payload: PreacherRevealPayload | CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload | NightwatchmanRevealPayload | GrantedAbilityRevealPayload | MarionetteRevealPayload;
 };
 export type RuleState = {
+  deathResolutions?:{eventId:string;outcomes:DeathOutcome[];explanations?:DeathExplanation[]}[];
+  scheduledDeaths?:ScheduledDeath[];
   automaticReminders?: AutomaticReminder[];
   preparations?: PreparationRecord[];
   poisonerChoices?: TargetAssignment[];
@@ -451,7 +463,7 @@ export type FortuneTellerInformationRevealPayload = {
 
 export type CharacterInformationRevealPayload = {
   kind: "characterInformation";
-  characterId: "undertaker" | "ravenkeeper";
+  characterId: "undertaker" | "ravenkeeper" | "grandmother";
   targetPlayer: RevealPlayer;
   revealedCharacterId: string;
 };
@@ -525,7 +537,8 @@ export type GrantedAbilityRevealPayload={kind:'grantedAbilityInformation';recipi
 export type MarionetteRevealPayload={kind:'marionetteInformation';recipientPlayer:RevealPlayer;marionettePlayer:RevealPlayer};
 export type PreacherRevealPayload = {kind:'preacherInformation';recipientPlayer:RevealPlayer};
 export type ChambermaidRevealPayload = {kind:'chambermaidInformation';targetPlayers:RevealPlayer[];value:number};
-export type RevealPayload = PreacherRevealPayload | ChambermaidRevealPayload | MarionetteRevealPayload | GrantedAbilityRevealPayload | LearnedPlayerRevealPayload | LearnedCharacterRevealPayload | NightwatchmanRevealPayload | MutantExecutionRevealPayload | TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload | MadnessAssignmentRevealPayload;
+export type NobleRevealPayload = {kind:'nobleInformation';candidatePlayers:RevealPlayer[]};
+export type RevealPayload = NobleRevealPayload | PreacherRevealPayload | ChambermaidRevealPayload | MarionetteRevealPayload | GrantedAbilityRevealPayload | LearnedPlayerRevealPayload | LearnedCharacterRevealPayload | NightwatchmanRevealPayload | MutantExecutionRevealPayload | TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload | MadnessAssignmentRevealPayload;
 export type SetupDistributionRequest = { customDefinition: CustomScriptDefinition; playerCount: number; actualCharacters: string[]; setupChoiceId?:string;boffinAbility?:string;marionetteCharacter?:string };
 
 
@@ -563,7 +576,22 @@ export type ActionCause =
 export type GuidanceCause = { kind: "initialDrunk" | "acquiredDrunk" | "marionette" } | { kind: "choice"; parentEventId: string } | {kind:'pixieAcquisition';bondEventId:string};
 export type CustomGameEnd = { winningAlignment: "good" | "evil"; reason: "goodTwinExecuted"|"saintExecuted"|"mayorNoExecution"|"vortoxNoExecution"|"demonAbsent"|"twoLivingPlayers"|"klutzChoice"|"storytellerDecision"; sourceEventId: string };
 export type InformationPreparation = { information: InformationResult; correctPlayerId: string | null };
+export type DeathPrevention = {source:AbilityUseRef;consumed:boolean};
+/** Read-only causes frozen by Core at the confirmed event prefix. */
+export type DeathExplanation = {playerId:string;reason:
+  | {kind:'protection'|'bypassedProtection'|'redirected';source:AbilityUseRef}
+  | {kind:'alreadyDead'}
+  | {kind:'impaired';source:AbilityUseRef;impairments:('drunk'|'poisoned')[]}
+};
+export type DeathOutcome = {playerId:string;died:boolean;prevention:DeathPrevention|null;sourceCharacterId:string|null};
+export type ScheduledDeath = {source:AbilityUseRef;eventId:string;targetPlayerId:string;chosenGood:boolean;night:number;preview:Extract<CustomActionResult,{kind:'moonchildResolved'}>|null};
 export type CustomActionResult =
+  | {kind:'grandmotherLearned';targetPlayerId:string;information:ConfirmedInformation}
+  | {kind:'gamblerGuessed';targetPlayerId:string;characterId:string;correct:boolean;effective:boolean;deaths:DeathOutcome[]}
+  | {kind:'devilsAdvocateProtected';targetPlayerId:string;night:number;effective:boolean}
+  | {kind:'assassinUsed';targetPlayerId:string|null;spent:boolean;deaths:DeathOutcome[]}
+  | {kind:'moonchildResolved';targetPlayerId:string;chosenGood:boolean;effective:boolean;deaths:DeathOutcome[]}
+
   | {kind:'preacherSelected';targetPlayerId:string;effective:boolean}
   | {kind:'pixieLearned';targetPlayerId:string;characterId:string}
   | {kind:'balloonistLearned';targetPlayerId:string;registeredKind:'Townsfolk'|'Outsider'|'Minion'|'Demon'}
