@@ -73,14 +73,58 @@ test('replaced game URL cannot open a newer game; the list isolates corrupt reco
   await expect(page).toHaveURL(/\?game=replacement-game$/);
 });
 
-test('setup refresh returns to saved games and preserves the previous session', async ({page}) => {
+for (const width of [390, 1280]) {
+  test(`setup refresh retains the scenario, roles and seating without replacing the saved game at ${width}px`, async ({page}, info) => {
+    await page.setViewportSize({width,height:900});
+    await importGame(page, await fixture()); const before = await saved(page), oldUrl = page.url();
+    await page.getByRole('button', {name:'새 게임',exact:true}).click();
+    await page.getByRole('dialog').getByRole('button', {name:'새 게임',exact:true}).click();
+    await expect(page).toHaveURL(/\?mode=setup$/);
+    await page.getByRole('button', {name:'5명',exact:true}).click();
+    await page.getByRole('button', {name:'군인',exact:true}).click();
+    await page.reload();
+    await expect(page.getByRole('button', {name:'직업 선택 확정',exact:true})).toBeVisible();
+    await expect(page.getByRole('button', {name:'5명',exact:true})).toHaveAttribute('aria-pressed','true');
+    await expect(page.getByRole('button', {name:'군인',exact:true})).toHaveAttribute('aria-pressed','true');
+    expect(await saved(page)).toEqual(before);
+    for (const name of ['시장','처단자','탕녀','임프 악마 선택'])
+      await page.getByRole('button', {name,exact:true}).click();
+    await page.getByRole('button', {name:'직업 선택 확정',exact:true}).click();
+    await page.getByRole('button', {name:'무작위 배치',exact:true}).click();
+    await page.getByRole('button', {name:/^1번 좌석,/}).click();
+    await page.getByLabel('1번 좌석 이름').fill('계속 설정');
+    const seats = await page.getByRole('button', {name:/^[1-5]번 좌석,/}).evaluateAll(elements => elements.map(e => e.getAttribute('aria-label')));
+    await page.reload();
+    await expect(page.getByRole('button', {name:'좌석 확정',exact:true})).toBeEnabled();
+    expect(await page.getByRole('button', {name:/^[1-5]번 좌석,/}).evaluateAll(elements => elements.map(e => e.getAttribute('aria-label')))).toEqual(seats);
+    expect(await saved(page)).toEqual(before);
+    await page.getByRole('button', {name:'저장 / 불러오기',exact:true}).click();
+    await page.getByRole('button', {name:'자동 저장 목록',exact:true}).click();
+    await expect(page.getByRole('list', {name:'저장된 게임'})).toBeVisible();
+    await page.goBack();
+    await expect(page.getByRole('button', {name:/^1번 좌석, 계속 설정,/})).toBeVisible();
+    await page.screenshot({path:info.outputPath(`restored-setup-${width}.png`),fullPage:true});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+1);
+    await page.getByRole('button', {name:'좌석 확정',exact:true}).click();
+    await expect(page).toHaveURL(/\?game=/);
+    expect(page.url()).not.toBe(oldUrl);
+    expect(await page.evaluate(()=>history.state.customSetupDraft)).toBeUndefined();
+    const after = await saved(page) as Array<{canonical:GameFileV5}>;
+    expect(after[0].canonical.game.events).toHaveLength(1);
+    expect(after[0].canonical.game.events[0].payload).toMatchObject({players:expect.arrayContaining([expect.objectContaining({name:'계속 설정'})])});
+  });
+}
+
+test('reload during the scenario-to-setup transition retains the selected scenario', async ({page}) => {
   await importGame(page, await fixture()); const before = await saved(page);
+  await page.emulateMedia({reducedMotion:'no-preference'});
   await page.getByRole('button', {name:'새 게임',exact:true}).click();
   await page.getByRole('dialog').getByRole('button', {name:'새 게임',exact:true}).click();
   await expect(page).toHaveURL(/\?mode=setup$/);
+  await page.reload();
   await expect(page.getByRole('button', {name:'직업 선택 확정',exact:true})).toBeVisible();
-  await page.reload(); await expect(page.getByText('게임 설정이 저장되지 않았습니다.')).toBeVisible();
-  await expect(page.getByRole('list', {name:'저장된 게임'})).toBeVisible(); expect(await saved(page)).toEqual(before);
+  await expect(page.getByRole('button', {name:'군인',exact:true})).toBeVisible();
+  expect(await saved(page)).toEqual(before);
 });
 
 test('first save failure keeps the setup URL and previous game; retry activates exactly one setup event', async ({page}) => {

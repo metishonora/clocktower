@@ -5,7 +5,8 @@ import type { ImportedGame } from '../authoring/importScenarioSource.js';
 import { CustomCanonicalSession } from '../session.js';
 import { IndexedDbCustomWebSessionStorageDriver } from '../storage/sessionStorage.js';
 import { CustomSessionWriter } from '../storage/sessionWriter.js';
-import { GrimoireSetupController, type GrimoireSetupDraft, type GrimoirePresentationState } from './setupController.js';
+import { GrimoireSetupController, type GrimoireSetupDraft, type GrimoirePresentationState, type GrimoireSetupProgress } from './setupController.js';
+import { parseSetupRouteDraft, type SetupRouteDraft } from './setupRouteDraft.js';
 import { FirstNightController, type GrimoireSession } from './firstNightController.js';
 export type ApplicationState = { screen: 'editor' | 'setup' | 'play' | 'library' | 'restore'; busy: boolean; error?: string; saveFailed: boolean };
 export class CustomGrimoireApplicationController {
@@ -17,7 +18,8 @@ export class CustomGrimoireApplicationController {
   private pending?: GrimoireSession;
   setup?: GrimoireSetupController;
   play?: FirstNightController;
-  constructor(private readonly core: CoreAdapter, private readonly onActivated: (id: string, gameId: string) => void) {}
+  constructor(private readonly core: CoreAdapter, private readonly onActivated: (id: string, gameId: string) => void,
+    private readonly onSetupProgress?: (draft: SetupRouteDraft) => void) {}
   getSnapshot = () => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private patch(patch: Partial<ApplicationState>) { if (this.disposed) return; this.state = freezeSnapshot({ ...this.state, ...patch }); this.listeners.forEach(listener => listener()); }
@@ -70,16 +72,28 @@ export class CustomGrimoireApplicationController {
     return true;
   };
   startSetup = (scenario: ValidatedScenario, initialDraft?: GrimoireSetupDraft) => {
+    this.openSetup(scenario, initialDraft ? {draft: initialDraft, rosterConfirmed: true, tab: 'seating'} : undefined);
+  };
+  restoreSetup = (value: unknown): boolean => {
+    const draft = parseSetupRouteDraft(value);
+    if (!draft || this.navigationStatus() !== 'ready') return false;
+    this.openSetup({definition: draft.definition}, draft.progress);
+    return true;
+  };
+  private openSetup = (scenario: ValidatedScenario, initialProgress?: GrimoireSetupProgress) => {
     if (this.navigationStatus() !== 'ready') return;
     this.retire();
     const driver = new IndexedDbCustomWebSessionStorageDriver<GrimoireSetupDraft, GrimoirePresentationState>(scenario.definition.id);
-    this.setup = new GrimoireSetupController(scenario, { core: this.core, storage: driver, initialDraft,
+    this.setup = new GrimoireSetupController(scenario, { core: this.core, storage: driver, initialProgress,
+      onProgress: progress => this.onSetupProgress?.({version: 1, definition: scenario.definition, progress}),
       createSession: (definition, draft) => {
         this.writer?.dispose(); this.play?.dispose();
         this.writer = new CustomSessionWriter(definition.id, driver);
         return this.pending = CustomCanonicalSession.create({ definition, core: this.core, storage: this.writer, setupDraft: draft, presentation: { activeTab: 'play' } });
       }, onReady: this.activate });
     this.patch({ screen: 'setup', error: undefined, saveFailed: false });
+    const {draft, tab, rosterConfirmed} = this.setup.getSnapshot();
+    if (tab !== 'play') this.onSetupProgress?.({version: 1, definition: scenario.definition, progress: {draft, tab, rosterConfirmed}});
     void this.setup.initialize();
   };
   restartFromSetup = () => {

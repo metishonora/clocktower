@@ -848,7 +848,7 @@ Do not split public and secret stores for MVP. Add that only if reveal code beco
 
 Rust creates canonical confirmed events. TypeScript only stores confirmed events returned by Rust.
 
-TypeScript may keep draft UI state, such as selected seats, vote toggles, preview state, and open panels. Draft state is not persisted.
+TypeScript may keep draft UI state, such as selected seats, vote toggles, preview state, and open panels. These live-play drafts are not persisted. Pre-game setup inputs may be retained separately in browser history as described in Custom recovery routes; they never become canonical events before confirmation.
 
 Use a command/proposal/event flow.
 
@@ -993,11 +993,15 @@ Do not let TypeScript patch derived rules state directly.
 ## Custom recovery routes (#248)
 
 `/clocktower/custom/scenario/` opens authoring; `/clocktower/custom/grimoire/`
-lists the existing autosaved sessions. `?mode=setup` denotes in-memory setup and
-`?game=<game-id>` restores one exact saved game. Both HTML entries boot the same
-custom application. In-app History API transitions carry validated authoring input
-in memory; a cold setup route explains that setup was not saved and opens the list.
-Only a successful first durable save replaces the setup URL with a game URL.
+lists the existing autosaved sessions. `?mode=setup` restores the selected scenario
+and editable setup progress from that browser history entry; `?game=<game-id>`
+restores one exact saved game. Both HTML entries boot the same custom application.
+Setup history retains the definition, input draft, roster confirmation and active
+setup tab, including the transition before setup opens. Restoration checks the UI
+shape and recomputes distribution through Core. It never restores derived game facts
+or changes an existing autosave. A setup URL without a valid history draft offers
+the saved-game list. Successful first durable save replaces the setup URL with a
+game URL and removes the setup draft from that entry.
 
 The existing `session:custom:<script-id>` records remain the persistence boundary.
 Listing reads their names, actual game IDs and durable save times, isolating malformed
@@ -1014,8 +1018,9 @@ operation is pending or failed. Canceling preserves the current screen and retry
 explicitly leaving or forced termination still restores only the last durable record.
 Read-only restoration and a saved public reveal do not trigger this exit warning.
 Durable activation does not cancel
-a navigation waiting for that save. Public reveals stay closed on restore. Editor drafts,
-pre-game setup and unconfirmed live inputs are not made durable by these routes.
+a navigation waiting for that save. Public reveals stay closed on restore. General editor
+drafts and unconfirmed live inputs are not persisted. Setup history is browser-local
+draft recovery; it does not create or replace a canonical game before Setup confirmation.
 
 The editor invalidates pending requests when hidden, and resumes interrupted order
 calculation or validation on return using the same draft and requested reset mode.

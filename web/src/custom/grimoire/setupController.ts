@@ -7,6 +7,7 @@ import type { CustomWebSessionStorageDriver } from '../storage/sessionStorage.js
 
 export type GrimoireSetupDraft = { playerCount: number; selectedIds: string[]; players: SetupPlayerInput[]; setupChoiceId?:string;boffinAbility?:string;marionetteCharacter?:string };
 export type GrimoirePresentationState = { activeTab: 'roles' | 'seating' | 'play' };
+export type GrimoireSetupProgress = { draft: GrimoireSetupDraft; tab: 'roles' | 'seating'; rosterConfirmed: boolean };
 export type GrimoireSetupState = {
   definition: CustomScriptDefinition;
   draft: GrimoireSetupDraft;
@@ -26,7 +27,8 @@ export type GrimoireSetupDependencies = {
   core: CoreAdapter;
   storage: CustomWebSessionStorageDriver<GrimoireSetupDraft, GrimoirePresentationState>;
   gameId?: string;
-  initialDraft?: GrimoireSetupDraft;
+  initialProgress?: GrimoireSetupProgress;
+  onProgress?: (progress: GrimoireSetupProgress) => void;
   createSession?: (definition: CustomScriptDefinition, draft: GrimoireSetupDraft) => CustomCanonicalSession<GrimoireSetupDraft, GrimoirePresentationState>;
   onReady?: (session: CustomCanonicalSession<GrimoireSetupDraft, GrimoirePresentationState>) => void;
 };
@@ -42,18 +44,26 @@ export class GrimoireSetupController {
 
   constructor(scenario: ValidatedScenario, private readonly dependencies: GrimoireSetupDependencies) {
     this.state = freezeSnapshot({ definition: structuredClone(scenario.definition),
-      draft: structuredClone(dependencies.initialDraft ?? emptyDraft(7)), rosterConfirmed: !!dependencies.initialDraft, tab: dependencies.initialDraft ? 'seating' : 'roles', distributionPending: false, busy: false, saveFailed: false });
+      draft: structuredClone(dependencies.initialProgress?.draft ?? emptyDraft(7)), rosterConfirmed: dependencies.initialProgress?.rosterConfirmed ?? false, tab: dependencies.initialProgress?.tab ?? 'roles', distributionPending: false, busy: false, saveFailed: false });
   }
   getSnapshot = (): GrimoireSetupState => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   dispose = () => { this.disposed = true; this.distributionRequest++; this.listeners.clear(); };
   private patch(patch: Partial<GrimoireSetupState>) {
     if (this.disposed) return;
+    const prior = this.state;
     this.state = freezeSnapshot({ ...this.state, ...patch });
+    if (this.state.tab !== 'play' && (prior.draft !== this.state.draft || prior.tab !== this.state.tab || prior.rosterConfirmed !== this.state.rosterConfirmed)) {
+      this.dependencies.onProgress?.({draft: this.state.draft, tab: this.state.tab, rosterConfirmed: this.state.rosterConfirmed});
+    }
     this.listeners.forEach(listener => listener());
   }
   private get editable() { return !this.disposed && !this.state.busy && !this.session && !this.state.replay; }
-  initialize = async () => { await this.updateDistribution(); };
+  initialize = async () => {
+    await this.updateDistribution();
+    if (this.dependencies.initialProgress?.rosterConfirmed && this.editable && !rosterComplete(this.state))
+      this.patch({rosterConfirmed: false, tab: 'roles'});
+  };
 
   setPlayerCount = (playerCount: number) => {
     if (!this.editable || this.state.rosterConfirmed || !Number.isInteger(playerCount) || playerCount < 5 || playerCount > 15 || playerCount === this.state.draft.playerCount) return;
