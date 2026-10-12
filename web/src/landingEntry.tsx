@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import { CustomScenarioLanding } from "./customScenarioLanding";
+import { isFestivalPosterInvitationRequest } from "./festivalPosterInvitationRoute";
 import {
   isPublishedPromoCardSampleRequest,
   resolveActivePromoCardProductionRoute,
@@ -24,6 +25,13 @@ const DevIssue200CustomScriptPrototype = import.meta.env.DEV
       return { default: module.Issue200CustomScriptPrototype };
     })
   : undefined;
+
+const FestivalPosterInvitationEntry = React.lazy(async () => {
+  const module = await import("./festivalPosterInvitation");
+  return { default: module.FestivalPosterInvitation };
+});
+
+const festivalPosterInvitationRequested = isFestivalPosterInvitationRequest(window.location);
 
 const ExpiredInvitationPrototypeEntry = React.lazy(async () => {
   const module = await import("./expiredInvitationPrototype");
@@ -80,7 +88,11 @@ const promoCardDateOverride = is260923Invitation
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {issue200PrototypeRequested && DevIssue200CustomScriptPrototype ? (
+    {festivalPosterInvitationRequested ? (
+      <React.Suspense fallback={null}>
+        <FestivalPosterInvitationEntry />
+      </React.Suspense>
+    ) : issue200PrototypeRequested && DevIssue200CustomScriptPrototype ? (
       <React.Suspense fallback={null}>
         <DevIssue200CustomScriptPrototype />
       </React.Suspense>
