@@ -18,7 +18,7 @@ export function CustomGrimoireApplication({ onExit }: { onExit: () => void }) {
   const [controller] = useState(() => new CustomGrimoireApplicationController(wasmCoreAdapter, (_scriptId, gameId) => {
     const next: CustomRoute = {kind: 'game', gameId};
     navigationRef.current?.activate(next); setRoute(next);
-  }));
+  }, draft => navigationRef.current?.rememberSetupDraft(draft)));
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const [sourceFile, setSourceFile] = useState<File>();
   const [starting, setStarting] = useState<ValidatedScenario>();
@@ -32,6 +32,7 @@ export function CustomGrimoireApplication({ onExit }: { onExit: () => void }) {
     setStarting(undefined); setRoute(next); setNotice(undefined);
     if (next.kind === 'game') void controller.restoreGame(next.gameId);
     else if (next.kind === 'editor') controller.openEditor();
+    else if (next.kind === 'setup' && controller.restoreSetup(navigation.readSetupDraft())) { /* restored locally */ }
     else {
       controller.openLibrary();
       if (next.kind === 'setup') setNotice('게임 설정이 저장되지 않았습니다.');
@@ -74,7 +75,9 @@ export function CustomGrimoireApplication({ onExit }: { onExit: () => void }) {
     setEditorGeneration(value => value + 1); setRoute({kind: 'editor'});
   });
   const startSetup = (scenario: ValidatedScenario) => void navigation.navigate({kind: 'setup'}, () => {
-    controller.openEditor(); setRoute({kind: 'setup'}); setStarting(scenario); setNotice(undefined);
+    controller.openEditor();
+    navigation.rememberSetupDraft({version: 1, definition: scenario.definition});
+    setRoute({kind: 'setup'}); setStarting(scenario); setNotice(undefined);
   });
   const restart = () => void navigation.navigate({kind: 'setup'}, () => {
     controller.restartFromSetup(); setRoute({kind: 'setup'}); setNotice(undefined);

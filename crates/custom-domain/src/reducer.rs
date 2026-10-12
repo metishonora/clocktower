@@ -47,6 +47,18 @@ pub(crate) fn reduce_custom_facts(
 
     let mut next = previous.clone();
     apply_changes(&mut next, event)?;
+    for outcome in &event.fact_changes().resolved_deaths().outcomes {
+        let source=event.fact_changes().resolved_deaths().sources.iter().find(|(id,_)| id==&outcome.player_id).map(|(_,s)| s.clone()).unwrap_or(event.occurrence()?);
+        next.malfunction_audit.extend(crate::death::audit(previous,Some(&source),&crate::death::Attempt {player_id:&outcome.player_id,execution:false,unpreventable:event.fact_changes().resolved_deaths().unpreventable_player_ids.contains(&outcome.player_id)},outcome,event.id()));
+        crate::death::consume(&mut next, outcome, event.id());
+    }
+    let resolution = event.fact_changes().resolved_deaths();
+    if !resolution.outcomes.is_empty() || !resolution.explanations.is_empty() {
+        next.death_resolutions.push(crate::death::Record {
+            event_id: event.id().into(), outcomes: resolution.outcomes.clone(),
+            explanations: resolution.explanations.clone(),
+        });
+    }
     apply_snv_facts(&mut next, event)?;
     crate::characters::carousel::apply_marionette(&mut next, event)?;
     crate::characters::carousel::apply_boffin_assignment(&mut next, event)?;
@@ -324,10 +336,9 @@ fn apply_changes(
                 event_id: event.id().into(),
                 night: next.night_number(),
                 player,
-                source: event
-                    .fact_changes()
-                    .death_source()
-                    .cloned()
+                source: event.fact_changes().resolved_deaths().sources.iter()
+                    .find(|(id, _)| *id == change.player_id).map(|(_, source)| source.clone())
+                    .or_else(|| event.fact_changes().death_source().cloned())
                     .unwrap_or(event.occurrence()?),
                 guidance: crate::simulation::sources(next)
                     .into_iter()

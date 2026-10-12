@@ -52,14 +52,23 @@ fn complete_catalog_matches_frozen_production_order_and_kinds() {
     let current: Value = serde_json::from_str(&custom_script_catalog_json()).unwrap();
     let mut expected = baseline.as_array().unwrap().clone();
     expected.extend([
+        serde_json::json!({"id":"noble","kind":"Townsfolk"}),
         serde_json::json!({"id":"preacher","kind":"Townsfolk"}),
         serde_json::json!({"id":"zealot","kind":"Outsider"}),
+        serde_json::json!({"id":"golem","kind":"Outsider"}),
         serde_json::json!({"id":"nightwatchman","kind":"Townsfolk"}),
         serde_json::json!({"id":"pixie","kind":"Townsfolk"}),
         serde_json::json!({"id":"balloonist","kind":"Townsfolk"}),
         serde_json::json!({"id":"boffin","kind":"Minion"}),
         serde_json::json!({"id":"marionette","kind":"Minion"}),
         serde_json::json!({"id":"chambermaid","kind":"Townsfolk"}),
+        serde_json::json!({"id":"fool","kind":"Townsfolk"}),
+        serde_json::json!({"id":"gambler","kind":"Townsfolk"}),
+        serde_json::json!({"id":"devilsAdvocate","kind":"Minion"}),
+        serde_json::json!({"id":"assassin","kind":"Minion"}),
+        serde_json::json!({"id":"grandmother","kind":"Townsfolk"}),
+        serde_json::json!({"id":"moonchild","kind":"Outsider"}),
+
     ]);
     assert_eq!(current, serde_json::Value::Array(expected));
 }

@@ -145,6 +145,11 @@ fn acquired_snake_preserves_original_owner_priority_and_swaps_actual_philosopher
     assert_eq!(state["players"][0]["alignment"], "evil");
     assert_eq!(state["players"][3]["actualCharacter"], "philosopher");
     assert_eq!(state["players"][3]["alignment"], "good");
+    assert!(state["ruleState"]["activeImpairments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|i| i["playerId"] == "p4" && i["sourceCharacterId"] == "snakeCharmer"));
     assert!(state["ruleState"].get("abilityGrants").is_none());
     assert_eq!(state["currentStep"]["id"], "firstNight:system:dawn");
     assert_eq!(

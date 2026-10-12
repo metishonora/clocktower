@@ -188,11 +188,19 @@
     "kind": "Demon"
   },
   {
+    "id": "noble",
+    "kind": "Townsfolk"
+  },
+  {
     "id": "preacher",
     "kind": "Townsfolk"
   },
   {
     "id": "zealot",
+    "kind": "Outsider"
+  },
+  {
+    "id": "golem",
     "kind": "Outsider"
   },
   {
@@ -218,5 +226,29 @@
   {
     "id": "chambermaid",
     "kind": "Townsfolk"
+  },
+  {
+    "id": "fool",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "gambler",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "devilsAdvocate",
+    "kind": "Minion"
+  },
+  {
+    "id": "assassin",
+    "kind": "Minion"
+  },
+  {
+    "id": "grandmother",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "moonchild",
+    "kind": "Outsider"
   }
 ]

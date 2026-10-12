@@ -53,6 +53,19 @@ Execution/death/consequence confirmations share a causal Undo unit. Canonical fi
 store the same events, and failed saves block further live actions until retry succeeds.
 The next-night transition expires day-limited effects; night action execution remains in #204.
 
+### Golem nominations
+
+Carousel owns Golem nomination eligibility, registration options and source-bound use.
+The day view projects typed target outcomes; the browser selects an option without
+calculating character rules. A nomination atomically records its Golem effects and any
+immediate death, then resumes voting after other triggered deaths/consequences and victory
+checks. All triggers observe the nomination prefix, including Witch and Virgin. These deaths
+share the existing participant snapshots, consequences and causal Undo path.
+The optional `recluseAsDemon` input and optional `golemEffects` evidence extend custom
+GameFile v5 without changing old event contents or schema version. Missing values retain
+the old contract. Real acquired abilities retain their own use history; unavailable grants
+impose no restriction, and simulated identities acquire no real Golem effect.
+
 ### Custom automatic reminders (#223)
 
 Automatic tokens are read-only projections, never reducer inputs or saved facts. The common
@@ -66,8 +79,9 @@ separately, without manufacturing an actual ability instance.
 Handlers own token kind, target, evidence event and lifetime. Context queries distinguish current
 instances, living owners, matching action occurrences and actual versus simulated sources; no
 universal effectiveness gate is applied. Undertaker requires a living current ability/guidance
-source, while Barber's pending death handoff and durable poison retain their historical source
-through death or identity change. Resolved effect and spent-use formatting are reusable context
+source, while Barber's pending death handoff retains its historical source. Persistent effect
+markers retain historical attribution but require a currently valid maintenance binding.
+Resolved effect and spent-use formatting are reusable context
 helpers explicitly selected by character registrations. The common dispatcher contains no
 character-name branches and never infers ability ownership from a token or target's character.
 
@@ -78,6 +92,35 @@ Production reminder handlers remain disabled in the isolated fixture runtime. Ne
 must be registered in their owning script module and tested for source and lifetime boundaries;
 adding a global post-processing token rule in `projection.rs`, day orchestration or TypeScript is
 not supported. GameFile/schema and confirmed events remain unchanged.
+
+## Custom death attempts and BMR (#271)
+
+`death.rs` dispatches registered protection, use consumption, death follow-ups and
+malfunction evidence. Character-specific policies remain in their script module.
+Demon attacks, executions, daytime ability deaths and scheduled night deaths query
+this boundary. Existing Soldier/Monk/Mayor handling runs before the shared attempt;
+Assassin declares an unpreventable attempt. Each actual death retains its own
+ability source while a Grandmother chain shares the initiating event's Undo unit.
+Fool consumption survives both prevention and an actual first death. Golem's
+nomination preview queries this same boundary; its `protected` result still consumes
+the attempted Golem use and the applicable protection. Actual nomination deaths
+create the same daytime consequences and causal Undo unit as other day deaths.
+
+The read-only death ledger also projects event-time explanations: the effective
+protection source, protection bypass, already-dead target, impaired attack, or
+Mayor redirection. The UI formats these reasons without inspecting roles or reminder
+tokens to decide protection. Explanations are recomputed from the event prefix and
+are never written to confirmed results or GameFile. Character-owned death audits
+record the attacking ability when another ability blocks a promised death, and the
+Fool when an unpreventable attack bypasses its available protection; executions alone
+do not promise a death. Prevented follow-ups retain their own ability source.
+
+BMR characters own the projected execution preview and Moonchild scheduled death.
+The Moonchild's public choice occurs immediately after announcement/confirmation;
+its alignment judgment is frozen then, and its ability is checked at night.
+`resolveConsequence` accepts optional `registrationJudgments` (default/omitted empty)
+with GameFile v5 retained. Preview/outcome ledgers and reminders are read-only
+projections, never UI-authored rule state. See [#271 acceptance](fixtures/acceptance/issue271/README.md).
 
 ## Independent official and custom runtimes (#207)
 
@@ -114,6 +157,15 @@ continuation, not extra scheduler phases. Balloonist setup discretion and the
 initial Boffin grant are canonical setup inputs; Marionette's believed role remains
 separate from its real identity. UI does not compute eligibility or Jinx results.
 
+Noble delivers one set of three distinct players per concrete ability, including on
+its first night after acquisition. Core projects legal choices and read-only
+`alignmentOptions` for Storyteller registration controls; the UI never counts
+alignments or decides whether a set is valid. The additive `playerGroup` information
+result records exactly three IDs in existing confirmed information events. Its
+`nobleInformation` reveal contains only frozen seat/name identities. GameFile stays
+at version 5; existing files omit the new result and remain valid. Registration,
+impairment, Vortox, reminders, history and Undo share the canonical event path.
+
 Night steps and overview entries expose Core-derived `abilityImpairments` for the
 acting ability, not its owner's unrelated impairments. This presentation metadata
 is rebuilt on replay; it is not saved in GameFile or inferred by character-specific
@@ -123,6 +175,40 @@ use the ability owner's actual team; simulated information uses its real root so
 when deciding whether Vortox applies.
 
 Custom `effects.rs` resolves character-owned effect candidates against a common fact view.
+
+Persistent contributions carry an `EffectRule` with a mandatory binding, a time window, and
+whether the original attempt succeeded. `EffectBinding` distinguishes an ordinary ability,
+an ability that works after death, and the resulting identity of a transformation. `NoDeadline`
+only removes the clock deadline; it never bypasses ownership, availability or impairment checks.
+The historical `source_ability_use` remains the event's cause. Snake Charmer poison is maintained
+by the exact resulting identity (also when an acquired Snake Charmer produces a Philosopher),
+while Sweetheart drunkenness is maintained by its exact ability with an explicit death exception.
+Self-inflicted impairment is a character-declared `SelfInteraction`, not an implicit exemption
+for all durable records. A recipient's identity change does not erase externally maintained effects.
+
+`effects/lifetime.rs` evaluates active, suspended, ended and never-applied states with reasons.
+The existing impairment fixed-point solver evaluates these rules, retains independent overlapping
+contributions, and rejects oscillating dependencies. Curse, madness, master, protection and twin
+candidates use the same rule evaluator; their rule consumers and automatic reminders use its
+results. Ended markers disappear; suspended and never-applied markers use `inactiveReason`.
+Character modules still own target selection, day/night windows, replacement rules and grants.
+Historical causes, deaths, identity changes, delivered reveals and spent uses are not deleted.
+Undo and replay derive validity from the selected prefix; no effect status is serialized.
+
+Official SnV keeps a separate `characters/sects_and_violets/effect_lifetime.rs` implementation.
+It reconstructs Snake Charmer and Sweetheart bindings from canonical events and evaluates their
+dependencies around the existing SnV ability-state calculation. Inconsistent cycles fail replay.
+Legacy Cerenovus events have no ability-instance field; their acquisition event boundary excludes
+assignments made before the current identity. Its explicit window includes the following day and
+night, but not another day; a newer assignment supersedes the previous one. This does not migrate official TB/BMR, grants or the entire rules engine onto the custom evaluator.
+
+The saved `expires: never` DTO is unchanged and does not imply an unconditional effect. Existing
+files still cross strict event validation. An old result that depended on the fixed bug may fail
+replay; import does not rewrite previously delivered information or saved deaths. The reported
+Vortox game first conflicts at event 29 (Dreamer information), after 28 valid events. Historical
+recovery/versioning remains separate from this rule correction. See
+[the effect lifetime audit](docs/testing/effect-lifetime-audit.md).
+
 `simulation.rs` derives guidance and its usage from real sources and confirmed choices.
 The scheduler owns required preparation and optional candidates separately from ordered progress.
 Preparation records link each delivery to the chosen version; optional events cannot consume ordinary progress.
@@ -140,7 +226,7 @@ The UI receives read-only per-target evidence and Core-owned numeric delivery co
 Product-specific Jinx registrations retain their issue provenance internally and share the
 ordinary Jinx presentation; Boffin-origin acquisition restrictions follow nested grant provenance.
 
-Production registers 23 ordered TB/SnV/Carousel/BMR character actions and ten additional preparation or optional actions; fixture builds separately register only system
+Production registers ordered TB/SnV/Carousel/BMR character actions and additional preparation or optional actions; fixture builds separately register only system
 and test handlers. `scripts/check-custom-boundaries.mjs` rejects imports across the boundary,
 including indirect Cargo/TypeScript and source-include dependencies. Run its negative tests with
 `node --test scripts/check-custom-boundaries.test.mjs`.
@@ -762,7 +848,7 @@ Do not split public and secret stores for MVP. Add that only if reveal code beco
 
 Rust creates canonical confirmed events. TypeScript only stores confirmed events returned by Rust.
 
-TypeScript may keep draft UI state, such as selected seats, vote toggles, preview state, and open panels. Draft state is not persisted.
+TypeScript may keep draft UI state, such as selected seats, vote toggles, preview state, and open panels. These live-play drafts are not persisted. Pre-game setup inputs may be retained separately in browser history as described in Custom recovery routes; they never become canonical events before confirmation.
 
 Use a command/proposal/event flow.
 
@@ -907,11 +993,15 @@ Do not let TypeScript patch derived rules state directly.
 ## Custom recovery routes (#248)
 
 `/clocktower/custom/scenario/` opens authoring; `/clocktower/custom/grimoire/`
-lists the existing autosaved sessions. `?mode=setup` denotes in-memory setup and
-`?game=<game-id>` restores one exact saved game. Both HTML entries boot the same
-custom application. In-app History API transitions carry validated authoring input
-in memory; a cold setup route explains that setup was not saved and opens the list.
-Only a successful first durable save replaces the setup URL with a game URL.
+lists the existing autosaved sessions. `?mode=setup` restores the selected scenario
+and editable setup progress from that browser history entry; `?game=<game-id>`
+restores one exact saved game. Both HTML entries boot the same custom application.
+Setup history retains the definition, input draft, roster confirmation and active
+setup tab, including the transition before setup opens. Restoration checks the UI
+shape and recomputes distribution through Core. It never restores derived game facts
+or changes an existing autosave. A setup URL without a valid history draft offers
+the saved-game list. Successful first durable save replaces the setup URL with a
+game URL and removes the setup draft from that entry.
 
 The existing `session:custom:<script-id>` records remain the persistence boundary.
 Listing reads their names, actual game IDs and durable save times, isolating malformed
@@ -928,8 +1018,9 @@ operation is pending or failed. Canceling preserves the current screen and retry
 explicitly leaving or forced termination still restores only the last durable record.
 Read-only restoration and a saved public reveal do not trigger this exit warning.
 Durable activation does not cancel
-a navigation waiting for that save. Public reveals stay closed on restore. Editor drafts,
-pre-game setup and unconfirmed live inputs are not made durable by these routes.
+a navigation waiting for that save. Public reveals stay closed on restore. General editor
+drafts and unconfirmed live inputs are not persisted. Setup history is browser-local
+draft recovery; it does not create or replace a canonical game before Setup confirmation.
 
 The editor invalidates pending requests when hidden, and resumes interrupted order
 calculation or validation on return using the same draft and requested reset mode.
@@ -1141,7 +1232,7 @@ precedence. Replay alone admits an old leading Setup-preparation prefix, validat
 source, owner, input and historical snapshot. New proposals cannot use that compatibility path.
 
 `custom/grimoire/firstNightController` owns drafts, raw number text, selection handoff, proposals
-and reveal state. `grimoire-custom/actions/registry` explicitly maps all 29 supported action references to input, selection, completion, reveal and cancellation adapters without scheduling them. `grimoire-custom/taskPresentationModel` adapts that state and Core
+and reveal state. `grimoire-custom/actions/registry` explicitly maps all supported action references to input, selection, completion, reveal and cancellation adapters without scheduling them. `grimoire-custom/taskPresentationModel` adapts that state and Core
 projections to identity, actor, ability, stage, editor, result, warnings and actions. The task and
 board consume this model. Missing candidate contracts block confirmation instead of creating
 raw fallback forms. Setup choices carry the correct reminder owner and registration provenance;

@@ -10,6 +10,7 @@ use crate::{
 fn executed(f: &mut CustomGameFacts) {
     let mut day = DayProgress::new(1);
     day.execution = Some(ExecutionRecord {
+                prevention: None,
         event_id: "execution".into(),
         player_id: Some("p2".into()),
         death_event_id: Some("death".into()),
@@ -124,6 +125,12 @@ fn dead_barber_keeps_death_bound_token_until_handoff_is_resolved() {
 fn durable_poison_uses_historical_source_and_same_projection_for_spy_and_board() {
     let (context, mut f) = facts(&["snakeCharmer", "soldier"]);
     f.durable_impairments.push(DurableImpairment {
+        self_interaction: crate::effects::SelfInteraction::IgnoreOwnContribution,
+        rule: crate::effects::EffectRule {
+            binding: crate::effects::EffectBinding::ResultingIdentity(source(&f, 1)),
+            window: crate::effects::EffectWindow::NoDeadline,
+            established: true,
+        },
         source_ability_use: source(&f, 0),
         impairment: ActiveImpairment {
             kind: ImpairmentKind::Poisoned,
@@ -147,7 +154,7 @@ fn durable_poison_uses_historical_source_and_same_projection_for_spy_and_board()
 }
 #[test]
 fn cerenovus_token_lifetime_is_independent_of_target_death_and_expires_at_night() {
-    let (_, mut f) = facts(&["cerenovus", "soldier"]);
+    let (context, mut f) = facts(&["cerenovus", "soldier"]);
     executed(&mut f);
     f.madness_assignments
         .push(crate::contracts::MadnessAssignment {
@@ -160,9 +167,11 @@ fn cerenovus_token_lifetime_is_independent_of_target_death_and_expires_at_night(
             effective: true,
         });
     f.players[1].alive = false;
+    crate::effects::resolve_effects(&context, &mut f).unwrap();
     assert_eq!(project(&f)[0].token_id, "mad");
     assert_eq!(undertaker_count(&f), 0);
     f.day.as_mut().unwrap().stage = DayStage::Night;
+    crate::effects::resolve_effects(&context, &mut f).unwrap();
     assert!(project(&f).is_empty());
 }
 #[test]
@@ -172,6 +181,7 @@ fn registered_handlers_have_unique_supported_character_ids() {
         .into_iter()
         .chain(crate::characters::sects_and_violets::reminder_handlers())
         .chain(crate::characters::carousel::reminder_handlers())
+        .chain(crate::characters::bad_moon_rising::reminder_handlers())
     {
         assert!(seen.insert(h.character_id));
         assert!(crate::characters::character_kind(h.character_id).is_some());
@@ -202,7 +212,7 @@ fn philosopher_identity_marker_requires_a_live_grant_without_an_original_charact
 #[test]
 fn every_supported_character_has_an_audited_reminder_policy() {
     // Explicit exclusions: a catalog addition must be reviewed instead of silently lacking tokens.
-    let no_automatic_token = [
+    let no_automatic_token = ["gambler",
         "chambermaid",
         "zealot",
         "chef",
@@ -229,6 +239,7 @@ fn every_supported_character_has_an_audited_reminder_policy() {
         .into_iter()
         .chain(crate::characters::sects_and_violets::reminder_handlers())
         .chain(crate::characters::carousel::reminder_handlers())
+        .chain(crate::characters::bad_moon_rising::reminder_handlers())
         .map(|h| h.character_id)
         .collect::<Vec<_>>();
     for entry in crate::characters::custom_script_catalog() {
@@ -246,7 +257,7 @@ fn every_supported_character_has_an_audited_reminder_policy() {
     }
     assert_eq!(
         handlers.len() + no_automatic_token.len() + subsequent_night_only.len(),
-        55
+        63
     );
 }
 
@@ -276,6 +287,7 @@ fn observer_markers_use_action_time_identity_and_raw_votes_then_reset_at_dawn() 
         .collect::<Vec<_>>();
     let mut day = DayProgress::new(1);
     day.nominations.push(NominationRecord {
+        golem_effects: vec![],
         event_id: "nomination".into(),
         nominator_id: "p3".into(),
         nominee_id: "p2".into(),

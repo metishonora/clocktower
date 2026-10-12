@@ -657,7 +657,7 @@ fn trigger_impaired_klutz_proposes_target_free_canonical_no_effect() {
 }
 
 #[test]
-fn trigger_impaired_sweetheart_rejects_a_forged_unused_target() {
+fn former_snake_becomes_healthy_sweetheart_and_rejects_forged_no_effect() {
     let mut setup = setup_event("vortox");
     setup["payload"]["players"][0]["name"] = json!("Snake Charmer");
     setup["payload"]["players"][0]["actualCharacter"] = json!("snakeCharmer");
@@ -696,27 +696,30 @@ fn trigger_impaired_sweetheart_rejects_a_forged_unused_target() {
     let state = replay(&events);
     let pending = &state["value"]["pendingDeathConsequences"][0];
     assert_eq!(pending["kind"], "sweetheart");
-    assert_eq!(pending["actorImpairedAtTrigger"], true);
+    assert_eq!(pending["actorImpairedAtTrigger"], false);
     let proposal = propose(
         &events,
         json!({
             "type": "resolveSweetheartConsequence",
             "payload": {
                 "stepId": pending["stepId"],
-                "expectedEventCount": events.len()
+                "expectedEventCount": events.len(),
+                "targetPlayerId": "player-2"
             }
         }),
     );
     assert_eq!(proposal["ok"], true, "proposal failed: {proposal}");
-    assert!(proposal["value"]["event"]["payload"]
-        .get("targetPlayerId")
-        .is_none());
+    assert_eq!(
+        proposal["value"]["event"]["payload"]["targetPlayerId"],
+        "player-2"
+    );
 
     let mut canonical = events.clone();
     canonical.push(proposal["value"]["event"].clone());
     assert_eq!(replay(&canonical)["ok"], true);
 
     let mut forged = canonical;
-    forged.last_mut().unwrap()["payload"]["targetPlayerId"] = json!("player-2");
+    forged.last_mut().unwrap()["payload"]["outcome"] =
+        json!({"kind":"noEffect","reason":"actorImpairedAtDeath"});
     assert_replay_failed(&forged);
 }

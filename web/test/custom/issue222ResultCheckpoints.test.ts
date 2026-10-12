@@ -6,6 +6,23 @@ import {actionResultRows} from '../../src/custom/grimoire/actionResult';
 async function choose(c:FirstNightController,ids:string[],extra:Parameters<FirstNightController['updateInput']>[0]={}){
  c.beginSelection();for(const id of ids)c.togglePlayer(id);c.updateInput(extra);expect(c.selectionReady).toBe(true);await c.acceptSelection();expect(c.getSnapshot().error).toBeUndefined();
 }
+it('an in-play Pit-Hag choice preserves an unchanged result through restoration and Undo',async()=>{
+ const {controller:c,session}=await nightFixture(['soldier','monk','virgin','slayer','ravenkeeper','pitHag','vortox'],{},[],undefined,{},'p4');
+ try {
+  await choose(c,['p1']);
+  const before=c.getSnapshot().replay.players;
+  await choose(c,['p1'],{characterIds:['vortox']});
+  const result=c.getSnapshot().handoff?.result;
+  expect(c.getSnapshot().handoff).toMatchObject({stage:'result',notifications:[],result:{kind:'pitHagChange',changed:false,createdDemon:false}});
+  expect(c.getSnapshot().replay.players).toEqual(before);
+  expect(actionResultRows(result!,id=>id,id=>id)).toContainEqual({label:'결과',value:'변경 없음'});
+  const restored=new FirstNightController(session,realWasmCore());
+  try {expect(restored.getSnapshot().handoff?.result).toEqual(result);}finally{restored.dispose();}
+  c.finishHandoff();expect(c.getSnapshot().handoff).toBeUndefined();expect(c.step?.actionRef?.actionId).toBe('attackPlayer');
+  await c.undo();await vi.waitFor(()=>expect(c.getSnapshot().saveStatus).toBe('saved'));
+  expect(c.step?.actionRef?.actionId).toBe('changeCharacter');
+ }finally{c.dispose();}
+});
 it.each(['imp','fangGu','noDashii','vortox','vigormortis'])('%s preserves a saved attack result before the next action',async(demon)=>{
  const {controller:c}=await nightFixture(['soldier','monk','virgin',demon==='fangGu'?'saint':'slayer','ravenkeeper','scarletWoman',demon],{},[],undefined,{},demon==='vortox'?'p4':undefined);
  try{await choose(c,['p1']);await choose(c,['p3']);const state=c.getSnapshot(),count=state.file.game.events.length;

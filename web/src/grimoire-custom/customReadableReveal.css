@@ -61,3 +61,13 @@
  .customReadableTwins .evilTwinRevealIdentity > img { width:calc(84px * var(--reveal-scale)); height:calc(84px * var(--reveal-scale)); }
  .customReadableTwins .evilTwinRevealIdentity > strong { font-size:calc(21px * var(--reveal-scale)); }
 }
+
+/* Noble's reviewed three-card layout, isolated from existing public reveals. */
+.customNobleReveal .customReadablePanel { display:grid; grid-template-columns:minmax(0,1fr); justify-items:center; gap:32px; }
+.customNobleReveal .customReadableCards { max-width:720px; justify-self:center; margin-inline:auto; }
+.customNobleReveal .customReadableCard { flex:1; min-width:100px; max-width:calc(180px * var(--reveal-scale)); }
+@media(max-width:620px) {
+ .customNobleReveal .customReadablePanel { gap:28px; }
+ .customNobleReveal .customReadableCard { min-width:82px; max-width:calc(126px * var(--reveal-scale)); }
+ .customNobleReveal .customReadableCard :is(strong,span) { font-size:calc(23px * var(--reveal-scale)); }
+}

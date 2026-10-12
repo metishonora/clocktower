@@ -1,0 +1,974 @@
+diff --git i/crates/custom-domain/src/tests.rs w/crates/custom-domain/src/tests.rs
+index 701ec66..66405ee 100644
+--- i/crates/custom-domain/src/tests.rs
++++ w/crates/custom-domain/src/tests.rs
+@@ -120,3 +120,6 @@ mod issue237_carousel;
+
+ #[cfg(not(feature = "custom-runtime-fixtures"))]
+ mod vortox_pit_hag;
++
++#[cfg(not(feature = "custom-runtime-fixtures"))]
++mod effect_lifetime_audit;
+diff --git i/crates/domain/src/tests.rs w/crates/domain/src/tests.rs
+index 3eba84e..e7a199a 100644
+--- i/crates/domain/src/tests.rs
++++ w/crates/domain/src/tests.rs
+@@ -47,3 +47,7 @@ mod suggestion_scenarios;
+ mod support;
+ mod trouble_brewing_scenarios;
+ mod win_game_scenarios;
++
++mod effect_lifetime_snake_audit;
++mod effect_lifetime_sweetheart_audit;
++mod effect_lifetime_cerenovus_audit;
+diff --git 1/crates/custom-domain/src/tests/effect_lifetime_audit.rs 2/crates/custom-domain/src/tests/effect_lifetime_audit.rs
+new file mode 100644
+index 0000000..2489238
+--- /dev/null
++++ 2/crates/custom-domain/src/tests/effect_lifetime_audit.rs
+@@ -0,0 +1,386 @@
++//! Investigation probes: assert the intended rules; failures identify existing defects.
++use super::issue223_day::production;
++use super::issue225_nights::{begin_night, character, day, replay, step, system};
++use serde_json::{json, Value};
++fn has_effect(state: &Value, source: &str, target: &str) -> bool {
++    state["ruleState"]["activeImpairments"]
++        .as_array()
++        .is_some_and(|a| {
++            a.iter()
++                .any(|e| e["sourceCharacterId"] == source && e["playerId"] == target)
++        })
++}
++fn change(game: &mut Value, player: &str, role: &str) {
++    step(
++        game,
++        character("pitHag", "changeCharacter"),
++        json!({"playerIds":[player],"characterIds":[role]}),
++        None,
++    );
++}
++fn sweet_game() -> Value {
++    production(
++        &[
++            "soldier",
++            "virgin",
++            "slayer",
++            "artist",
++            "sweetheart",
++            "ravenkeeper",
++            "pitHag",
++            "imp",
++        ],
++        json!({}),
++    )
++}
++fn night_sweetheart() -> Value {
++    let mut g = sweet_game();
++    begin_night(&mut g);
++    change(&mut g, "p7", "pitHag");
++    step(
++        &mut g,
++        character("imp", "attackPlayer"),
++        json!({"playerIds":["p5"]}),
++        None,
++    );
++    step(
++        &mut g,
++        character("sweetheart", "makeDrunk"),
++        json!({"playerIds":["p2"]}),
++        None,
++    );
++    assert!(has_effect(&replay(&g), "sweetheart", "p2"));
++    step(&mut g, system("dawn"), Value::Null, None);
++    begin_night(&mut g);
++    g
++}
++#[test]
++fn audit_reported_snake_poison_ends_when_pit_hag_replaces_new_snake() {
++    let mut g: Value = serde_json::from_str(include_str!(
++        "../../../../fixtures/acceptance/vortox-pit-hag/reported-game.json"
++    ))
++    .unwrap();
++    g["game"]["events"].as_array_mut().unwrap().truncate(24);
++    assert!(has_effect(&replay(&g), "snakeCharmer", "player-1"));
++    change(&mut g, "player-1", "vortox");
++    assert!(
++        !has_effect(&replay(&g), "snakeCharmer", "player-1"),
++        "BUG: new Vortox still has the former Snake Charmer's poison"
++    );
++}
++#[test]
++fn audit_snake_poison_ends_after_barber_swap() {
++    let mut g = production(
++        &[
++            "snakeCharmer",
++            "virgin",
++            "barber",
++            "slayer",
++            "soldier",
++            "pitHag",
++            "imp",
++            "artist",
++        ],
++        json!({"choosePlayer":{"playerIds":["p7"]}}),
++    );
++    begin_night(&mut g);
++    step(
++        &mut g,
++        character("snakeCharmer", "choosePlayer"),
++        json!({"playerIds":["p7"]}),
++        None,
++    );
++    change(&mut g, "p6", "pitHag");
++    step(
++        &mut g,
++        character("imp", "attackPlayer"),
++        json!({"playerIds":["p3"]}),
++        None,
++    );
++    step(
++        &mut g,
++        character("barber", "swapCharacters"),
++        json!({"playerIds":["p7","p2"],"chooserPlayerId":"p1"}),
++        None,
++    );
++    let state = replay(&g);
++    assert_eq!(state["players"][6]["actualCharacter"], "virgin");
++    assert!(
++        !has_effect(&state, "snakeCharmer", "p7"),
++        "BUG: old Snake Charmer stays poisoned after Barber replacement"
++    );
++    assert!(!has_effect(&state, "snakeCharmer", "p2"));
++}
++#[test]
++fn audit_night_sweetheart_effect_ends_when_dead_source_changes() {
++    let mut g = night_sweetheart();
++    change(&mut g, "p5", "saint");
++    assert!(
++        !has_effect(&replay(&g), "sweetheart", "p2"),
++        "BUG: dead Sweetheart changed to Saint still drunks the victim"
++    );
++}
++#[test]
++fn audit_day_sweetheart_effect_ends_when_dead_source_changes() {
++    let mut g = sweet_game();
++    for _ in 0..3 {
++        day(&mut g, json!({"kind":"advance"}));
++    }
++    day(
++        &mut g,
++        json!({"kind":"nominate","nominatorId":"p1","nomineeId":"p5"}),
++    );
++    day(
++        &mut g,
++        json!({"kind":"vote","voterIds":["p1","p2","p3","p4","p5"]}),
++    );
++    day(&mut g, json!({"kind":"closeNominations"}));
++    day(&mut g, json!({"kind":"confirmExecution"}));
++    day(&mut g, json!({"kind":"confirmDeath"}));
++    let state = replay(&g);
++    let id = state["day"]["consequences"][0]["id"].clone();
++    day(
++        &mut g,
++        json!({"kind":"resolveConsequence","consequenceId":id,"playerId":"p2"}),
++    );
++    assert!(has_effect(&replay(&g), "sweetheart", "p2"));
++    day(&mut g, json!({"kind":"beginNight"}));
++    change(&mut g, "p5", "saint");
++    assert!(
++        !has_effect(&replay(&g), "sweetheart", "p2"),
++        "BUG: day-death Sweetheart effect survives source replacement"
++    );
++}
++#[test]
++fn audit_control_sweetheart_effect_survives_recipient_change() {
++    let mut g = night_sweetheart();
++    change(&mut g, "p2", "saint");
++    assert!(
++        has_effect(&replay(&g), "sweetheart", "p2"),
++        "Recipient replacement must not clear somebody else's ongoing effect"
++    );
++}
++#[test]
++fn audit_control_poisoner_source_change_expires_poison_but_recipient_change_does_not() {
++    for target in ["p1", "p2"] {
++        let mut g = production(
++            &[
++                "poisoner",
++                "virgin",
++                "soldier",
++                "slayer",
++                "artist",
++                "pitHag",
++                "imp",
++                "sage",
++                "flowergirl",
++                "townCrier",
++            ],
++            json!({"choosePoisonTarget":{"playerIds":["p2"]}}),
++        );
++        begin_night(&mut g);
++        step(
++            &mut g,
++            character("poisoner", "choosePoisonTarget"),
++            json!({"playerIds":["p2"]}),
++            None,
++        );
++        assert!(has_effect(&replay(&g), "poisoner", "p2"));
++        change(&mut g, target, "saint");
++        assert_eq!(has_effect(&replay(&g), "poisoner", "p2"), target == "p2");
++    }
++}
++#[test]
++fn audit_control_philosopher_source_change_expires_grant_and_drunk() {
++    let mut g = production(
++        &[
++            "philosopher",
++            "artist",
++            "soldier",
++            "slayer",
++            "virgin",
++            "pitHag",
++            "imp",
++        ],
++        json!({"chooseAbility":{"characterIds":["artist"]}}),
++    );
++    assert!(has_effect(&replay(&g), "philosopher", "p2"));
++    begin_night(&mut g);
++    change(&mut g, "p1", "saint");
++    assert!(!has_effect(&replay(&g), "philosopher", "p2"));
++    assert!(replay(&g)["ruleState"]["abilityGrants"]
++        .as_array()
++        .is_none_or(|a| a.is_empty()));
++}
++#[test]
++fn audit_control_witch_and_cerenovus_source_change_expires_assignment() {
++    for (role, action, collection, input) in [
++        (
++            "witch",
++            "chooseCursedPlayer",
++            "witchCurses",
++            json!({"playerIds":["p2"]}),
++        ),
++        (
++            "cerenovus",
++            "assignMadness",
++            "madnessAssignments",
++            json!({"playerIds":["p2"],"characterId":"soldier"}),
++        ),
++    ] {
++        for target in ["p1", "p2"] {
++            let mut inputs = json!({});
++            inputs[action] = input.clone();
++            let mut g = production(
++                &[
++                    role,
++                    "virgin",
++                    "soldier",
++                    "slayer",
++                    "artist",
++                    "pitHag",
++                    "imp",
++                    "sage",
++                    "flowergirl",
++                    "townCrier",
++                ],
++                inputs,
++            );
++            begin_night(&mut g);
++            step(&mut g, character(role, action), input.clone(), None);
++            change(&mut g, target, "saint");
++            let state = replay(&g);
++            let entries = if role == "cerenovus" {
++                &state[collection]
++            } else {
++                &state["ruleState"][collection]
++            };
++            assert_eq!(
++                entries.as_array().unwrap().last().unwrap()["effective"],
++                target == "p2"
++            );
++        }
++    }
++}
++
++#[test]
++fn audit_witch_reminder_expires_when_source_changes() {
++    check_expired_reminder(
++        "witch",
++        "chooseCursedPlayer",
++        json!({"playerIds":["p2"]}),
++        "cursed",
++    );
++}
++#[test]
++fn audit_cerenovus_reminder_expires_when_source_changes() {
++    check_expired_reminder(
++        "cerenovus",
++        "assignMadness",
++        json!({"playerIds":["p2"],"characterId":"soldier"}),
++        "mad",
++    );
++}
++fn check_expired_reminder(role: &str, action: &str, input: Value, token: &str) {
++    let mut inputs = json!({});
++    inputs[action] = input.clone();
++    let mut g = production(
++        &[
++            role,
++            "virgin",
++            "soldier",
++            "slayer",
++            "artist",
++            "pitHag",
++            "imp",
++            "sage",
++            "flowergirl",
++            "townCrier",
++        ],
++        inputs,
++    );
++    begin_night(&mut g);
++    step(&mut g, character(role, action), input, None);
++    change(&mut g, "p1", "saint");
++    let state = replay(&g);
++    let reminders = state["ruleState"]["automaticReminders"].as_array().unwrap();
++    assert!(!reminders.iter().any(|r|r["characterId"]==role && r["tokenId"]==token),"BUG: removed {role} ability still projects an active-looking {token} marker: {reminders:?}");
++}
++#[test]
++fn audit_sweetheart_effect_pauses_when_dead_source_is_poisoned_bounded() {
++    use super::issue207_impairments::{facts, source};
++    use crate::{
++        contracts::{ActiveImpairment, ImpairmentExpiry, ImpairmentKind},
++        state::DurableImpairment,
++    };
++    let (context, mut f) = facts(&["sweetheart", "artist", "poisoner"]);
++    f.players[0].alive = false;
++    f.durable_impairments.push(DurableImpairment {
++        source_ability_use: source(&f, 0),
++        impairment: ActiveImpairment {
++            player_id: "p2".into(),
++            kind: ImpairmentKind::Drunk,
++            source_event_id: "death".into(),
++            source_character_id: "sweetheart".into(),
++            expires: ImpairmentExpiry::Never,
++        },
++    });
++    crate::effects::resolve_effects(&context, &mut f).unwrap();
++    assert!(f.active_impairments.iter().any(|e| e.player_id == "p2"));
++    f.active_impairments.push(ActiveImpairment {
++        player_id: "p1".into(),
++        kind: ImpairmentKind::Poisoned,
++        source_event_id: "poison".into(),
++        source_character_id: "poisoner".into(),
++        expires: ImpairmentExpiry::WhileSourceAbilityActive,
++    });
++    crate::effects::resolve_effects(&context, &mut f).unwrap();
++    assert!(
++        !f.active_impairments.iter().any(|e| e.player_id == "p2"),
++        "BUG: Sweetheart drunk does not suspend when the dead source is poisoned"
++    );
++}
++
++#[test]
++fn audit_butler_reminder_expires_when_source_changes() {
++    let mut g = production(
++        &[
++            "soldier",
++            "virgin",
++            "slayer",
++            "artist",
++            "butler",
++            "ravenkeeper",
++            "pitHag",
++            "imp",
++        ],
++        json!({"chooseMaster":{"playerIds":["p2"]}}),
++    );
++    // Custom scripts permit this authored order. No other-night event exists yet.
++    let order = g["game"]["script"]["definition"]["otherNightOrder"]
++        .as_array_mut()
++        .unwrap();
++    let at = order
++        .iter()
++        .position(|a| a["characterId"] == "butler")
++        .unwrap();
++    let action = order.remove(at);
++    order.insert(1, action);
++    begin_night(&mut g);
++    step(
++        &mut g,
++        character("butler", "chooseMaster"),
++        json!({"playerIds":["p2"]}),
++        None,
++    );
++    change(&mut g, "p5", "saint");
++    let state = replay(&g);
++    assert!(
++        !state["ruleState"]["automaticReminders"]
++            .as_array()
++            .into_iter()
++            .flatten()
++            .any(|r| r["characterId"] == "butler" && r["tokenId"] == "master"),
++        "BUG: replaced Butler still projects the former master marker"
++    );
++}
+diff --git 1/crates/domain/src/tests/effect_lifetime_snake_audit.rs 2/crates/domain/src/tests/effect_lifetime_snake_audit.rs
+new file mode 100644
+index 0000000..8176a21
+--- /dev/null
++++ 2/crates/domain/src/tests/effect_lifetime_snake_audit.rs
+@@ -0,0 +1,190 @@
++use crate::{propose_json, replay_json};
++use serde_json::{json, Value};
++
++use super::support::snv_demon_bluff_input;
++
++fn setup_event(players: Value) -> Value {
++    json!({
++        "id": "setup-1",
++        "type": "setupConfirmed",
++        "phase": "setup",
++        "payload": { "players": players },
++        "summary": "초기 설정 확정: 7명",
++        "createdAt": "2026-07-23T00:00:00.000Z"
++    })
++}
++
++fn standard_setup() -> Value {
++    setup_event(json!([
++        { "id": "player-1", "seat": 1, "name": "Snake", "actualCharacter": "snakeCharmer", "shownCharacter": "snakeCharmer" },
++        { "id": "player-2", "seat": 2, "name": "Clock", "actualCharacter": "clockmaker", "shownCharacter": "clockmaker" },
++        { "id": "player-3", "seat": 3, "name": "Dreamer", "actualCharacter": "dreamer", "shownCharacter": "dreamer" },
++        { "id": "player-4", "seat": 4, "name": "Seamstress", "actualCharacter": "seamstress", "shownCharacter": "seamstress" },
++        { "id": "player-5", "seat": 5, "name": "Mathematician", "actualCharacter": "mathematician", "shownCharacter": "mathematician" },
++        { "id": "player-6", "seat": 6, "name": "Pit-Hag", "actualCharacter": "pitHag", "shownCharacter": "pitHag" },
++        { "id": "player-7", "seat": 7, "name": "Vigormortis", "actualCharacter": "vigormortis", "shownCharacter": "vigormortis" }
++    ]))
++}
++
++fn game(events: Vec<Value>) -> Value {
++    json!({
++        "schemaVersion": 3,
++        "game": {
++            "id": "game-issue-101",
++            "name": "Snake Charmer",
++            "scriptId": "sectsAndViolets",
++            "createdAt": "2026-07-23T00:00:00.000Z",
++            "updatedAt": "2026-07-23T00:00:00.000Z",
++            "events": events
++        }
++    })
++}
++
++fn replay(events: &[Value]) -> Value {
++    serde_json::from_str(&replay_json(&game(events.to_vec()).to_string())).unwrap()
++}
++
++fn propose(events: &[Value], command: Value) -> Value {
++    serde_json::from_str(&propose_json(
++        &game(events.to_vec()).to_string(),
++        &command.to_string(),
++    ))
++    .unwrap()
++}
++
++fn append(events: &mut Vec<Value>, command: Value) -> Value {
++    let proposal = propose(events, command);
++    assert_eq!(proposal["ok"], true, "proposal failed: {proposal}");
++    events.push(proposal["value"]["event"].clone());
++    proposal
++}
++
++fn advance_to_snake_charmer(events: &mut Vec<Value>, later_night_only: bool) -> Value {
++    for _ in 0..96 {
++        let state = replay(events);
++        assert_eq!(state["ok"], true, "replay failed: {state}");
++        let step = &state["value"]["currentStep"];
++        if step["character"] == "snakeCharmer"
++            && (!later_night_only || state["value"]["phase"] == "night")
++        {
++            return state;
++        }
++        let step_id = step["id"].as_str().expect("step id");
++        let command = if step["requiredInput"]["kind"] == "nomination" {
++            json!({ "type": "skipStep", "payload": { "stepId": step_id } })
++        } else if step["requiredInput"]["kind"] == "executionDecision" {
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })
++        } else if step["requiredInput"]["kind"] == "characterTransformation" {
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": ["player-6"], "characterIds": ["pitHag"] } } })
++        } else if step_id == "firstNight:demonInfo" {
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": snv_demon_bluff_input(step) } })
++        } else if step["support"] == "manual" {
++            json!({ "type": "resolveManualStep", "payload": { "stepId": step_id, "outcome": "handled" } })
++        } else if step["id"].as_str().is_some_and(|id| id.contains(":demon:")) {
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": ["player-2"] } } })
++        } else if step["character"] == "dreamer" {
++            let check = &step["informationPrompt"]["targetChecks"][0];
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": check["targetPlayerIds"] }, "deliveredResult": check["choices"][0]["result"] } })
++        } else if step["character"] == "seamstress" {
++            json!({ "type": "skipStep", "payload": { "stepId": step_id } })
++        } else {
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": null } })
++        };
++        append(events, command);
++    }
++    panic!("did not reach Snake Charmer step");
++}
++
++fn advance_to_character(events: &mut Vec<Value>, character: &str) -> Value {
++    for _ in 0..48 {
++        let state = replay(events);
++        assert_eq!(state["ok"], true, "replay failed: {state}");
++        let step = &state["value"]["currentStep"];
++        if step["character"] == character {
++            return state;
++        }
++        let step_id = step["id"].as_str().expect("step id");
++        let command = if step["requiredInput"]["kind"] == "nomination" {
++            json!({ "type": "skipStep", "payload": { "stepId": step_id } })
++        } else if step["requiredInput"]["kind"] == "executionDecision" {
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })
++        } else if step["requiredInput"]["kind"] == "characterTransformation" {
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": [step["playerId"]], "characterIds": ["pitHag"] } } })
++        } else if step["character"] == "dreamer" {
++            let check = &step["informationPrompt"]["targetChecks"][0];
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": check["targetPlayerIds"] }, "deliveredResult": check["choices"][0]["result"] } })
++        } else if step["character"] == "seamstress" {
++            json!({ "type": "skipStep", "payload": { "stepId": step_id } })
++        } else if step["support"] == "manual" {
++            json!({ "type": "resolveManualStep", "payload": { "stepId": step_id, "outcome": "handled" } })
++        } else {
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": null } })
++        };
++        append(events, command);
++    }
++    panic!("did not reach {character}");
++}
++
++fn snake_step_id(state: &Value) -> &str {
++    state["value"]["currentStep"]["id"]
++        .as_str()
++        .expect("Snake Charmer step id")
++}
++
++#[test]
++fn audit_official_snake_poison_ends_on_source_change() {
++    let mut events = vec![standard_setup()];
++    let first_snake = advance_to_snake_charmer(&mut events, false);
++    append(
++        &mut events,
++        json!({
++            "type": "confirmStep",
++            "payload": {
++                "stepId": snake_step_id(&first_snake),
++                "input": { "playerIds": ["player-6"] }
++            }
++        }),
++    );
++    let snake = advance_to_snake_charmer(&mut events, true);
++    let swap = append(
++        &mut events,
++        json!({
++            "type": "confirmStep",
++            "payload": {
++                "stepId": snake_step_id(&snake),
++                "input": { "playerIds": ["player-7"] }
++            }
++        }),
++    );
++    assert_eq!(
++        swap["value"]["event"]["payload"]["outcome"]["kind"], "swap",
++        "{swap}"
++    );
++
++    let pit_hag = advance_to_character(&mut events, "pitHag");
++    let change = append(
++        &mut events,
++        json!({
++            "type": "confirmStep",
++            "payload": {
++                "stepId": pit_hag["value"]["currentStep"]["id"],
++                "input": { "playerIds": ["player-7"], "characterIds": ["witch"] }
++            }
++        }),
++    );
++    assert_eq!(
++        change["value"]["event"]["payload"]["outcome"]["kind"], "changed",
++        "{change}"
++    );
++
++    let after = replay(&events);
++    assert_eq!(after["ok"], true, "{after}");
++    assert!(
++        !after["value"]["ruleState"]["activeImpairments"]
++            .as_array()
++            .is_some_and(|a| a
++                .iter()
++                .any(|i| i["playerId"] == "player-7" && i["sourceCharacterId"] == "snakeCharmer")),
++        "BUG: official runtime retains Snake Charmer poison after character replacement"
++    );
++}
+diff --git 1/crates/domain/src/tests/effect_lifetime_sweetheart_audit.rs 2/crates/domain/src/tests/effect_lifetime_sweetheart_audit.rs
+new file mode 100644
+index 0000000..be19485
+--- /dev/null
++++ 2/crates/domain/src/tests/effect_lifetime_sweetheart_audit.rs
+@@ -0,0 +1,170 @@
++use crate::{propose_json, replay_json};
++use serde_json::{json, Value};
++
++use super::support::snv_demon_bluff_input;
++
++fn setup_event() -> Value {
++    json!({
++        "id": "setup-issue-103",
++        "type": "setupConfirmed",
++        "phase": "setup",
++        "payload": { "players": [
++            { "id": "player-1", "seat": 1, "name": "Sweetheart", "actualCharacter": "sweetheart", "shownCharacter": "sweetheart" },
++            { "id": "player-2", "seat": 2, "name": "Barber", "actualCharacter": "barber", "shownCharacter": "barber" },
++            { "id": "player-3", "seat": 3, "name": "Klutz", "actualCharacter": "klutz", "shownCharacter": "klutz" },
++            { "id": "player-4", "seat": 4, "name": "Clockmaker", "actualCharacter": "clockmaker", "shownCharacter": "clockmaker" },
++            { "id": "player-5", "seat": 5, "name": "Savant", "actualCharacter": "savant", "shownCharacter": "savant" },
++            { "id": "player-6", "seat": 6, "name": "Pit-Hag", "actualCharacter": "pitHag", "shownCharacter": "pitHag" },
++            { "id": "player-7", "seat": 7, "name": "Vigormortis", "actualCharacter": "vigormortis", "shownCharacter": "vigormortis" }
++        ] },
++        "summary": "issue 103 setup",
++        "createdAt": "2026-07-28T00:00:00.000Z"
++    })
++}
++
++fn game(events: Vec<Value>) -> Value {
++    json!({
++        "schemaVersion": 3,
++        "game": {
++            "id": "game-issue-103",
++            "name": "Death consequences",
++            "scriptId": "sectsAndViolets",
++            "createdAt": "2026-07-28T00:00:00.000Z",
++            "updatedAt": "2026-07-28T00:00:00.000Z",
++            "events": events
++        }
++    })
++}
++
++fn replay(events: &[Value]) -> Value {
++    serde_json::from_str(&replay_json(&game(events.to_vec()).to_string())).unwrap()
++}
++
++fn propose(events: &[Value], command: Value) -> Value {
++    serde_json::from_str(&propose_json(
++        &game(events.to_vec()).to_string(),
++        &command.to_string(),
++    ))
++    .unwrap()
++}
++
++fn append(events: &mut Vec<Value>, command: Value) -> Value {
++    let proposal = propose(events, command);
++    assert_eq!(proposal["ok"], true, "proposal failed: {proposal}");
++    events.push(proposal["value"]["event"].clone());
++    proposal
++}
++
++fn default_command(state: &Value, demon_target: &str) -> Value {
++    let step = &state["value"]["currentStep"];
++    let step_id = step["id"].as_str().expect("step id");
++    match step["requiredInput"]["kind"].as_str().unwrap_or("none") {
++        "nomination" => json!({ "type": "skipStep", "payload": { "stepId": step_id } }),
++        "executionDecision" => {
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })
++        }
++        "characterTransformation" => json!({
++            "type": "confirmStep",
++            "payload": { "stepId": step_id, "input": { "playerIds": ["player-6"], "characterIds": ["pitHag"] } }
++        }),
++        "characterIds" if step_id == "firstNight:demonInfo" => json!({
++            "type": "confirmStep",
++            "payload": { "stepId": step_id, "input": snv_demon_bluff_input(step) }
++        }),
++        "playerIds" if step_id.contains(":demon:") => json!({
++            "type": "confirmStep",
++            "payload": { "stepId": step_id, "input": { "playerIds": [demon_target] } }
++        }),
++        "playerIds" if step["character"] == "dreamer" => {
++            let check = &step["informationPrompt"]["targetChecks"][0];
++            json!({
++                "type": "confirmStep",
++                "payload": {
++                    "stepId": step_id,
++                    "input": { "playerIds": check["targetPlayerIds"] },
++                    "deliveredResult": check["choices"][0]["result"]
++                }
++            })
++        }
++        "number" => json!({
++            "type": "confirmStep",
++            "payload": {
++                "stepId": step_id,
++                "input": null,
++                "deliveredResult": {
++                    "kind": "number",
++                    "value": step["informationPrompt"]["numberChoices"][0]["value"].as_u64().unwrap_or(100)
++                }
++            }
++        }),
++        _ if step["support"] == "manual" => json!({
++            "type": "resolveManualStep",
++            "payload": { "stepId": step_id, "outcome": "handled" }
++        }),
++        _ => json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": null } }),
++    }
++}
++
++fn advance_until(
++    events: &mut Vec<Value>,
++    demon_target: &str,
++    wanted: impl Fn(&Value) -> bool,
++) -> Value {
++    for _ in 0..96 {
++        let state = replay(events);
++        assert_eq!(state["ok"], true, "replay failed: {state}");
++        if wanted(&state) {
++            return state;
++        }
++        let command = default_command(&state, demon_target);
++        let proposal = propose(events, command.clone());
++        assert_eq!(
++            proposal["ok"], true,
++            "proposal failed for state {state} with {command}: {proposal}"
++        );
++        events.push(proposal["value"]["event"].clone());
++    }
++    panic!("wanted state was not reached")
++}
++
++fn attack(events: &mut Vec<Value>, target_player_id: &str) -> Value {
++    let demon = advance_until(events, target_player_id, |state| {
++        state["value"]["phase"] == "night"
++            && state["value"]["currentStep"]["id"]
++                .as_str()
++                .is_some_and(|id| id.contains(":demon:"))
++    });
++    append(events, default_command(&demon, target_player_id))
++}
++
++#[test]
++fn audit_official_sweetheart_drunk_ends_on_source_change() {
++    let mut events = vec![setup_event()];
++    attack(&mut events, "player-1");
++    let pending = replay(&events);
++    let command = json!({"type":"resolveSweetheartConsequence","payload":{"stepId":pending["value"]["pendingDeathConsequences"][0]["stepId"],"targetPlayerId":"player-5","expectedEventCount":events.len()}});
++    append(&mut events, command);
++    let has_drunk = |state: &Value| {
++        state["value"]["ruleState"]["activeImpairments"]
++            .as_array()
++            .is_some_and(|a| {
++                a.iter()
++                    .any(|i| i["sourceCharacterId"] == "sweetheart" && i["playerId"] == "player-5")
++            })
++    };
++    assert!(has_drunk(&replay(&events)));
++    let pit = advance_until(&mut events, "player-4", |s| {
++        s["value"]["currentStep"]["character"] == "pitHag" && s["value"]["phase"] == "night"
++    });
++    append(
++        &mut events,
++        json!({"type":"confirmStep","payload":{"stepId":pit["value"]["currentStep"]["id"],"input":{"playerIds":["player-1"],"characterIds":["mutant"]}}}),
++    );
++    let after = replay(&events);
++    assert_eq!(after["ok"], true, "{after}");
++    assert_eq!(after["value"]["players"][0]["actualCharacter"], "mutant");
++    assert!(
++        !has_drunk(&after),
++        "BUG: official runtime retains Sweetheart drunk after character replacement"
++    );
++}
+diff --git 1/crates/domain/src/tests/effect_lifetime_cerenovus_audit.rs 2/crates/domain/src/tests/effect_lifetime_cerenovus_audit.rs
+new file mode 100644
+index 0000000..bb14e29
+--- /dev/null
++++ 2/crates/domain/src/tests/effect_lifetime_cerenovus_audit.rs
+@@ -0,0 +1,181 @@
++use crate::{propose_json, replay_json};
++use serde_json::{json, Value};
++
++use super::support::snv_demon_bluff_input;
++
++fn setup_event() -> Value {
++    json!({
++        "id": "setup-issue-103",
++        "type": "setupConfirmed",
++        "phase": "setup",
++        "payload": { "players": [
++            { "id": "player-1", "seat": 1, "name": "Sweetheart", "actualCharacter": "oracle", "shownCharacter": "oracle" },
++            { "id": "player-2", "seat": 2, "name": "Barber", "actualCharacter": "barber", "shownCharacter": "barber" },
++            { "id": "player-3", "seat": 3, "name": "Klutz", "actualCharacter": "klutz", "shownCharacter": "klutz" },
++            { "id": "player-4", "seat": 4, "name": "Clockmaker", "actualCharacter": "clockmaker", "shownCharacter": "clockmaker" },
++            { "id": "player-5", "seat": 5, "name": "Savant", "actualCharacter": "cerenovus", "shownCharacter": "cerenovus" },
++            { "id": "player-6", "seat": 6, "name": "Pit-Hag", "actualCharacter": "pitHag", "shownCharacter": "pitHag" },
++            { "id": "player-7", "seat": 7, "name": "Vigormortis", "actualCharacter": "vigormortis", "shownCharacter": "vigormortis" }
++        ] },
++        "summary": "issue 103 setup",
++        "createdAt": "2026-07-28T00:00:00.000Z"
++    })
++}
++
++fn game(events: Vec<Value>) -> Value {
++    json!({
++        "schemaVersion": 3,
++        "game": {
++            "id": "game-issue-103",
++            "name": "Death consequences",
++            "scriptId": "sectsAndViolets",
++            "createdAt": "2026-07-28T00:00:00.000Z",
++            "updatedAt": "2026-07-28T00:00:00.000Z",
++            "events": events
++        }
++    })
++}
++
++fn replay(events: &[Value]) -> Value {
++    serde_json::from_str(&replay_json(&game(events.to_vec()).to_string())).unwrap()
++}
++
++fn propose(events: &[Value], command: Value) -> Value {
++    serde_json::from_str(&propose_json(
++        &game(events.to_vec()).to_string(),
++        &command.to_string(),
++    ))
++    .unwrap()
++}
++
++fn append(events: &mut Vec<Value>, command: Value) -> Value {
++    let proposal = propose(events, command);
++    assert_eq!(proposal["ok"], true, "proposal failed: {proposal}");
++    events.push(proposal["value"]["event"].clone());
++    proposal
++}
++
++fn default_command(state: &Value, demon_target: &str) -> Value {
++    let step = &state["value"]["currentStep"];
++    let step_id = step["id"].as_str().expect("step id");
++    match step["requiredInput"]["kind"].as_str().unwrap_or("none") {
++        "madnessAssignment" => {
++            json!({"type":"confirmStep","payload":{"stepId":step_id,"input":{"playerIds":["player-4"],"characterId":"clockmaker"}}})
++        }
++        "nomination" => json!({ "type": "skipStep", "payload": { "stepId": step_id } }),
++        "executionDecision" => {
++            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })
++        }
++        "characterTransformation" => json!({
++            "type": "confirmStep",
++            "payload": { "stepId": step_id, "input": { "playerIds": ["player-6"], "characterIds": ["pitHag"] } }
++        }),
++        "characterIds" if step_id == "firstNight:demonInfo" => json!({
++            "type": "confirmStep",
++            "payload": { "stepId": step_id, "input": snv_demon_bluff_input(step) }
++        }),
++        "playerIds" if step_id.contains(":demon:") => json!({
++            "type": "confirmStep",
++            "payload": { "stepId": step_id, "input": { "playerIds": [demon_target] } }
++        }),
++        "playerIds" if step["character"] == "dreamer" => {
++            let check = &step["informationPrompt"]["targetChecks"][0];
++            json!({
++                "type": "confirmStep",
++                "payload": {
++                    "stepId": step_id,
++                    "input": { "playerIds": check["targetPlayerIds"] },
++                    "deliveredResult": check["choices"][0]["result"]
++                }
++            })
++        }
++        "number" => json!({
++            "type": "confirmStep",
++            "payload": {
++                "stepId": step_id,
++                "input": null,
++                "deliveredResult": {
++                    "kind": "number",
++                    "value": step["informationPrompt"]["numberChoices"][0]["value"].as_u64().unwrap_or(100)
++                }
++            }
++        }),
++        _ if step["support"] == "manual" => json!({
++            "type": "resolveManualStep",
++            "payload": { "stepId": step_id, "outcome": "handled" }
++        }),
++        _ => json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": null } }),
++    }
++}
++
++fn advance_until(
++    events: &mut Vec<Value>,
++    demon_target: &str,
++    wanted: impl Fn(&Value) -> bool,
++) -> Value {
++    for _ in 0..96 {
++        let state = replay(events);
++        assert_eq!(state["ok"], true, "replay failed: {state}");
++        if wanted(&state) {
++            return state;
++        }
++        let command = default_command(&state, demon_target);
++        let proposal = propose(events, command.clone());
++        assert_eq!(
++            proposal["ok"], true,
++            "proposal failed for state {state} with {command}: {proposal}"
++        );
++        events.push(proposal["value"]["event"].clone());
++    }
++    panic!("wanted state was not reached")
++}
++
++fn attack(events: &mut Vec<Value>, target_player_id: &str) -> Value {
++    let demon = advance_until(events, target_player_id, |state| {
++        state["value"]["phase"] == "night"
++            && state["value"]["currentStep"]["id"]
++                .as_str()
++                .is_some_and(|id| id.contains(":demon:"))
++    });
++    append(events, default_command(&demon, target_player_id))
++}
++
++#[test]
++fn audit_official_old_cerenovus_madness_must_not_revive_on_reacquisition() {
++    let mut events = vec![setup_event()];
++    let pit = advance_until(&mut events, "player-1", |s| {
++        s["value"]["currentStep"]["character"] == "pitHag" && s["value"]["phase"] == "night"
++    });
++    let assignments = |s: &Value| {
++        s["value"]["madnessAssignments"]
++            .as_array()
++            .into_iter()
++            .flatten()
++            .filter(|a| a["sourceCharacterId"] == "cerenovus")
++            .cloned()
++            .collect::<Vec<_>>()
++    };
++    let before = assignments(&pit);
++    assert_eq!(before.len(), 1);
++    let old_id = before[0]["assignmentId"].clone();
++    append(
++        &mut events,
++        json!({"type":"confirmStep","payload":{"stepId":pit["value"]["currentStep"]["id"],"input":{"playerIds":["player-5"],"characterIds":["artist"]}}}),
++    );
++    assert!(assignments(&replay(&events)).is_empty());
++    let pit = advance_until(&mut events, "player-1", |s| {
++        s["value"]["currentStep"]["character"] == "pitHag" && s["value"]["phase"] == "night"
++    });
++    append(
++        &mut events,
++        json!({"type":"confirmStep","payload":{"stepId":pit["value"]["currentStep"]["id"],"input":{"playerIds":["player-5"],"characterIds":["cerenovus"]}}}),
++    );
++    let after = replay(&events);
++    assert_eq!(after["ok"], true, "{after}");
++    assert_eq!(after["value"]["players"][4]["actualCharacter"], "cerenovus");
++    let stale = assignments(&after);
++    assert!(
++        stale.is_empty(),
++        "BUG: old Cerenovus assignment {old_id} revived on new instance: {stale:?}"
++    );
++}

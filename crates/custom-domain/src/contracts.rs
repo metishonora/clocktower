@@ -297,6 +297,10 @@ pub(crate) enum ReplayScriptIdentity {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RuleState {
     #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) scheduled_deaths: Vec<crate::characters::bad_moon_rising::ScheduledDeathView>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) death_resolutions: Vec<crate::death::Record>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub(crate) automatic_reminders: Vec<AutomaticReminder>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub(crate) preparations: Vec<PreparationRecord>,
@@ -376,6 +380,11 @@ pub(crate) enum RevealPayload {
         character_id: String,
         #[serde(rename = "sourceCharacterId")]
         source_character_id: String,
+    },
+    NobleInformation {
+        kind: &'static str,
+        #[serde(rename = "candidatePlayers")]
+        candidate_players: Vec<RevealPlayer>,
     },
     LearnedPlayer {
         kind: &'static str,
@@ -572,6 +581,11 @@ pub(crate) struct GameEvent {
     deny_unknown_fields
 )]
 pub(crate) enum CustomActionResult {
+    GrandmotherLearned { target_player_id: String, information: ConfirmedInformation },
+    MoonchildResolved { target_player_id: String, chosen_good: bool, effective: bool, deaths: Vec<crate::death::Outcome> },
+    GamblerGuessed { target_player_id: String, character_id: String, correct: bool, effective: bool, deaths: Vec<crate::death::Outcome> },
+    DevilsAdvocateProtected { target_player_id: String, night: u32, effective: bool },
+    AssassinUsed { target_player_id: Option<String>, spent: bool, deaths: Vec<crate::death::Outcome> },
     PreacherSelected {
         target_player_id: String,
         effective: bool,

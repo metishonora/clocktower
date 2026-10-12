@@ -17,11 +17,11 @@ const SYSTEM_ONLY_FIRST_NIGHT_ORDER = [
 ];
 
 test("builds the exact supported custom allowlist with canonical kinds", () => {
-  equal(customScriptCharacters.length, 55);
-  equal(new Set(customScriptCharacters.map(({ id }) => id)).size, 55);
+  equal(customScriptCharacters.length, 63);
+  equal(new Set(customScriptCharacters.map(({ id }) => id)).size, 63);
   deepEqual(
     customScriptCharacters.map(({ id }) => id),
-    [...baseline.map(({ id }) => id), 'preacher', 'zealot', 'nightwatchman', 'pixie', 'balloonist', 'boffin', 'marionette', 'chambermaid'],
+    [...baseline.map(({ id }) => id), 'noble', 'preacher', 'zealot', 'golem', 'nightwatchman', 'pixie', 'balloonist', 'boffin', 'marionette', 'chambermaid', 'fool', 'gambler', 'devilsAdvocate', 'assassin', 'grandmother', 'moonchild'],
   );
   equal(customScriptCharacterKind("imp"), "Demon");
   equal(customScriptCharacterKind("clockmaker"), "Townsfolk");
@@ -33,7 +33,7 @@ test("keeps non-canonical and unsupported BMR IDs outside the custom allowlist",
   equal(isCustomScriptCharacter("imp"), true);
   equal(isCustomScriptCharacter("Imp"), false);
   equal(isCustomScriptCharacter("futureCharacter"), false);
-  for (const id of ["grandmother", "sailor", "exorcist", "innkeeper", "gambler", "gossip", "courtier", "professor", "minstrel", "teaLady", "pacifist", "fool", "tinker", "moonchild", "goon", "lunatic", "godfather", "devilsAdvocate", "assassin", "mastermind", "zombuul", "pukka", "shabaloth", "po"]) {
+  for (const id of ["sailor", "exorcist", "innkeeper", "gossip", "courtier", "professor", "minstrel", "teaLady", "pacifist", "tinker", "goon", "lunatic", "godfather", "mastermind", "zombuul", "pukka", "shabaloth", "po"]) {
     equal(isCustomScriptCharacter(id), false, id);
   }
 });
@@ -63,7 +63,7 @@ test("resolves supported definitions without changing order and rejects unsuppor
     characterIds: [],
     firstNightOrder: SYSTEM_ONLY_FIRST_NIGHT_ORDER,
   });
-  for (const characterId of ["Imp", "futureCharacter", "grandmother"]) {
+  for (const characterId of ["Imp", "futureCharacter", "sailor"]) {
     throws(
       () => resolveCustomScriptDefinition({ ...definition, characterIds: ["imp", characterId] }),
     );

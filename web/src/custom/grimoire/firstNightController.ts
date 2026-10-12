@@ -1,3 +1,4 @@
+import {nobleInformationDraft} from './carouselPresentation';
 import type { PublicInstruction } from './publicInstruction';
 import {reviewedAction,type HandoffStep} from './actionResult';
 import {actionAdapter,revealDisposition} from './actions/registry';
@@ -17,14 +18,14 @@ export type CurrentInputDraft = { mayorBounceSelecting?: boolean; mayorDecision?
 const emptyInput = (): CurrentInputDraft => ({treatments:{},playerIds:[],characterIds:[],correct:'',zero:false,execute:false,choiceIndex:'',judgments:[],preparedPlayerIds:[],preparedCharacter:'',preparedZero:false});
 export type DayHandoff = {
   kind: 'nomination' | 'vote'; stepId: string; nominatorId?: string; nomineeId?: string;
-  voterIds: string[]; spyAsTownsfolk: boolean; complete: boolean; countedVotes?: number;
+  voterIds: string[]; spyAsTownsfolk: boolean; recluseAsDemon?: boolean; complete: boolean; countedVotes?: number;
 };
 /** Restore the same ballot after a nomination-triggered death and its consequences. */
 function interruptedDayVoteHandoff(replay:ReplayState):DayHandoff|undefined {
   const day=replay.day,nomination=day?.nominations.at(-1);
   if(replay.phase!=='day'||replay.gameEnd||!day||day.stage!=='voting'||day.pendingGameEnd||day.pendingDeath||!nomination||nomination.countedVoterIds!==null)return;
   if(day.consequences.some(c=>!c.resolved&&c.source.characterId!=='barber'))return;
-  if(!day.deaths.some(d=>d.cause.rootEventId===nomination.eventId&&d.cause.resumeStage==='voting'))return;
+  if(!nomination.golemEffects.length&&!day.deaths.some(d=>d.cause.rootEventId===nomination.eventId&&d.cause.resumeStage==='voting'))return;
   return {kind:'vote',stepId:day.stepId,nominatorId:nomination.nominatorId,nomineeId:nomination.nomineeId,voterIds:[...day.forcedVoterIds],spyAsTownsfolk:false,complete:false};
 }
 export type FirstNightState = {
@@ -104,8 +105,13 @@ export class FirstNightController {
       draft.choiceIndex=index<0?'':String(index);
       draft.delivery=undefined;
     }
+    if(this.step?.character==='noble') {
+      const model=nobleInformationDraft(this.step,draft);
+      draft.choiceIndex=model.index<0?'':String(model.index);
+      draft.delivery=undefined;
+    }
     const registrations=this.step?.requiredInput.playerRegistrationOptions;
-    if(registrations)draft.judgments=registrations.filter(j=>draft.playerIds.includes(j.playerId));
+    if(registrations&&this.step?.character!=='gambler')draft.judgments=registrations.filter(j=>draft.playerIds.includes(j.playerId));
     this.patch({inputDraft:this.step?normalizeSetupDraft(this.step,draft):draft});
   };
   updateTreatment = (id:string,value:RegistrationSelections[string]) => {
@@ -123,6 +129,7 @@ export class FirstNightController {
     if(this.state.selectionKind==='delivery')return ids.length===2;
     if(isPlayerPairInformation(step))return ids.length===2&&informationChoices(step,ids).length>0;
     const d=this.state.inputDraft;
+    if(step.character==='noble')return !!nobleInformationDraft(step,d).choice;
     if(actionAdapter(step)?.emptySelection&&!ids.length)return false;
     if(d.zero)return !!r.zeroAllowed;
     if(r.allowedSelectionCounts&&!r.allowedSelectionCounts.includes(ids.length))return false;
@@ -198,6 +205,7 @@ export class FirstNightController {
     const step=this.step;if(!step)return;
     if(!actionPresentation(step)){this.patch({error:"이 행동의 화면 연결을 확인할 수 없습니다."});return;}
     const d=this.state.inputDraft, choices=informationChoices(step,d.playerIds);
+    if(step.character==='noble'&&!nobleInformationDraft(step,d).choice)return;
     if(!skip && isPlayerPairInformation(step) && (d.playerIds.length!==2 || d.choiceIndex==='' || !choices[Number(d.choiceIndex)] || !judgmentsEqual(choices[Number(d.choiceIndex)].registrationJudgments,d.judgments)))return;
     if(!skip && step.requiredInput.kind==='setupInfo'&&!selectedSetupChoice(step,d))return;
     const constraint=selectedInformationPrompt(step,d.playerIds)?.numberConstraint;
@@ -258,7 +266,7 @@ export class FirstNightController {
       if(!result.ok){this.patch({error:result.error.messageKo});return;}
       this.adopt();
       const currentDay=this.state.replay.day!;
-      if(handoff&&input.kind==='nominate'&&currentDay.stage==='voting') this.patch({dayHandoff:{...handoff,kind:'vote',stepId:currentDay.stepId,voterIds:[...currentDay.forcedVoterIds],complete:false}});
+      if(handoff&&input.kind==='nominate'&&currentDay.stage==='voting'&&!currentDay.pendingGameEnd&&!currentDay.consequences.some(c=>!c.resolved&&c.source.characterId!=='barber')) this.patch({dayHandoff:{...handoff,kind:'vote',stepId:currentDay.stepId,voterIds:[...currentDay.forcedVoterIds],complete:false}});
       if(handoff&&input.kind==='vote') this.patch({dayHandoff:{...handoff,stepId:currentDay.stepId,complete:true,countedVotes:currentDay.nominations.at(-1)?.countedVoterIds?.length??0}});
       const newIds=new Set(this.state.file.game.events.slice(beforeCount).map(e=>e.id));
       const notifications=this.state.replay.pendingIdentityReveals?.filter(r=>newIds.has(r.deliveryEventId??r.sourceEventId)).map(r=>r.payload)??[];
@@ -292,20 +300,24 @@ export class FirstNightController {
   selectDayPlayer = (id:string) => {
     if(!this.canSelectDayPlayer(id))return;
     const h=this.state.dayHandoff!;
-    this.patch({dayHandoff:h.kind==='vote'?{...h,voterIds:h.voterIds.includes(id)?h.voterIds.filter(v=>v!==id):[...h.voterIds,id]}:!h.nominatorId?{...h,nominatorId:id}:{...h,nomineeId:h.nomineeId===id?undefined:id,spyAsTownsfolk:false}});
+    this.patch({dayHandoff:h.kind==='vote'?{...h,voterIds:h.voterIds.includes(id)?h.voterIds.filter(v=>v!==id):[...h.voterIds,id]}:!h.nominatorId?{...h,nominatorId:id}:{...h,nomineeId:h.nomineeId===id?undefined:id,spyAsTownsfolk:false,recluseAsDemon:false}});
   };
   resetDayHandoff = () => {
     const h=this.state.dayHandoff;if(!h||h.complete||!this.dayInteractionReady)return;
-    this.patch({dayHandoff:h.kind==='vote'?{...h,voterIds:[...this.state.replay.day!.forcedVoterIds]}:{...h,nominatorId:undefined,nomineeId:undefined,spyAsTownsfolk:false}});
+    this.patch({dayHandoff:h.kind==='vote'?{...h,voterIds:[...this.state.replay.day!.forcedVoterIds]}:{...h,nominatorId:undefined,nomineeId:undefined,spyAsTownsfolk:false,recluseAsDemon:false}});
   };
   setDaySpyRegistration = (value:boolean) => {
     const h=this.state.dayHandoff;if(h&&!h.complete&&this.dayInteractionReady)this.patch({dayHandoff:{...h,spyAsTownsfolk:value}});
+  };
+  setDayRecluseRegistration = (value:boolean) => {
+    const h=this.state.dayHandoff,day=this.state.replay.day;
+    if(h?.kind==='nomination'&&!h.complete&&this.dayInteractionReady&&day?.golemNominationOptions.some(o=>o.source.ownerPlayerId===h.nominatorId&&o.targetPlayerId===h.nomineeId&&o.recluseAsDemon===value))this.patch({dayHandoff:{...h,recluseAsDemon:value}});
   };
   confirmDayHandoff = async () => {
     const h=this.state.dayHandoff;
     if(!h||h.complete||!this.dayInteractionReady||h.stepId!==this.state.replay.day?.stepId)return;
     if(h.kind==='vote')await this.confirmDay({kind:'vote',voterIds:h.voterIds});
-    else if(h.nominatorId&&h.nomineeId)await this.confirmDay({kind:'nominate',nominatorId:h.nominatorId,nomineeId:h.nomineeId,spyAsTownsfolk:h.spyAsTownsfolk});
+    else if(h.nominatorId&&h.nomineeId)await this.confirmDay({kind:'nominate',nominatorId:h.nominatorId,nomineeId:h.nomineeId,spyAsTownsfolk:h.spyAsTownsfolk,...(h.recluseAsDemon?{recluseAsDemon:true}:{})});
   };
   get canCancelDayVote() {
     const h=this.state.dayHandoff,day=this.state.replay.day;

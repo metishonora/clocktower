@@ -21,6 +21,8 @@ pub(crate) struct CustomGameFacts {
     pub(crate) pixie_resolutions: Vec<crate::characters::carousel::PixieResolution>,
     pub(crate) canonical_event_index: Option<usize>,
     pub(crate) night_deaths: Vec<NightDeathRecord>,
+    pub(crate) death_resolutions: Vec<crate::death::Record>,
+    pub(crate) moonchild_choices: Vec<crate::characters::bad_moon_rising::MoonchildChoice>,
     pub(crate) monk_protections: Vec<crate::contracts::TargetAssignment>,
     pub(crate) day: Option<crate::day::contracts::DayProgress>,
     pub(crate) scarlet_day_reveals: Vec<crate::contracts::PendingIdentityReveal>,
@@ -50,6 +52,7 @@ pub(crate) struct CustomGameFacts {
     pub(crate) pending_identity_reveals: Vec<crate::contracts::PendingIdentityReveal>,
     pub(crate) vortox_sources: Vec<AbilityUseRef>,
     pub(crate) resolved_impairments: Vec<DurableImpairment>,
+    pub(crate) evaluated_effects: Vec<crate::effects::EvaluatedEffect>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -110,6 +113,8 @@ impl CustomGameFacts {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DurableImpairment {
+    pub(crate) self_interaction: crate::effects::SelfInteraction,
+    pub(crate) rule: crate::effects::EffectRule,
     pub(crate) impairment: ActiveImpairment,
     pub(crate) source_ability_use: AbilityUseRef,
 }
@@ -137,8 +142,11 @@ pub(crate) enum MalfunctionOutcome {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FailedEffect {
+    GamblerDeath, MoonchildDeath, AssassinDeath, GrandmotherDeath, FoolProtection, DevilsAdvocateProtection,
     PreacherSuppression,
     NightwatchmanNotification,
+    GolemDeath,
+    SlayerDeath,
     DemonDeath,
     PitHagCharacterChange,
     PoisonerPoison,

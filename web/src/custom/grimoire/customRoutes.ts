@@ -1,3 +1,5 @@
+import type { SetupRouteDraft } from './setupRouteDraft.js';
+
 export const scenarioUrl = '/clocktower/custom/scenario/';
 export const grimoireUrl = '/clocktower/custom/grimoire/';
 export type CustomRoute = { kind: 'editor' | 'library' | 'setup' | 'invalid' } | { kind: 'game'; gameId: string };
@@ -17,6 +19,7 @@ export function readCustomRoute(url = new URL(window.location.href)): CustomRout
 }
 
 const positionKey = 'customRoutePosition';
+const setupKey = 'customSetupDraft';
 type NavigationGuard = {
   navigationStatus: () => 'ready' | 'waiting' | 'blocked';
   waitForNavigation: () => Promise<boolean>;
@@ -80,6 +83,14 @@ export class CustomBrowserNavigation {
     this.current = {url: location.href, state: history.state};
     this.apply(readCustomRoute());
   }
+  readSetupDraft(): unknown { return history.state?.[setupKey]; }
+  rememberSetupDraft(draft: SetupRouteDraft) {
+    // A late update from the screen being left must not overwrite a different entry.
+    if (readCustomRoute().kind !== 'setup' || location.href !== this.current.url
+      || history.state?.[positionKey] !== this.current.state?.[positionKey]) return;
+    history.replaceState({...history.state, [setupKey]: structuredClone(draft)}, '');
+    this.current = {url: location.href, state: history.state};
+  }
   /** Durable activation must not cancel a navigation already waiting for that save. */
   activate(route: CustomRoute) {
     if (this.returned) this.pendingActivation = route;
@@ -91,6 +102,8 @@ export class CustomBrowserNavigation {
     const currentPosition = this.current.state?.[positionKey] ?? 0;
     const state = {...history.state, [positionKey]: currentPosition + (replace ? 0 : 1)};
     delete state.customGrimoire;
+    // Preserve only a cold setup entry; new routes must not inherit another draft.
+    if (route.kind !== 'setup' || !replace) delete state[setupKey];
     history[replace ? 'replaceState' : 'pushState'](state, '', url);
     this.current = {url: location.href, state: history.state};
   }

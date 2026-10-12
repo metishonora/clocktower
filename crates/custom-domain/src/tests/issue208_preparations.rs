@@ -93,6 +93,12 @@ fn prepared_false_information_reaches_mathematician_without_an_invented_answer()
             facts(&["washerwoman", "artist", "savant", "mathematician", "imp"]);
         let demon = super::issue207_impairments::source(&state, 4);
         state.durable_impairments.push(DurableImpairment {
+            self_interaction: crate::effects::SelfInteraction::IgnoreOwnContribution,
+            rule: crate::effects::EffectRule::ability(
+                &demon,
+                crate::effects::EffectWindow::NoDeadline,
+                true,
+            ),
             source_ability_use: demon,
             impairment: ActiveImpairment {
                 kind: ImpairmentKind::Poisoned,

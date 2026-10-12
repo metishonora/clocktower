@@ -1,3 +1,4 @@
+use crate::effects::{EffectCandidate, EffectKind, EffectRule, EffectWindow};
 use crate::model::CharacterKind;
 pub(super) fn custom_registry_entries() -> Vec<(&'static str, CharacterKind)> {
     vec![
@@ -64,11 +65,21 @@ pub(crate) fn registration_allowed(
 }
 
 pub(crate) fn demon_protected(facts: &crate::state::CustomGameFacts, player_id: &str) -> bool {
-    facts.ability_provenance.iter().any(|record| {
-        record.ability_use.owner_player_id == player_id
-            && record.ability_use.character_id == "soldier"
-            && crate::effects::effective(facts, &record.ability_use)
-    })
+    soldier_protection(facts, player_id).is_some()
+}
+fn soldier_protection(
+    facts: &crate::state::CustomGameFacts,
+    player_id: &str,
+) -> Option<AbilityUseRef> {
+    facts
+        .ability_provenance
+        .iter()
+        .find(|record| {
+            record.ability_use.owner_player_id == player_id
+                && record.ability_use.character_id == "soldier"
+                && crate::effects::effective(facts, &record.ability_use)
+        })
+        .map(|r| r.ability_use.clone())
 }
 pub(crate) fn impairment_candidates(
     facts: &crate::state::CustomGameFacts,
@@ -76,9 +87,14 @@ pub(crate) fn impairment_candidates(
     facts
         .poisoner_choices
         .iter()
-        .filter(|choice| choice.initially_effective && day_effect_in_lifetime(facts, choice.day))
         .map(|choice| crate::effects::ImpairmentEffect {
             effect: crate::state::DurableImpairment {
+                self_interaction: crate::effects::SelfInteraction::IgnoreOwnContribution,
+                rule: EffectRule::ability(
+                    &choice.ability_use,
+                    EffectWindow::ThroughDay(choice.day),
+                    choice.initially_effective,
+                ),
                 source_ability_use: choice.ability_use.clone(),
                 impairment: crate::contracts::ActiveImpairment {
                     kind: crate::contracts::ImpairmentKind::Poisoned,
@@ -88,8 +104,6 @@ pub(crate) fn impairment_candidates(
                     expires: crate::contracts::ImpairmentExpiry::WhileSourceAbilityActive,
                 },
             },
-            requires_source: true,
-            ignore_self: choice.target_player_id == choice.ability_use.owner_player_id,
             demon_harm: false,
         })
         .collect()
@@ -961,6 +975,7 @@ impl TbHandler {
             }
             prompt.computed_result = Some(actual.clone());
             prompt.target_checks.push(TargetInformationCheck {
+                alignment_options: vec![],
                 number_constraint: None,
                 wake_audit: vec![],
                 fixed_character_id: None,
@@ -1018,6 +1033,7 @@ impl TbHandler {
                     }
                 }
                 prompt.target_checks.push(TargetInformationCheck {
+                    alignment_options: vec![],
                     number_constraint: None,
                     wake_audit: vec![],
                     fixed_character_id: None,
@@ -1179,6 +1195,7 @@ impl TbHandler {
             }
             if self.character() == "fortuneTeller" {
                 prompt.target_checks.push(TargetInformationCheck {
+                    alignment_options: vec![],
                     number_constraint: None,
                     wake_audit: vec![],
                     fixed_character_id: None,
@@ -1711,7 +1728,10 @@ impl TbHandler {
                     }),
                 ));
             }
-            let killed = demon_attack_target(facts, source, player, &fields.mayor_decision)?;
+            let attack = demon_attack(facts, source, player, &fields.mayor_decision)?;
+            let mut deaths = crate::death::night(facts, o, &attack.target.into_iter().collect::<Vec<_>>(), false);
+            deaths.explanations.extend(attack.explanations);
+            let killed = deaths.deaths().first().cloned();
             let mut identities = vec![];
             let mut eligible: Vec<_> = facts
                 .players
@@ -1777,15 +1797,7 @@ impl TbHandler {
                             vec![]
                         },
                     )
-                    .with_life_changes(
-                        killed
-                            .into_iter()
-                            .map(|player_id| crate::event::PlayerLifeChange {
-                                player_id,
-                                alive: false,
-                            })
-                            .collect(),
-                    ),
+                    .with_resolved_deaths(deaths),
             ));
         }
         if self.id() == regular_id(self.character()) {
@@ -2169,6 +2181,38 @@ fn information_causes(
     Ok((reasons, causes))
 }
 
+fn protection_rule(p: &TargetAssignment) -> EffectRule {
+    EffectRule::ability(
+        &p.ability_use,
+        EffectWindow::Night(u32::from(p.day)),
+        p.initially_effective,
+    )
+}
+pub(crate) fn effect_candidates(f: &CustomGameFacts) -> Vec<EffectCandidate> {
+    f.master_choices
+        .iter()
+        .map(|r| EffectCandidate {
+            kind: EffectKind::Master,
+            origin: r.ability_use.clone(),
+            event_id: r.source_event_id.clone(),
+            target: r.target_player_id.clone(),
+            rule: EffectRule::ability(
+                &r.ability_use,
+                EffectWindow::ThroughDay(r.day),
+                r.initially_effective,
+            ),
+            ended: false,
+        })
+        .chain(f.monk_protections.iter().map(|r| EffectCandidate {
+            kind: EffectKind::Protection,
+            origin: r.ability_use.clone(),
+            event_id: r.source_event_id.clone(),
+            target: r.target_player_id.clone(),
+            rule: protection_rule(r),
+            ended: false,
+        }))
+        .collect()
+}
 pub(crate) fn refresh_assignments(facts: &mut CustomGameFacts) {
     let poison = facts
         .poisoner_choices
@@ -2184,9 +2228,14 @@ pub(crate) fn refresh_assignments(facts: &mut CustomGameFacts) {
         .master_choices
         .iter()
         .map(|c| {
-            c.initially_effective
-                && effective(facts, &c.ability_use)
-                && day_effect_in_lifetime(facts, c.day)
+            crate::effects::status(
+                facts,
+                EffectKind::Master,
+                &c.source_event_id,
+                &c.ability_use,
+                &c.target_player_id,
+            )
+            .active()
         })
         .collect::<Vec<_>>();
     for (c, active) in facts.poisoner_choices.iter_mut().zip(poison) {
@@ -2554,16 +2603,6 @@ pub(crate) fn death_succession(
     Ok(())
 }
 
-fn day_effect_in_lifetime(facts: &CustomGameFacts, day: u16) -> bool {
-    facts.day.as_ref().is_none_or(|d| {
-        if d.stage == crate::day::contracts::DayStage::Night {
-            u32::from(day) > d.day
-        } else {
-            u32::from(day) == d.day
-        }
-    })
-}
-
 pub(crate) fn day_is_once(character: &str) -> bool {
     character == "slayer"
 }
@@ -2737,14 +2776,7 @@ fn drunk_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
         .unwrap_or_default()
 }
 fn butler_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
-    c.facts
-        .master_choices
-        .iter()
-        .filter(|choice| {
-            c.matches_ability(&choice.ability_use) && day_effect_in_lifetime(c.facts, choice.day)
-        })
-        .map(|choice| c.token(&choice.target_player_id, "master", &choice.source_event_id))
-        .collect()
+    c.effects(EffectKind::Master, "master")
 }
 fn undertaker_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
     if !c.living() {
@@ -2782,54 +2814,119 @@ fn scarlet_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
         .collect()
 }
 
-/// Resolve TB protections and Mayor redirection for any actual demon attack.
+/// Resolve TB protections and Mayor redirection once, including event-prefix explanations.
+pub(crate) struct DemonAttack {
+    pub(crate) target: Option<String>,
+    pub(crate) explanations: Vec<crate::death::Explanation>,
+}
 pub(crate) fn demon_attack_target(
     facts: &CustomGameFacts,
     source: &AbilityUseRef,
     target: &Player,
     mayor: &Option<MayorDecisionInput>,
 ) -> Result<Option<String>, CoreError> {
-    let protected = |id: &str| {
-        demon_protected(facts, id)
-            || facts.monk_protections.iter().any(|p| {
-                p.target_player_id == id
-                    && u32::from(p.day) == facts.night_number()
-                    && p.initially_effective
-                    && effective(facts, &p.ability_use)
-            })
+    Ok(demon_attack(facts, source, target, mayor)?.target)
+}
+pub(crate) fn demon_attack(
+    facts: &CustomGameFacts,
+    source: &AbilityUseRef,
+    target: &Player,
+    mayor: &Option<MayorDecisionInput>,
+) -> Result<DemonAttack, CoreError> {
+    use crate::death::{Explanation, Reason};
+    let protection = |id: &str| {
+        soldier_protection(facts, id).or_else(|| {
+            facts
+                .monk_protections
+                .iter()
+                .find(|p| {
+                    p.target_player_id == id
+                        && crate::effects::status(
+                            facts,
+                            EffectKind::Protection,
+                            &p.source_event_id,
+                            &p.ability_use,
+                            &p.target_player_id,
+                        )
+                        .active()
+                })
+                .map(|p| p.ability_use.clone())
+        })
     };
-    if !effective(facts, source)
-        || !target.alive
-        || protected(&target.id)
-        || super::sects_and_violets::demon_deaths_arbitrary(facts)
-    {
+    let reason = if !target.alive {
+        Some(Reason::AlreadyDead)
+    } else if !effective(facts, source) {
+        Some(Reason::Impaired {
+            source: source.clone(),
+            impairments: crate::effects::ability_impairments(facts, source)
+                .iter()
+                .map(|e| e.kind)
+                .collect(),
+        })
+    } else {
+        protection(&target.id).map(|source| Reason::Protection { source })
+    };
+    if reason.is_some() || super::sects_and_violets::demon_deaths_arbitrary(facts) {
         if mayor.is_some() {
             return Err(invalid());
         }
-        return Ok(None);
+        return Ok(DemonAttack {
+            target: None,
+            explanations: reason
+                .into_iter()
+                .map(|reason| Explanation {
+                    player_id: target.id.clone(),
+                    reason,
+                })
+                .collect(),
+        });
     }
-    let is_mayor = facts.ability_provenance.iter().any(|r| {
+    let mayor_source = facts.ability_provenance.iter().find(|r| {
         r.ability_use.owner_player_id == target.id
             && r.ability_use.character_id == "mayor"
             && effective(facts, &r.ability_use)
     });
-    if is_mayor {
+    if let Some(mayor_source) = mayor_source {
         match mayor.as_ref().ok_or_else(invalid)? {
-            MayorDecisionInput::MayorDies => Ok(Some(target.id.clone())),
+            MayorDecisionInput::MayorDies => Ok(DemonAttack {
+                target: Some(target.id.clone()),
+                explanations: vec![],
+            }),
             MayorDecisionInput::Bounce { target_player_id } => {
                 if *target_player_id == target.id {
                     return Err(invalid());
                 }
                 let redirected = facts.player(target_player_id).ok_or_else(invalid)?;
-                Ok((redirected.alive && !protected(target_player_id))
-                    .then_some(target_player_id.clone()))
+                let reason = if !redirected.alive {
+                    Some(Reason::AlreadyDead)
+                } else {
+                    protection(target_player_id).map(|source| Reason::Protection { source })
+                };
+                let mut explanations = vec![Explanation {
+                    player_id: target.id.clone(),
+                    reason: Reason::Redirected {
+                        source: mayor_source.ability_use.clone(),
+                    },
+                }];
+                let killed = reason.is_none().then(|| target_player_id.clone());
+                explanations.extend(reason.map(|reason| Explanation {
+                    player_id: target_player_id.clone(),
+                    reason,
+                }));
+                Ok(DemonAttack {
+                    target: killed,
+                    explanations,
+                })
             }
         }
     } else {
         if mayor.is_some() {
             return Err(invalid());
         }
-        Ok(Some(target.id.clone()))
+        Ok(DemonAttack {
+            target: Some(target.id.clone()),
+            explanations: vec![],
+        })
     }
 }
 
@@ -2913,24 +3010,7 @@ fn death_information_facts<'a>(
 }
 
 fn monk_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
-    if c.facts
-        .day
-        .as_ref()
-        .is_some_and(|d| d.stage != crate::day::contracts::DayStage::Night)
-    {
-        return vec![];
-    }
-    c.facts
-        .monk_protections
-        .iter()
-        .filter(|p| c.matches_ability(&p.ability_use) && u32::from(p.day) == c.facts.night_number())
-        .map(|p| {
-            let mut token = c.token(&p.target_player_id, "safe", &p.source_event_id);
-            token.inactive_reason = (!p.initially_effective || !effective(c.facts, &p.ability_use))
-                .then(|| "능력 비활성".into());
-            token
-        })
-        .collect()
+    c.effects(EffectKind::Protection, "safe")
 }
 
 /// Event-time availability is reconstructed on replay, never inferred from current ownership.
@@ -2984,8 +3064,11 @@ pub(crate) fn enrich_attack_input(
                                 .collect(),
                         });
                     }
-                    if killed.ok().flatten().as_deref() == Some(source.owner_player_id.as_str())
-                        && target.id == source.owner_player_id
+                    if killed.ok().flatten().is_some_and(|id| {
+                        id == source.owner_player_id && crate::death::decide(facts, crate::death::Attempt {
+                            player_id: &id, execution: false, unpreventable: false,
+                        }).died
+                    }) && target.id == source.owner_player_id
                     {
                         successor_player_ids = successors
                             .iter()
@@ -3095,4 +3178,24 @@ pub(super) fn wakes_actor(action: &crate::contracts::FirstNightActionRef) -> boo
             ("monk", "protectPlayer") | ("imp", "attackPlayer") |
             ("undertaker", "learnExecutedCharacter") | ("ravenkeeper", "learnCharacter") |
             ("spy", "inspectGrimoire")))
+}
+
+pub(crate) fn death_audit(
+    _facts: &crate::state::CustomGameFacts,
+    source: Option<&crate::state::ActionOccurrence>,
+    attempt: &crate::death::Attempt<'_>,
+    outcome: &crate::death::Outcome,
+    event: &str,
+) -> Vec<crate::state::MalfunctionEvidence> {
+    let effect =
+        source
+            .and_then(|o| o.ability_use.as_ref())
+            .and_then(|s| match s.character_id.as_str() {
+                "imp" => Some(crate::state::FailedEffect::DemonDeath),
+                "slayer" => Some(crate::state::FailedEffect::SlayerDeath),
+                _ => None,
+            });
+    effect
+        .map(|e| crate::death::prevented_failure(source, attempt, outcome, e, event))
+        .unwrap_or_default()
 }

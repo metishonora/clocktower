@@ -1,0 +1,28 @@
+Baseline: 741c36922a293f35410cd5b67c1129560e8fe9ce
+Diagnostic expectations assert the intended rules. Failures reproduce existing defects.
+
+running 3 tests
+
+thread 'tests::effect_lifetime_snake_audit::audit_official_snake_poison_ends_on_source_change' panicked at crates/domain/src/tests/effect_lifetime_snake_audit.rs:182:5:
+BUG: official runtime retains Snake Charmer poison after character replacement
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test tests::effect_lifetime_snake_audit::audit_official_snake_poison_ends_on_source_change ... FAILED
+
+thread 'tests::effect_lifetime_sweetheart_audit::audit_official_sweetheart_drunk_ends_on_source_change' panicked at crates/domain/src/tests/effect_lifetime_sweetheart_audit.rs:166:5:
+BUG: official runtime retains Sweetheart drunk after character replacement
+test tests::effect_lifetime_sweetheart_audit::audit_official_sweetheart_drunk_ends_on_source_change ... FAILED
+
+thread 'tests::effect_lifetime_cerenovus_audit::audit_official_old_cerenovus_madness_must_not_revive_on_reacquisition' panicked at crates/domain/src/tests/effect_lifetime_cerenovus_audit.rs:177:5:
+BUG: old Cerenovus assignment "madness-assignment-13" revived on new instance: [Object {"assignmentId": String("madness-assignment-13"), "canCheck": Bool(false), "canExecute": Bool(true), "requiredCharacterId": String("clockmaker"), "sourceCharacterId": String("cerenovus"), "sourceEffective": Bool(true), "sourcePlayerId": String("player-5"), "status": String("unchecked"), "targetPlayerId": String("player-4")}]
+test tests::effect_lifetime_cerenovus_audit::audit_official_old_cerenovus_madness_must_not_revive_on_reacquisition ... FAILED
+
+failures:
+
+failures:
+    tests::effect_lifetime_cerenovus_audit::audit_official_old_cerenovus_madness_must_not_revive_on_reacquisition
+    tests::effect_lifetime_snake_audit::audit_official_snake_poison_ends_on_source_change
+    tests::effect_lifetime_sweetheart_audit::audit_official_sweetheart_drunk_ends_on_source_change
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 381 filtered out; finished in 0.12s
+
+error: test failed, to rerun pass `-p clocktower-domain --lib`

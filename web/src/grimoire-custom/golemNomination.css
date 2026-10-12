@@ -1,0 +1,21 @@
+.customGrimoirePlay .golemRegistration { min-width:0; margin:0; padding:0; border:0; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.golemRegistration legend { float:left; width:100%; grid-column:1/-1; padding:0 0 4px; color:var(--bmr-muted); font-size:.8rem; font-weight:800; }
+.customGrimoirePlay .golemRegistration button { min-height:44px; padding:9px 8px; font:inherit; font-size:.82rem; font-weight:800; }
+.customGrimoirePlay .golemRegistration button[aria-pressed=true] { color:#2c1608; border-color:#b37e30; background:#f3d995; box-shadow:inset 0 0 0 1px #b37e30; }
+/* Outcome-first preview: the nominee and what the Golem does to them. */
+.customGrimoirePlay .golemPreview { display:grid; gap:8px; }
+.customGrimoirePlay .golemAbility { display:flex; align-items:center; gap:8px; margin:0; color:var(--bmr-muted); font-size:.8rem; font-weight:800; }
+.golemAbility img, .golemNote img { width:24px; height:24px; object-fit:contain; }
+.golemAbility em { padding:2px 8px; border:1px solid #747f1f; border-radius:999px; color:#58651c; background:#e9edc8; font-size:.7rem; font-style:normal; }
+.customGrimoirePlay .golemVerdict { display:grid; grid-template-columns:40px minmax(0,1fr) auto; align-items:center; gap:10px; padding:10px 12px 10px 8px; border:1px solid var(--bmr-line); border-radius:14px; background:var(--bmr-card); color:var(--bmr-ink); }
+.golemVerdict img { width:40px; height:40px; object-fit:contain; }
+.golemVerdict span { display:grid; min-width:0; }
+.golemVerdict strong { font-size:1.05rem; line-height:1.3; }
+.golemVerdict small { color:var(--bmr-muted); font-size:.76rem; }
+.golemVerdict em { padding:5px 11px; border:1px solid currentColor; border-radius:999px; font-style:normal; font-weight:800; font-size:.88rem; white-space:nowrap; }
+.customGrimoirePlay .golemVerdict.tone-death { border-color:rgba(214,72,88,.55); background:linear-gradient(90deg,rgba(176,38,58,.14),var(--bmr-card) 70%); }
+.golemVerdict.tone-death em { color:#fff; background:#b3263a; border-color:#b3263a; }
+.golemVerdict.tone-none em { color:var(--bmr-muted); border-style:dashed; }
+.customGrimoirePlay .golemNote { display:flex; align-items:center; gap:8px; margin:0; padding:8px 12px; border-radius:12px; background:color-mix(in srgb,var(--bmr-card) 60%,transparent); color:var(--bmr-ink); font-size:.88rem; }
+.golemNote span { color:var(--bmr-muted); font-weight:700; }
+.golemNote strong { margin-left:auto; }

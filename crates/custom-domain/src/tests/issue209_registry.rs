@@ -4,7 +4,7 @@ use crate::first_night::{action_registry, catalog, ActionRegistry};
 #[test]
 fn production_builder_covers_all_declared_actions_and_categories() {
     let registry = action_registry().unwrap();
-    assert_eq!(catalog::production_actions().len(), 56);
+    assert_eq!(catalog::production_actions().len(), 62);
     for (action, ordered) in catalog::production_actions() {
         assert_eq!(
             registry
@@ -44,6 +44,7 @@ fn additional_actions_cannot_be_misclassified_as_regular_even_with_a_real_handle
             .into_iter()
             .chain(crate::characters::sects_and_violets::registrations())
             .chain(crate::characters::carousel::registrations())
+            .chain(crate::characters::bad_moon_rising::registrations())
             .chain(std::iter::once(
                 crate::first_night::night_deaths::registration(),
             ))

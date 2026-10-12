@@ -249,7 +249,7 @@ it.each([false,true])('Vigormortis death result continues directly to board pois
  const app=reload?new CustomGrimoireApplicationController(realWasmCore(),vi.fn()):undefined;
  if(app){await app.resumeImported({file:play.getSnapshot().file});play.dispose();play=app.play!;}
  expect(play.getSnapshot().replay.players.find(p=>p.id==='p6')?.alive).toBe(false);
- render(<Play play={play}/>);await click('다음 →');
+ render(<Play play={play}/>);await click('진행으로 →');
  await screen.findByRole('heading',{name:'중독 대상 선택'});
  expect(screen.getByRole('button',{name:'마도서'}).className).toContain('active');
  expect(play.getSnapshot().selecting).toBe(true);

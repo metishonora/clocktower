@@ -1,0 +1,442 @@
+[
+  {
+    "file": "bmr/advocate-expired-execution.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "execution",
+    "handoff": null
+  },
+  {
+    "file": "bmr/advocate-second-night.game.json",
+    "phase": "night",
+    "currentStep": {
+      "character": "devilsAdvocate",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "devilsAdvocate",
+        "actionId": "protectExecution"
+      }
+    },
+    "dayStage": "night",
+    "handoff": null
+  },
+  {
+    "file": "bmr/advocate.game.json",
+    "phase": "firstNight",
+    "currentStep": {
+      "character": "devilsAdvocate",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "devilsAdvocate",
+        "actionId": "protectExecution"
+      }
+    },
+    "handoff": null
+  },
+  {
+    "file": "bmr/assassin-spent.game.json",
+    "phase": "night",
+    "currentStep": {
+      "character": "imp",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      }
+    },
+    "dayStage": "night",
+    "handoff": null
+  },
+  {
+    "file": "bmr/assassin.game.json",
+    "phase": "night",
+    "currentStep": {
+      "character": "assassin",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "assassin",
+        "actionId": "killPlayer"
+      }
+    },
+    "dayStage": "night",
+    "handoff": {
+      "stage": "result",
+      "character": "imp",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      },
+      "resultKind": "nightAttack"
+    }
+  },
+  {
+    "file": "bmr/execution.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "execution",
+    "handoff": null
+  },
+  {
+    "file": "bmr/fool-first-execution.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "execution",
+    "handoff": null
+  },
+  {
+    "file": "bmr/fool-spent-attack.game.json",
+    "phase": "night",
+    "currentStep": {
+      "character": "imp",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      }
+    },
+    "dayStage": "night",
+    "handoff": {
+      "stage": "result",
+      "character": "devilsAdvocate",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "devilsAdvocate",
+        "actionId": "protectExecution"
+      },
+      "resultKind": "devilsAdvocateProtected"
+    }
+  },
+  {
+    "file": "bmr/gambler.game.json",
+    "phase": "night",
+    "currentStep": {
+      "character": "gambler",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "gambler",
+        "actionId": "guessCharacter"
+      }
+    },
+    "dayStage": "night",
+    "handoff": null
+  },
+  {
+    "file": "bmr/grandmother-chain.game.json",
+    "phase": "night",
+    "currentStep": {
+      "character": "imp",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      }
+    },
+    "dayStage": "night",
+    "handoff": {
+      "stage": "result",
+      "character": "devilsAdvocate",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "devilsAdvocate",
+        "actionId": "protectExecution"
+      },
+      "resultKind": "devilsAdvocateProtected"
+    }
+  },
+  {
+    "file": "bmr/grandmother.game.json",
+    "phase": "firstNight",
+    "currentStep": {
+      "character": "grandmother",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "grandmother",
+        "actionId": "learnGrandchild"
+      }
+    },
+    "handoff": {
+      "stage": "result",
+      "character": "devilsAdvocate",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "devilsAdvocate",
+        "actionId": "protectExecution"
+      },
+      "resultKind": "devilsAdvocateProtected"
+    }
+  },
+  {
+    "file": "bmr/moonchild-day-choice.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "nightReady",
+    "handoff": null
+  },
+  {
+    "file": "bmr/moonchild-night-lethal.game.json",
+    "phase": "night",
+    "currentStep": {
+      "character": "moonchild",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "moonchild",
+        "actionId": "resolveDeath"
+      }
+    },
+    "dayStage": "night",
+    "handoff": null
+  },
+  {
+    "file": "bmr/moonchild-night-poisoned.game.json",
+    "phase": "night",
+    "currentStep": {
+      "character": "moonchild",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "moonchild",
+        "actionId": "resolveDeath"
+      }
+    },
+    "dayStage": "night",
+    "handoff": {
+      "stage": "result",
+      "character": "imp",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      },
+      "resultKind": "nightAttack"
+    }
+  },
+  {
+    "file": "bmr/moonchild-night.game.json",
+    "phase": "night",
+    "currentStep": {
+      "character": "moonchild",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "moonchild",
+        "actionId": "resolveDeath"
+      }
+    },
+    "dayStage": "night",
+    "handoff": null
+  },
+  {
+    "file": "bmr/moonchild.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "whisper",
+    "handoff": null
+  },
+  {
+    "file": "bmr/poisoned-assassin.game.json",
+    "phase": "night",
+    "currentStep": {
+      "character": "assassin",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "assassin",
+        "actionId": "killPlayer"
+      }
+    },
+    "dayStage": "night",
+    "handoff": {
+      "stage": "result",
+      "character": "imp",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      },
+      "resultKind": "nightAttack"
+    }
+  },
+  {
+    "file": "bmr/poisoned-fool-execution.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "execution",
+    "handoff": null
+  },
+  {
+    "file": "bmr/poisoned-gambler.game.json",
+    "phase": "night",
+    "currentStep": {
+      "character": "gambler",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "gambler",
+        "actionId": "guessCharacter"
+      }
+    },
+    "dayStage": "night",
+    "handoff": null
+  },
+  {
+    "file": "bmr/poisoned-grandmother.game.json",
+    "phase": "firstNight",
+    "currentStep": {
+      "character": "grandmother",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "grandmother",
+        "actionId": "learnGrandchild"
+      }
+    },
+    "handoff": null
+  },
+  {
+    "file": "noble/normal.game.json",
+    "phase": "firstNight",
+    "currentStep": {
+      "character": "noble",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "noble",
+        "actionId": "learnPlayers"
+      }
+    },
+    "handoff": null
+  },
+  {
+    "file": "noble/philosopher.game.json",
+    "phase": "firstNight",
+    "currentStep": {
+      "character": "noble",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "noble",
+        "actionId": "learnPlayers"
+      }
+    },
+    "handoff": null
+  },
+  {
+    "file": "noble/poisoned.game.json",
+    "phase": "firstNight",
+    "currentStep": {
+      "character": "noble",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "noble",
+        "actionId": "learnPlayers"
+      }
+    },
+    "handoff": null
+  },
+  {
+    "file": "noble/recluse.game.json",
+    "phase": "firstNight",
+    "currentStep": {
+      "character": "noble",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "noble",
+        "actionId": "learnPlayers"
+      }
+    },
+    "handoff": null
+  },
+  {
+    "file": "noble/spy.game.json",
+    "phase": "firstNight",
+    "currentStep": {
+      "character": "noble",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "noble",
+        "actionId": "learnPlayers"
+      }
+    },
+    "handoff": null
+  },
+  {
+    "file": "noble/vortox.game.json",
+    "phase": "firstNight",
+    "currentStep": {
+      "character": "noble",
+      "actionRef": {
+        "kind": "character",
+        "characterId": "noble",
+        "actionId": "learnPlayers"
+      }
+    },
+    "handoff": null
+  },
+  {
+    "file": "golem/boffin-recovered.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "nomination",
+    "handoff": null,
+    "dayNotifications": []
+  },
+  {
+    "file": "golem/boffin-spent.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "nomination",
+    "handoff": null,
+    "dayNotifications": []
+  },
+  {
+    "file": "golem/boffin-suspended.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "nomination",
+    "handoff": null,
+    "dayNotifications": []
+  },
+  {
+    "file": "golem/dead.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "nomination",
+    "handoff": null
+  },
+  {
+    "file": "golem/normal.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "nomination",
+    "handoff": null
+  },
+  {
+    "file": "golem/poisoned.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "nomination",
+    "handoff": null
+  },
+  {
+    "file": "golem/recluse.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "nomination",
+    "handoff": null
+  },
+  {
+    "file": "golem/spent.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "nomination",
+    "handoff": null
+  },
+  {
+    "file": "golem/sweetheart.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "nomination",
+    "handoff": null
+  },
+  {
+    "file": "integrated/all-eight-day.game.json",
+    "phase": "day",
+    "currentStep": null,
+    "dayStage": "nomination",
+    "handoff": null
+  }
+]

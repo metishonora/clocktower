@@ -1,0 +1,3655 @@
+{
+  "schemaVersion": 5,
+  "game": {
+    "script": {
+      "type": "custom",
+      "definition": {
+        "id": "everyone-can-play-271",
+        "name": "Everyone Can Play",
+        "characterIds": [
+          "librarian",
+          "clockmaker",
+          "grandmother",
+          "fortuneTeller",
+          "empath",
+          "monk",
+          "undertaker",
+          "gambler",
+          "artist",
+          "slayer",
+          "fool",
+          "ravenkeeper",
+          "mayor",
+          "drunk",
+          "recluse",
+          "saint",
+          "moonchild",
+          "baron",
+          "poisoner",
+          "assassin",
+          "devilsAdvocate",
+          "spy",
+          "scarletWoman",
+          "imp"
+        ],
+        "firstNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "devilsAdvocate",
+            "actionId": "protectExecution"
+          },
+          {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "learnOutsider"
+          },
+          {
+            "kind": "character",
+            "characterId": "empath",
+            "actionId": "learnEvilNeighbors"
+          },
+          {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "grandmother",
+            "actionId": "learnGrandchild"
+          },
+          {
+            "kind": "character",
+            "characterId": "clockmaker",
+            "actionId": "learnSteps"
+          },
+          {
+            "kind": "character",
+            "characterId": "spy",
+            "actionId": "inspectGrimoire"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ],
+        "otherNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "gambler",
+            "actionId": "guessCharacter"
+          },
+          {
+            "kind": "character",
+            "characterId": "monk",
+            "actionId": "protectPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "devilsAdvocate",
+            "actionId": "protectExecution"
+          },
+          {
+            "kind": "character",
+            "characterId": "imp",
+            "actionId": "attackPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "assassin",
+            "actionId": "killPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "moonchild",
+            "actionId": "resolveDeath"
+          },
+          {
+            "kind": "character",
+            "characterId": "empath",
+            "actionId": "learnEvilNeighbors"
+          },
+          {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "undertaker",
+            "actionId": "learnExecutedCharacter"
+          },
+          {
+            "kind": "character",
+            "characterId": "spy",
+            "actionId": "inspectGrimoire"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ]
+      }
+    },
+    "id": "everyone-can-play-271",
+    "name": "Everyone Can Play",
+    "createdAt": "2026-10-08T00:00:00.000Z",
+    "updatedAt": "2026-10-08T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "seat": 1,
+              "name": "P1",
+              "actualCharacter": "grandmother",
+              "shownCharacter": "grandmother"
+            },
+            {
+              "id": "p2",
+              "seat": 2,
+              "name": "P2",
+              "actualCharacter": "gambler",
+              "shownCharacter": "gambler"
+            },
+            {
+              "id": "p3",
+              "seat": 3,
+              "name": "P3",
+              "actualCharacter": "fool",
+              "shownCharacter": "fool"
+            },
+            {
+              "id": "p4",
+              "seat": 4,
+              "name": "P4",
+              "actualCharacter": "monk",
+              "shownCharacter": "monk"
+            },
+            {
+              "id": "p5",
+              "seat": 5,
+              "name": "P5",
+              "actualCharacter": "artist",
+              "shownCharacter": "artist"
+            },
+            {
+              "id": "p6",
+              "seat": 6,
+              "name": "P6",
+              "actualCharacter": "slayer",
+              "shownCharacter": "slayer"
+            },
+            {
+              "id": "p7",
+              "seat": 7,
+              "name": "P7",
+              "actualCharacter": "mayor",
+              "shownCharacter": "mayor"
+            },
+            {
+              "id": "p8",
+              "seat": 8,
+              "name": "P8",
+              "actualCharacter": "recluse",
+              "shownCharacter": "recluse"
+            },
+            {
+              "id": "p9",
+              "seat": 9,
+              "name": "P9",
+              "actualCharacter": "moonchild",
+              "shownCharacter": "moonchild"
+            },
+            {
+              "id": "p10",
+              "seat": 10,
+              "name": "P10",
+              "actualCharacter": "devilsAdvocate",
+              "shownCharacter": "devilsAdvocate"
+            },
+            {
+              "id": "p11",
+              "seat": 11,
+              "name": "P11",
+              "actualCharacter": "assassin",
+              "shownCharacter": "assassin"
+            },
+            {
+              "id": "p12",
+              "seat": 12,
+              "name": "P12",
+              "actualCharacter": "imp",
+              "shownCharacter": "imp"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 12명",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:minionInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:minionInfo",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          "input": {
+            "characterIds": [
+              "librarian",
+              "fortuneTeller",
+              "empath"
+            ]
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:demonInfo",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-4",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:devilsAdvocate:protectExecution:owner3:p10:instance9:setup:p10",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "devilsAdvocate",
+            "actionId": "protectExecution"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p10",
+            "characterId": "devilsAdvocate",
+            "abilityInstanceId": "setup:p10"
+          },
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          },
+          "result": {
+            "kind": "devilsAdvocateProtected",
+            "targetPlayerId": "p3",
+            "night": 1,
+            "effective": true
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:devilsAdvocate:protectExecution:owner3:p10:instance9:setup:p10",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-5",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:grandmother:learnGrandchild:owner2:p1:instance8:setup:p1",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "grandmother",
+            "actionId": "learnGrandchild"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p1",
+            "characterId": "grandmother",
+            "abilityInstanceId": "setup:p1"
+          },
+          "input": {
+            "playerIds": [
+              "p5"
+            ]
+          },
+          "result": {
+            "kind": "grandmotherLearned",
+            "targetPlayerId": "p5",
+            "information": {
+              "actor": {
+                "playerId": "p1",
+                "characterId": "grandmother"
+              },
+              "targetPlayerIds": [
+                "p5"
+              ],
+              "computedResult": {
+                "kind": "character",
+                "characterId": "artist"
+              },
+              "deliveredResult": {
+                "kind": "character",
+                "characterId": "artist"
+              },
+              "deliveryContext": {
+                "type": "fixed"
+              }
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:grandmother:learnGrandchild:owner2:p1:instance8:setup:p1",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-6",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:dawn",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "dawn"
+          },
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:dawn",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-7",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:Announcement:after12:phase-step-6",
+          "day": 1,
+          "input": {
+            "kind": "advance"
+          },
+          "result": {
+            "stage": "whisper",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "낮 진행",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-8",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:Whisper:after11:day-event-7",
+          "day": 1,
+          "input": {
+            "kind": "advance"
+          },
+          "result": {
+            "stage": "discussion",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "낮 진행",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-9",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:Discussion:after11:day-event-8",
+          "day": 1,
+          "input": {
+            "kind": "advance"
+          },
+          "result": {
+            "stage": "nomination",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "낮 진행",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-10",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:Nomination:after11:day-event-9",
+          "day": 1,
+          "input": {
+            "kind": "closeNominations"
+          },
+          "result": {
+            "stage": "execution",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-11",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:Execution:after12:day-event-10",
+          "day": 1,
+          "input": {
+            "kind": "confirmExecution"
+          },
+          "result": {
+            "stage": "nightReady",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "투표 결과에 따른 처형 처리",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-12",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:1:NightReady:after12:day-event-11",
+          "day": 1,
+          "input": {
+            "kind": "beginNight"
+          },
+          "result": {
+            "stage": "night",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": []
+          }
+        },
+        "phase": "day",
+        "summary": "다음 밤 시작",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-13",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:gambler:guessCharacter:owner2:p2:instance8:setup:p2",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "gambler",
+            "actionId": "guessCharacter"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p2",
+            "characterId": "gambler",
+            "abilityInstanceId": "setup:p2"
+          },
+          "input": {
+            "playerIds": [
+              "p2"
+            ],
+            "characterIds": [
+              "gambler"
+            ]
+          },
+          "result": {
+            "kind": "gamblerGuessed",
+            "targetPlayerId": "p2",
+            "characterId": "gambler",
+            "correct": true,
+            "effective": true,
+            "deaths": []
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:gambler:guessCharacter:owner2:p2:instance8:setup:p2",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-14",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:monk:protectPlayer:owner2:p4:instance8:setup:p4",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "monk",
+            "actionId": "protectPlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p4",
+            "characterId": "monk",
+            "abilityInstanceId": "setup:p4"
+          },
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          },
+          "result": {
+            "kind": "monkProtection",
+            "targetPlayerId": "p3",
+            "effective": true
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:monk:protectPlayer:owner2:p4:instance8:setup:p4",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-15",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:devilsAdvocate:protectExecution:owner3:p10:instance9:setup:p10",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "devilsAdvocate",
+            "actionId": "protectExecution"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p10",
+            "characterId": "devilsAdvocate",
+            "abilityInstanceId": "setup:p10"
+          },
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          },
+          "result": {
+            "kind": "devilsAdvocateProtected",
+            "targetPlayerId": "p7",
+            "night": 2,
+            "effective": true
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:devilsAdvocate:protectExecution:owner3:p10:instance9:setup:p10",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-16",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:imp:attackPlayer:owner3:p12:instance9:setup:p12",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "imp",
+            "actionId": "attackPlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p12",
+            "characterId": "imp",
+            "abilityInstanceId": "setup:p12"
+          },
+          "input": {
+            "playerIds": [
+              "p9"
+            ]
+          },
+          "result": {
+            "kind": "nightAttack",
+            "targetPlayerId": "p9",
+            "killedPlayerId": "p9",
+            "died": true,
+            "identityChanges": []
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:imp:attackPlayer:owner3:p12:instance9:setup:p12",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-17",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:2:assassin:killPlayer:owner3:p11:instance9:setup:p11",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "assassin",
+            "actionId": "killPlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p11",
+            "characterId": "assassin",
+            "abilityInstanceId": "setup:p11"
+          },
+          "input": null,
+          "result": {
+            "kind": "assassinUsed",
+            "targetPlayerId": null,
+            "spent": false,
+            "deaths": []
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:assassin:killPlayer:owner3:p11:instance9:setup:p11",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-18",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "night:2:system:dawn",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "dawn"
+          },
+          "input": null
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:2:system:dawn",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-19",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:2:Announcement:after13:phase-step-18",
+          "day": 2,
+          "input": {
+            "kind": "advance"
+          },
+          "result": {
+            "stage": "whisper",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": false,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": [
+              {
+                "id": "death:phase-step-16:{\"ownerPlayerId\":\"p9\",\"characterId\":\"moonchild\",\"abilityInstanceId\":\"setup:p9\"}",
+                "deathEventId": "phase-step-16",
+                "source": {
+                  "ownerPlayerId": "p9",
+                  "characterId": "moonchild",
+                  "abilityInstanceId": "setup:p9"
+                },
+                "impairedAtDeath": false,
+                "alignmentAtDeath": "good",
+                "resolved": false,
+                "targetPlayerId": null
+              }
+            ]
+          }
+        },
+        "phase": "day",
+        "summary": "낮 진행",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-20",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:2:Whisper:after12:day-event-19",
+          "day": 2,
+          "input": {
+            "kind": "resolveConsequence",
+            "consequenceId": "death:phase-step-16:{\"ownerPlayerId\":\"p9\",\"characterId\":\"moonchild\",\"abilityInstanceId\":\"setup:p9\"}",
+            "playerId": "p5"
+          },
+          "result": {
+            "stage": "whisper",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": false,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": [
+              {
+                "id": "death:phase-step-16:{\"ownerPlayerId\":\"p9\",\"characterId\":\"moonchild\",\"abilityInstanceId\":\"setup:p9\"}",
+                "deathEventId": "phase-step-16",
+                "source": {
+                  "ownerPlayerId": "p9",
+                  "characterId": "moonchild",
+                  "abilityInstanceId": "setup:p9"
+                },
+                "impairedAtDeath": false,
+                "alignmentAtDeath": "good",
+                "resolved": true,
+                "targetPlayerId": "p5"
+              }
+            ]
+          }
+        },
+        "phase": "day",
+        "summary": "사망 후속 처리",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-21",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:2:Whisper:after12:day-event-20",
+          "day": 2,
+          "input": {
+            "kind": "advance"
+          },
+          "result": {
+            "stage": "discussion",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": false,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": [
+              {
+                "id": "death:phase-step-16:{\"ownerPlayerId\":\"p9\",\"characterId\":\"moonchild\",\"abilityInstanceId\":\"setup:p9\"}",
+                "deathEventId": "phase-step-16",
+                "source": {
+                  "ownerPlayerId": "p9",
+                  "characterId": "moonchild",
+                  "abilityInstanceId": "setup:p9"
+                },
+                "impairedAtDeath": false,
+                "alignmentAtDeath": "good",
+                "resolved": true,
+                "targetPlayerId": "p5"
+              }
+            ]
+          }
+        },
+        "phase": "day",
+        "summary": "낮 진행",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-22",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:2:Discussion:after12:day-event-21",
+          "day": 2,
+          "input": {
+            "kind": "advance"
+          },
+          "result": {
+            "stage": "nomination",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": false,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": [
+              {
+                "id": "death:phase-step-16:{\"ownerPlayerId\":\"p9\",\"characterId\":\"moonchild\",\"abilityInstanceId\":\"setup:p9\"}",
+                "deathEventId": "phase-step-16",
+                "source": {
+                  "ownerPlayerId": "p9",
+                  "characterId": "moonchild",
+                  "abilityInstanceId": "setup:p9"
+                },
+                "impairedAtDeath": false,
+                "alignmentAtDeath": "good",
+                "resolved": true,
+                "targetPlayerId": "p5"
+              }
+            ]
+          }
+        },
+        "phase": "day",
+        "summary": "낮 진행",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-23",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:2:Nomination:after12:day-event-22",
+          "day": 2,
+          "input": {
+            "kind": "closeNominations"
+          },
+          "result": {
+            "stage": "execution",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": false,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": [
+              {
+                "id": "death:phase-step-16:{\"ownerPlayerId\":\"p9\",\"characterId\":\"moonchild\",\"abilityInstanceId\":\"setup:p9\"}",
+                "deathEventId": "phase-step-16",
+                "source": {
+                  "ownerPlayerId": "p9",
+                  "characterId": "moonchild",
+                  "abilityInstanceId": "setup:p9"
+                },
+                "impairedAtDeath": false,
+                "alignmentAtDeath": "good",
+                "resolved": true,
+                "targetPlayerId": "p5"
+              }
+            ]
+          }
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-24",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:2:Execution:after12:day-event-23",
+          "day": 2,
+          "input": {
+            "kind": "confirmExecution"
+          },
+          "result": {
+            "stage": "nightReady",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": false,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": [
+              {
+                "id": "death:phase-step-16:{\"ownerPlayerId\":\"p9\",\"characterId\":\"moonchild\",\"abilityInstanceId\":\"setup:p9\"}",
+                "deathEventId": "phase-step-16",
+                "source": {
+                  "ownerPlayerId": "p9",
+                  "characterId": "moonchild",
+                  "abilityInstanceId": "setup:p9"
+                },
+                "impairedAtDeath": false,
+                "alignmentAtDeath": "good",
+                "resolved": true,
+                "targetPlayerId": "p5"
+              }
+            ]
+          }
+        },
+        "phase": "day",
+        "summary": "투표 결과에 따른 처형 처리",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "day-event-25",
+        "type": "dayConfirmed",
+        "payload": {
+          "stepId": "day:2:NightReady:after12:day-event-24",
+          "day": 2,
+          "input": {
+            "kind": "beginNight"
+          },
+          "result": {
+            "stage": "night",
+            "participants": [
+              {
+                "playerId": "p1",
+                "characterId": "grandmother",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p1",
+                    "characterId": "grandmother",
+                    "abilityInstanceId": "setup:p1"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p2",
+                "characterId": "gambler",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p2",
+                    "characterId": "gambler",
+                    "abilityInstanceId": "setup:p2"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p3",
+                "characterId": "fool",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p3",
+                    "characterId": "fool",
+                    "abilityInstanceId": "setup:p3"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p4",
+                "characterId": "monk",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p4",
+                    "characterId": "monk",
+                    "abilityInstanceId": "setup:p4"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p5",
+                "characterId": "artist",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p5",
+                    "characterId": "artist",
+                    "abilityInstanceId": "setup:p5"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p6",
+                "characterId": "slayer",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p6",
+                    "characterId": "slayer",
+                    "abilityInstanceId": "setup:p6"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p7",
+                "characterId": "mayor",
+                "alignment": "good",
+                "characterKind": "Townsfolk",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p7",
+                    "characterId": "mayor",
+                    "abilityInstanceId": "setup:p7"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p8",
+                "characterId": "recluse",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p8",
+                    "characterId": "recluse",
+                    "abilityInstanceId": "setup:p8"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p9",
+                "characterId": "moonchild",
+                "alignment": "good",
+                "characterKind": "Outsider",
+                "alive": false,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p9",
+                    "characterId": "moonchild",
+                    "abilityInstanceId": "setup:p9"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p10",
+                "characterId": "devilsAdvocate",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p10",
+                    "characterId": "devilsAdvocate",
+                    "abilityInstanceId": "setup:p10"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p11",
+                "characterId": "assassin",
+                "alignment": "evil",
+                "characterKind": "Minion",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p11",
+                    "characterId": "assassin",
+                    "abilityInstanceId": "setup:p11"
+                  }
+                ],
+                "impairments": []
+              },
+              {
+                "playerId": "p12",
+                "characterId": "imp",
+                "alignment": "evil",
+                "characterKind": "Demon",
+                "alive": true,
+                "ghostVoteUsed": false,
+                "abilities": [
+                  {
+                    "ownerPlayerId": "p12",
+                    "characterId": "imp",
+                    "abilityInstanceId": "setup:p12"
+                  }
+                ],
+                "impairments": []
+              }
+            ],
+            "countedVoterIds": [],
+            "ghostVoteSpentPlayerIds": [],
+            "deathPlayerIds": [],
+            "abilityRecord": null,
+            "pendingDeath": null,
+            "pendingGameEnd": null,
+            "consequences": [
+              {
+                "id": "death:phase-step-16:{\"ownerPlayerId\":\"p9\",\"characterId\":\"moonchild\",\"abilityInstanceId\":\"setup:p9\"}",
+                "deathEventId": "phase-step-16",
+                "source": {
+                  "ownerPlayerId": "p9",
+                  "characterId": "moonchild",
+                  "abilityInstanceId": "setup:p9"
+                },
+                "impairedAtDeath": false,
+                "alignmentAtDeath": "good",
+                "resolved": true,
+                "targetPlayerId": "p5"
+              }
+            ]
+          }
+        },
+        "phase": "day",
+        "summary": "다음 밤 시작",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-26",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:3:gambler:guessCharacter:owner2:p2:instance8:setup:p2",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "gambler",
+            "actionId": "guessCharacter"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p2",
+            "characterId": "gambler",
+            "abilityInstanceId": "setup:p2"
+          },
+          "input": {
+            "playerIds": [
+              "p2"
+            ],
+            "characterIds": [
+              "gambler"
+            ]
+          },
+          "result": {
+            "kind": "gamblerGuessed",
+            "targetPlayerId": "p2",
+            "characterId": "gambler",
+            "correct": true,
+            "effective": true,
+            "deaths": []
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:3:gambler:guessCharacter:owner2:p2:instance8:setup:p2",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-27",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:3:monk:protectPlayer:owner2:p4:instance8:setup:p4",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "monk",
+            "actionId": "protectPlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p4",
+            "characterId": "monk",
+            "abilityInstanceId": "setup:p4"
+          },
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          },
+          "result": {
+            "kind": "monkProtection",
+            "targetPlayerId": "p7",
+            "effective": true
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:3:monk:protectPlayer:owner2:p4:instance8:setup:p4",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-28",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:3:devilsAdvocate:protectExecution:owner3:p10:instance9:setup:p10",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "devilsAdvocate",
+            "actionId": "protectExecution"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p10",
+            "characterId": "devilsAdvocate",
+            "abilityInstanceId": "setup:p10"
+          },
+          "input": {
+            "playerIds": [
+              "p3"
+            ]
+          },
+          "result": {
+            "kind": "devilsAdvocateProtected",
+            "targetPlayerId": "p3",
+            "night": 3,
+            "effective": true
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:3:devilsAdvocate:protectExecution:owner3:p10:instance9:setup:p10",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-29",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:3:imp:attackPlayer:owner3:p12:instance9:setup:p12",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "imp",
+            "actionId": "attackPlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p12",
+            "characterId": "imp",
+            "abilityInstanceId": "setup:p12"
+          },
+          "input": {
+            "playerIds": [
+              "p7"
+            ]
+          },
+          "result": {
+            "kind": "nightAttack",
+            "targetPlayerId": "p7",
+            "killedPlayerId": null,
+            "died": false,
+            "identityChanges": []
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:3:imp:attackPlayer:owner3:p12:instance9:setup:p12",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-30",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "night:3:assassin:killPlayer:owner3:p11:instance9:setup:p11",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "assassin",
+            "actionId": "killPlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p11",
+            "characterId": "assassin",
+            "abilityInstanceId": "setup:p11"
+          },
+          "input": null,
+          "result": {
+            "kind": "assassinUsed",
+            "targetPlayerId": null,
+            "spent": false,
+            "deaths": []
+          }
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:3:assassin:killPlayer:owner3:p11:instance9:setup:p11",
+        "createdAt": "2026-10-08T00:00:00.000Z"
+      }
+    ]
+  },
+  "exportedAt": "2026-10-08T00:00:00.000Z"
+}
