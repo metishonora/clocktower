@@ -1,0 +1,111 @@
+.fl { position: absolute; inset: 0; overflow: hidden; background: #0b0709; color: #f3e9d6; font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif; -webkit-font-smoothing: antialiased; }
+.fl.crit { animation: fl-shake .42s; }
+
+.fl-head { position: absolute; z-index: 2000; left: 50%; top: max(14px, env(safe-area-inset-top)); transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 6px 16px; border-radius: 999px; background: #1b1216d9; white-space: nowrap; }
+.rv-phone .fl-head { top: 42px; }
+.fl-head strong { font: 700 16px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; letter-spacing: .04em; }
+.fl-chip { margin-left: -10px; padding: 3px 10px; border-radius: 999px; background: #b8322d; color: #fff2e4; font-size: 12px; font-weight: 800; letter-spacing: .1em; }
+
+/* 광장 층 */
+.fl-plaza { position: absolute; inset: 0; transform-origin: var(--ox) var(--oy); transition: filter .6s; }
+.fl-plaza .pz-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fl-plaza.hidden { visibility: hidden; }
+.fl-plaza.pulling { animation: fl-pull 1.4s cubic-bezier(.3,0,.2,1) both; }
+.fl-cutin ~ .fl-head, .fl-trial ~ .fl-head { opacity: 0; }
+.fl-square { position: absolute; left: 0; right: 0; top: 150px; bottom: 96px; }
+.rv-phone .fl-square { top: 176px; }
+.fl-square .pz-ground { filter: brightness(.8) saturate(.75) sepia(.12); }
+.fl-person { position: absolute; transform: translate(-50%, -100%) scale(var(--s)); transform-origin: 50% 100%; transition: left .9s cubic-bezier(.5,0,.3,1), top .9s cubic-bezier(.5,0,.3,1), filter .25s, opacity .4s; }
+.fl-person.dim { filter: grayscale(1) brightness(.55); }
+.fl-person.lit .vf-alive { filter: brightness(1.12) drop-shadow(0 0 8px #ffe3a3); }
+.fl-person.turning .vf { animation: fl-rise-ghost 1.4s .5s ease-out both; }
+.fl-names { position: absolute; inset: 0; z-index: 960; pointer-events: none; }
+.fl-names span { position: absolute; transform: translate(-50%, 0); padding: 0 6px; border-radius: 6px; font-size: 12.5px; font-weight: 700; line-height: 1.45; white-space: nowrap; color: #3b2c1f; background: #fff8ebe6; transition: left .9s cubic-bezier(.5,0,.3,1), top .9s cubic-bezier(.5,0,.3,1), opacity .25s, filter .25s; }
+.fl-names span.me { background: #3b2c1f; color: #fbf2e2; }
+.fl-names span.ghost { background: #ece8f2cc; color: #5e5670; }
+.fl-names span.nominee { background: #b8322d; color: #fff2e4; }
+.fl-names span.dim { opacity: .45; filter: grayscale(1); }
+
+/* ① 지명 */
+.fl-accuse { position: absolute; inset: 0; z-index: 1100; pointer-events: none; overflow: visible; }
+.fl-accuse line { stroke: #ff3b30; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; filter: drop-shadow(0 0 6px #ff3b30); animation: fl-draw .45s .35s cubic-bezier(.6,0,.4,1) forwards; }
+.fl-accuse circle { fill: none; stroke: #ff3b30; stroke-width: 2.5; opacity: 0; transform-box: fill-box; transform-origin: center; animation: fl-target .5s .75s ease-out forwards; }
+.fl-flash { position: absolute; inset: 0; z-index: 1200; background: radial-gradient(circle at var(--ox) var(--oy), #ffffff, #ff3b30cc 30%, #3a0508 80%); mix-blend-mode: screen; animation: fl-flash .32s ease-out forwards; pointer-events: none; }
+
+/* 컷인 */
+.fl-cutin { position: absolute; inset: 0; z-index: 1300; pointer-events: none; }
+.fl-band { position: absolute; left: -10%; right: -10%; height: 38%; transform: skewY(-8deg); }
+.fl-band.a { top: 8%; background: linear-gradient(100deg, #1a0a0cee, #3a1015ee); animation: fl-in-left .4s .3s cubic-bezier(.2,.9,.2,1) both; }
+.fl-band.b { bottom: 8%; background: linear-gradient(100deg, #3a1015ee, #1a0a0cee); animation: fl-in-right .4s .42s cubic-bezier(.2,.9,.2,1) both; }
+.fl-portrait { position: absolute; z-index: 2; transform: translate(-50%, -50%); transition: left .8s cubic-bezier(.3,.9,.3,1), top .8s cubic-bezier(.3,.9,.3,1), width .8s cubic-bezier(.3,.9,.3,1), opacity .2s; filter: drop-shadow(0 8px 20px #000a); }
+.fl-portrait .tr-portrait { width: 100%; height: auto; display: block; }
+.fl-band-name { position: absolute; z-index: 3; font: 800 32px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; text-shadow: 0 3px 0 #6e0f17; animation: fl-fade .4s .8s both; }
+.fl-band-name.a { right: 8%; top: 22%; }
+.fl-band-name.b { left: 8%; bottom: 24%; }
+.fl-slash { position: absolute; z-index: 4; left: -10%; right: -10%; top: 50%; height: 62px; transform: translateY(-50%) skewY(-8deg); background: #c0242e; display: grid; place-items: center; box-shadow: 0 0 40px #c0242e99; animation: fl-slash .32s 1s cubic-bezier(.2,.9,.2,1.2) both; }
+.fl-slash strong { transform: skewY(8deg); font: 900 38px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; letter-spacing: .4em; padding-left: .4em; color: #f2e6d0; text-shadow: 3px 3px 0 #000; }
+
+/* 증언대(요약) */
+.fl-trial { position: absolute; inset: 0; z-index: 1300; background: radial-gradient(90% 60% at 50% 35%, #2a0f12, #0b0709 75%); transform-origin: var(--ox) var(--oy); }
+.fl-p-testimony .fl-trial { animation: fl-split-in .45s cubic-bezier(.2,.9,.2,1) both; }
+.fl-p-pullback .fl-trial { animation: fl-shrink 1s cubic-bezier(.5,0,.3,1) forwards; }
+.fl-trial-spot { position: absolute; left: 50%; top: 0; width: 120%; height: 75%; transform: translateX(-50%); background: radial-gradient(40% 60% at 50% 60%, #ffd69633, transparent 70%); }
+.fl-trial-portrait { position: absolute; left: 50%; bottom: 30%; width: 62%; max-width: 280px; transform: translateX(-50%); }
+.fl-trial-portrait .tr-portrait { width: 100%; height: auto; display: block; }
+.fl-trial-dialog { position: absolute; left: 12px; right: 12px; bottom: 60px; padding: 22px 16px 16px; background: #0a0506ee; border: 2px solid #c0242e; }
+.fl-trial-dialog span { position: absolute; top: -14px; left: 14px; padding: 3px 14px; background: #d9a441; color: #0b0709; font: 800 15px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; }
+.fl-trial-dialog p { margin: 0; font-size: 16px; line-height: 1.5; word-break: keep-all; }
+
+/* ④ 종, 빛, 슬롯 */
+.fl-bell { position: absolute; z-index: 1000; width: 30px; height: 30px; margin: -15px; border-radius: 50%; border: 2px solid #ffe2b0; opacity: 0; animation: fl-bell 1.4s ease-out forwards; pointer-events: none; }
+.fl-beam { position: absolute; inset: 0; z-index: 900; pointer-events: none; mix-blend-mode: screen; }
+.fl-pool { position: absolute; z-index: 1; width: 92px; height: 34px; margin: -22px 0 0 -46px; border-radius: 50%; background: radial-gradient(closest-side, #ffe3a3aa, #ffe3a300); transition: left .35s cubic-bezier(.5,1.3,.5,1), top .35s cubic-bezier(.5,1.3,.5,1); }
+.fl-empty { position: absolute; z-index: 1; width: 46px; height: 18px; margin: -12px 0 0 -23px; border-radius: 50%; border: 1.5px dashed #e9d3a477; }
+.fl-tally { position: absolute; z-index: 1500; left: 50%; top: calc(max(14px, env(safe-area-inset-top)) + 56px); transform: translateX(-50%); display: grid; justify-items: center; gap: 4px; transition: top .8s cubic-bezier(.5,0,.3,1) .5s, transform .8s cubic-bezier(.5,0,.3,1) .5s; }
+.rv-phone .fl-tally { top: 98px; }
+.fl-tally.center { transform: translate(-50%, -50%) scale(1.2); }
+.fl-slots { display: flex; gap: 6px; padding: 8px; border-radius: 12px; background: #1b1216d9; box-shadow: 0 2px 12px #0007; }
+.fl-slots i { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1.4px #d9b56a88; animation: fl-drop .45s cubic-bezier(.3,1.6,.5,1) both; }
+.fl-slots i.line { box-shadow: inset 0 0 0 1.6px #e0544a, 0 0 0 2px #1b1216, 0 0 0 3.6px #e0544a; }
+.fl-slots i.on { background: radial-gradient(circle at 35% 35%, #fff1c4, #d9a441 60%, #8f6522); box-shadow: 0 0 6px #f0c46a; }
+.fl-slots i.on.line { background: radial-gradient(circle at 35% 35%, #ffd2c4, #d9564a 60%, #7a1e18); box-shadow: 0 0 0 2px #1b1216, 0 0 0 3.6px #e0544a, 0 0 10px #e0544a; }
+.fl-count { display: flex; align-items: baseline; gap: 4px; padding: 2px 10px; border-radius: 999px; background: #1b1216d9; }
+.fl-count strong { font: 800 18px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; color: #f6e2b0; }
+.fl-count span { font-size: 12px; color: #c9b89a; }
+.fl-count em { margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #c33a32; color: #fff2e4; font-style: normal; font-size: 12px; font-weight: 800; align-self: center; }
+.fl-tally.exec .fl-slots { box-shadow: 0 0 0 1.5px #e0544a, 0 0 22px #e0544a66; }
+.fl.crit .fl-tally .fl-slots { animation: fl-crit .5s ease-out; }
+.fl.crit::after { content: ''; position: absolute; inset: 0; z-index: 1400; background: radial-gradient(circle at 50% 18%, #ff3b3055, transparent 60%); animation: fl-flash .5s ease-out forwards; pointer-events: none; }
+
+/* ⑥ 처형 */
+.fl-converge { position: absolute; inset: 0; z-index: 1000; pointer-events: none; background: radial-gradient(circle at var(--ox) calc(var(--oy) - 30px), transparent 40px, #07040699 130px, #070406e6 320px); animation: fl-fade .8s ease-out both; }
+.fl-exec { position: absolute; z-index: 1600; transform: translate(-50%, -50%); transition: left .9s cubic-bezier(.3,.9,.3,1), top .9s cubic-bezier(.3,.9,.3,1), width .9s cubic-bezier(.3,.9,.3,1), opacity .3s; filter: drop-shadow(0 12px 30px #000c); }
+.fl-exec .tr-portrait { width: 100%; height: auto; display: block; }
+.fl-stamp { position: absolute; left: 50%; top: 66%; padding: 4px 22px 6px; padding-left: calc(22px + .3em); border: 4px solid #c33a32; color: #c33a32; background: #0b0709aa; font: 900 40px/1 "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; letter-spacing: .3em; white-space: nowrap; transform: translate(-50%, -50%) rotate(-8deg); animation: fl-stamp .35s cubic-bezier(.3,1.6,.5,1) both; }
+.fl-exec.ashing .tr-portrait { animation: fl-dissolve 1.2s .2s ease-in forwards; }
+.fl-exec.ashing .fl-stamp { animation: fl-dissolve 1s .1s ease-in forwards; }
+.fl-ash { position: absolute; z-index: 1700; width: 0; height: 0; pointer-events: none; }
+.fl-ash i { position: absolute; border-radius: 1px; background: #2a1d1a; box-shadow: 0 0 3px #ff8a5a88; opacity: 0; animation: fl-ash 1.4s ease-out forwards; }
+.fl-ash i:nth-child(3n) { background: #ff9a5a; }
+.fl-verdict { position: absolute; z-index: 1650; left: 0; right: 0; bottom: 12%; margin: 0; text-align: center; font: 700 22px "Nanum Myeongjo", "AppleMyungjo", "Noto Serif KR", serif; text-shadow: 0 2px 8px #000; animation: fl-fade .6s .3s both; }
+.fl-p-end .fl-verdict { animation: fl-fade .6s both; }
+
+@keyframes fl-draw { to { stroke-dashoffset: 0; } }
+@keyframes fl-target { from { opacity: 1; transform: scale(2.2); } to { opacity: 1; transform: scale(1); } }
+@keyframes fl-flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fl-in-left { from { transform: skewY(-8deg) translateX(-100%); } }
+@keyframes fl-in-right { from { transform: skewY(-8deg) translateX(100%); } }
+@keyframes fl-slash { from { transform: translateY(-50%) skewY(-8deg) scaleX(0); } }
+@keyframes fl-fade { from { opacity: 0; } }
+@keyframes fl-split-in { from { clip-path: inset(48% 0 48% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes fl-shrink { to { transform: scale(.18); opacity: 0; } }
+@keyframes fl-pull { from { transform: scale(1.7); filter: brightness(.35) sepia(.7) hue-rotate(-25deg) saturate(1.4); } to { transform: scale(1); filter: none; } }
+@keyframes fl-bell { 0% { opacity: .9; transform: scale(.4); } 100% { opacity: 0; transform: scale(9); } }
+@keyframes fl-drop { from { transform: translateY(-40px); opacity: 0; } }
+@keyframes fl-crit { 0% { transform: scale(1.18); box-shadow: 0 0 0 3px #ff3b30, 0 0 40px #ff3b30; } 100% { transform: scale(1); } }
+@keyframes fl-shake { 0%, 100% { transform: none; } 20% { transform: translate(-4px, 2px); } 40% { transform: translate(4px, -2px); } 60% { transform: translate(-3px, 1px); } 80% { transform: translate(2px, -1px); } }
+@keyframes fl-stamp { from { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg) scale(2.6); } }
+@keyframes fl-dissolve { to { opacity: 0; filter: blur(6px) grayscale(1); transform: translateY(-14px) scale(.96); } }
+@keyframes fl-ash { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(220deg); } }
+@keyframes fl-rise-ghost { from { filter: brightness(2.2) drop-shadow(0 0 14px #fff); } }
+@media (prefers-reduced-motion: reduce) { .fl *, .fl *::before, .fl *::after { animation-duration: .01s !important; animation-delay: 0s !important; transition-duration: .01s !important; } }
