@@ -40,6 +40,16 @@ pub(crate) fn equivalent(a: &InformationResult, b: &InformationResult) -> bool {
             InformationResult::CharacterPair { character_ids: a },
             InformationResult::CharacterPair { character_ids: b },
         ) => a.len() == b.len() && a.iter().all(|id| b.contains(id)),
+        (
+            InformationResult::PlayerGroup { player_ids: a },
+            InformationResult::PlayerGroup { player_ids: b },
+        ) => {
+            let mut a = a.clone();
+            let mut b = b.clone();
+            a.sort();
+            b.sort();
+            a == b
+        }
         _ => a == b,
     }
 }

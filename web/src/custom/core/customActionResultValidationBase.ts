@@ -18,6 +18,12 @@ export function isCustomActionResult(
   const effect = typeof value.effective === "boolean";
   const day = Number.isInteger(value.day) && (value.day as number) >= 1 && (value.day as number) <= 65535;
   switch (value.kind) {
+    case 'grandmotherLearned':return hasExactKeys(value,['kind','targetPlayerId','information'])&&target&&isCustomActionResult({kind:'informationDelivered',information:value.information,spent:false},isKnownCharacter,isSpyGrimoirePlayer);
+    case 'gamblerGuessed':return hasExactKeys(value,['kind','targetPlayerId','characterId','correct','effective','deaths'])&&target&&effect&&isKnownCharacter(value.characterId)&&typeof value.correct==='boolean'&&isDeathOutcomes(value.deaths,isKnownCharacter);
+    case 'devilsAdvocateProtected':return hasExactKeys(value,['kind','targetPlayerId','night','effective'])&&target&&effect&&Number.isSafeInteger(value.night)&&Number(value.night)>0;
+    case 'assassinUsed':return hasExactKeys(value,['kind','targetPlayerId','spent','deaths'])&&(value.targetPlayerId===null||target)&&typeof value.spent==='boolean'&&isDeathOutcomes(value.deaths,isKnownCharacter);
+    case 'moonchildResolved':return hasExactKeys(value,['kind','targetPlayerId','chosenGood','effective','deaths'])&&target&&effect&&typeof value.chosenGood==='boolean'&&isDeathOutcomes(value.deaths,isKnownCharacter);
+
     case 'preacherSelected':return hasExactKeys(value,['kind','targetPlayerId','effective'])&&target&&effect;
     case 'marionetteShown':return hasExactKeys(value,['kind','characterId'])&&isKnownCharacter(value.characterId);
     case 'boffinGranted':return hasExactKeys(value,['kind','targetPlayerId','characterId'])&&target&&isKnownCharacter(value.characterId);
@@ -87,6 +93,8 @@ export function isCustomInformationResult(
       return hasExactKeys(value, ["kind", "value"]) && typeof value.value === "boolean";
     case "character":
       return hasExactKeys(value, ["kind", "characterId"]) && isKnownCharacter(value.characterId);
+    case "playerCharacter":
+      return hasExactKeys(value, ["kind", "playerId", "characterId"]) && textId(value.playerId) && isKnownCharacter(value.characterId);
     case "characterPair":
       return hasExactKeys(value, ["kind", "characterIds"]) &&
         Array.isArray(value.characterIds) &&
@@ -94,6 +102,8 @@ export function isCustomInformationResult(
         value.characterIds.every(isKnownCharacter);
     case "player":
       return hasExactKeys(value, ["kind", "playerId"]) && typeof value.playerId === "string";
+    case "playerGroup":
+      return hasExactKeys(value, ["kind", "playerIds"]) && uniqueIds(value.playerIds) && value.playerIds.length === 3;
     case "playerPair":
       return hasExactKeys(value, ["kind", "playerIds"]) &&
         Array.isArray(value.playerIds) &&
@@ -179,3 +189,7 @@ export function isCustomGameEnd(v: unknown): boolean {
 }
 
 function uniqueIds(value:unknown): value is string[] {return Array.isArray(value)&&value.every(textId)&&new Set(value).size===value.length;}
+
+export function isDeathOutcomes(value:unknown,known:KnownCharacterPredicate):boolean {
+ return Array.isArray(value)&&value.every(o=>isRecord(o)&&hasExactKeys(o,['playerId','died','prevention','sourceCharacterId'])&&textId(o.playerId)&&typeof o.died==='boolean'&&(o.sourceCharacterId===null||known(o.sourceCharacterId))&&(o.prevention===null||(isRecord(o.prevention)&&hasExactKeys(o.prevention,['source','consumed'])&&typeof o.prevention.consumed==='boolean'&&isRecord(o.prevention.source)&&hasExactKeys(o.prevention.source,['ownerPlayerId','characterId','abilityInstanceId'])&&textId(o.prevention.source.ownerPlayerId)&&known(o.prevention.source.characterId)&&textId(o.prevention.source.abilityInstanceId))));
+}

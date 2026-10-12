@@ -133,7 +133,12 @@ fn validate_custom_action_result_json(value: &Value) -> Result<(), CoreError> {
         .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
     match result.get("kind").and_then(Value::as_str) {
         Some(
-            "philosopherDeferred"
+            "grandmotherLearned"
+            | "moonchildResolved"
+            | "gamblerGuessed"
+            | "devilsAdvocateProtected"
+            | "assassinUsed"
+            | "philosopherDeferred"
             | "philosopherChoice"
             | "snakeCharmer"
             | "evilTwin"
@@ -172,7 +177,8 @@ fn validate_custom_action_result_json(value: &Value) -> Result<(), CoreError> {
             let typed: CustomActionResult = serde_json::from_value(value.clone())
                 .map_err(|_| ErrorKind::MalformedEvent.into_error())?;
             let information = match typed {
-                CustomActionResult::InformationDelivered { information, .. }
+                CustomActionResult::GrandmotherLearned { information, .. }
+                | CustomActionResult::InformationDelivered { information, .. }
                 | CustomActionResult::PreparedInformationDelivered { information, .. } => {
                     Some(information)
                 }
@@ -316,9 +322,10 @@ fn validate_custom_information_result_json(value: &Value) -> Result<(), CoreErro
     let fields = match kind {
         "number" | "boolean" => &["kind", "value"][..],
         "character" => &["kind", "characterId"][..],
+        "playerCharacter" => &["kind", "playerId", "characterId"][..],
         "characterPair" => &["kind", "characterIds"][..],
         "player" => &["kind", "playerId"][..],
-        "playerPair" => &["kind", "playerIds"][..],
+        "playerPair" | "playerGroup" => &["kind", "playerIds"][..],
         "setupInfo" => &["kind", "playerIds", "characterId", "zeroOutsiders"][..],
         "teamInfo" => &[
             "kind",

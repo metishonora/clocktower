@@ -1,0 +1,49 @@
+.customBmrVerdicts { display:grid;gap:8px;margin:18px 0 0;padding:0;list-style:none; }
+.customBmrVerdicts li { display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 14px 10px 10px;border:1px solid var(--bmr-line);border-radius:14px;background:var(--bmr-card);color:var(--bmr-ink); }
+.customBmrVerdicts img { width:44px;height:44px;object-fit:contain; }
+.customBmrVerdicts span { display:grid;min-width:0; }
+.customBmrVerdicts strong { font-size:1.15rem;line-height:1.3;overflow-wrap:anywhere; }
+.customBmrVerdicts small { color:var(--bmr-muted);font-size:.78rem; }
+.customBmrVerdicts em { padding:6px 12px;border-radius:999px;font-style:normal;font-weight:800;font-size:.95rem;white-space:nowrap;border:1px solid currentColor; }
+.customBmrVerdicts .tone-death { border-color:rgba(214,72,88,.55);background:linear-gradient(90deg,rgba(176,38,58,.18),var(--bmr-card) 70%); }
+.customBmrVerdicts .tone-death em { color:#fff;background:#b3263a;border-color:#b3263a; }
+.customBmrVerdicts .tone-alive em { color:#1f6a4a;background:rgba(80,190,140,.16); }
+.customGrimoirePlay[data-theme="night"] .customBmrVerdicts .tone-alive em { color:#9fe3c2; }
+.customBmrVerdicts .tone-none em { color:var(--bmr-muted);border-style:dashed; }
+
+/* Supporting facts: compact key/value lines, not stacked cards. */
+.issue116SelectionPanel dl.customBmrRows { display:grid;gap:0;margin:12px 0 0;padding:4px 14px;border-radius:12px;background:color-mix(in srgb,var(--bmr-card) 60%,transparent); }
+.issue116SelectionPanel dl.customBmrRows > div { display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:40px;padding:0;border-radius:0;background:transparent;border-bottom:1px solid var(--bmr-line); }
+.issue116SelectionPanel dl.customBmrRows > div:last-child { border-bottom:0; }
+.customBmrRows dt { color:var(--bmr-muted);font-size:.82rem;font-weight:700; }
+.customBmrRows dd { display:flex;align-items:center;gap:10px;margin:0;color:var(--bmr-ink);font-weight:700;text-align:right;word-break:keep-all; }
+.customBmrInline { min-height:30px !important;padding:2px 12px !important;font-size:.8rem !important;border-radius:999px !important; }
+
+.customBmrAppliedList { display:flex;flex-wrap:wrap;gap:8px;margin-top:10px; }
+.customBmrAppliedList:empty { display:none; }
+.customBmrApplied { display:flex;align-items:center;gap:8px;margin:0;padding:6px 14px 6px 6px;border:1px solid var(--bmr-gold,#c9a14a);border-radius:999px;color:var(--bmr-ink);font-weight:700;font-size:.9rem; }
+.customBmrApplied img { width:28px;height:28px;object-fit:contain; }
+.customBmrApplied span { display:grid;line-height:1.2; }
+.customBmrApplied small { color:var(--bmr-muted);font-size:.7rem;font-weight:600; }
+.customBmrApplied.spent { border-style:dashed;border-color:var(--bmr-line);opacity:.7; }
+
+
+.customBmrRows select {max-width:100%;} .customBmrVerdicts + dl {margin-top:12px;}
+@media(max-width:600px){.customBmrVerdicts li{grid-template-columns:36px minmax(0,1fr) auto;gap:10px}.customBmrVerdicts img{width:36px;height:36px}.customBmrVerdicts strong{font-size:1.05rem}}
+
+/* Information choices use the same touch-sized controls as the board. */
+.snvInformationTask dl.customBmrRows { display:grid;gap:12px;margin:20px 0; }
+.snvInformationTask dl.customBmrRows > div { display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:12px; }
+.snvInformationTask .customBmrRows dd { justify-content:flex-end;min-width:0; }
+.snvInformationTask .customBmrRows select { width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--bmr-line);border-radius:12px;background:var(--bmr-card);color:var(--bmr-ink);font:inherit; }
+.snvInformationTask .customBmrInline { border:1px solid var(--bmr-line);background:var(--bmr-card);color:var(--bmr-ink); }
+
+/* Acceptance follow-ups (#271 UI). */
+.customDayTask .issue116ExecutionConfirm { margin-top:16px; }
+.customBmrApplied.kept { border-color:var(--bmr-line);opacity:.85; }
+.customBmrApplied.kept small { color:var(--bmr-muted); }
+@media(max-width:600px){
+ .customGrimoirePlay .issue116SelectionHeader h2 { font-size:clamp(1.6rem,7.4vw,2.1rem);word-break:keep-all; }
+}
+.issue116SelectionPanel dl.customBmrRows:empty { display:none; }
+.customBmrVerdicts small { word-break:keep-all; }

@@ -11,11 +11,12 @@ pub(crate) const SYSTEM_ACTIONS: [SystemFirstNightActionId; 4] = [
 // currently supported TB/S&V/Carousel action catalog. This is deliberately not a merge of script-local
 // ranks. The ordered snapshot is used only when authoring a draft omits its order; the same
 // catalog supplies the Character action set used to validate completed definitions.
-pub(crate) const ORDERED_ACTIONS: [(&str, &str); 23] = [
+pub(crate) const ORDERED_ACTIONS: [(&str, &str); 26] = [
     ("philosopher", "chooseAbility"),
     ("preacher", "choosePlayer"),
     ("poisoner", "choosePoisonTarget"),
     ("snakeCharmer", "choosePlayer"),
+    ("devilsAdvocate", "protectExecution"),
     ("evilTwin", "learnTwin"),
     ("witch", "chooseCursedPlayer"),
     ("cerenovus", "assignMadness"),
@@ -27,9 +28,11 @@ pub(crate) const ORDERED_ACTIONS: [(&str, &str); 23] = [
     ("empath", "learnEvilNeighbors"),
     ("fortuneTeller", "checkDemon"),
     ("butler", "chooseMaster"),
+    ("grandmother", "learnGrandchild"),
     ("clockmaker", "learnSteps"),
     ("dreamer", "learnCharacters"),
     ("seamstress", "compareAlignments"),
+    ("noble", "learnPlayers"),
     ("balloonist", "learnPlayer"),
     ("nightwatchman", "choosePlayer"),
     ("spy", "inspectGrimoire"),
@@ -100,12 +103,14 @@ pub(crate) fn production_actions() -> Vec<(FirstNightActionRef, bool)> {
 // 3d6d930a9e600321f93b2567a2e88948a675bc1e, otherNight. D3 excludes
 // Scarlet Woman, Sweetheart, Sage and Ravenkeeper (event-triggered actions).
 // Barber retains its conditional nighttime choice, separate from its death trigger.
-pub(crate) const OTHER_ORDERED_ACTIONS: [(&str, &str); 29] = [
+pub(crate) const OTHER_ORDERED_ACTIONS: [(&str, &str); 33] = [
     ("philosopher", "chooseAbility"),
     ("preacher", "choosePlayer"),
     ("poisoner", "choosePoisonTarget"),
+    ("gambler", "guessCharacter"),
     ("snakeCharmer", "choosePlayer"),
     ("monk", "protectPlayer"),
+    ("devilsAdvocate", "protectExecution"),
     ("witch", "chooseCursedPlayer"),
     ("cerenovus", "assignMadness"),
     ("pitHag", "changeCharacter"),
@@ -114,7 +119,9 @@ pub(crate) const OTHER_ORDERED_ACTIONS: [(&str, &str); 29] = [
     ("noDashii", "attackPlayer"),
     ("vortox", "attackPlayer"),
     ("vigormortis", "attackPlayer"),
+    ("assassin", "killPlayer"),
     ("barber", "swapCharacters"),
+    ("moonchild", "resolveDeath"),
     ("empath", "learnEvilNeighbors"),
     ("fortuneTeller", "checkDemon"),
     ("undertaker", "learnExecutedCharacter"),

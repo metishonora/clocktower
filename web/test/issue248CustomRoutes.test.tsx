@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { CustomGrimoireApplication } from '../src/grimoire-custom/CustomGrimoireApplication';
@@ -36,7 +36,7 @@ it('restores a direct game address under StrictMode without history markers or a
   expect(new URL(location.href).searchParams.get('game')).toBe(before.canonical.game.id);
 });
 
-it('shows setup recovery and preserves the saved game instead of reopening setup', async () => {
+it('offers setup recovery when the browser entry has no draft and preserves the saved game', async () => {
   const first = await started(); first.app.dispose(); const before = await stored();
   history.replaceState({}, '', `${grimoireUrl}?mode=setup`);
   render(<CustomGrimoireApplication onExit={()=>{}}/>);
@@ -110,4 +110,27 @@ it('protects document exits only while persistence needs attention and removes t
   unsaved = true; expect(exiting()).toBe(true);
   unsaved = false; expect(exiting()).toBe(false);
   disconnect(); unsaved = true; expect(exiting()).toBe(false);
+});
+
+
+it('reloads the selected scenario, player count and partial roster without replacing an existing game', async () => {
+  const first = await started(); first.app.dispose(); const before = await stored();
+  history.replaceState({}, '', customRouteUrl({kind:'game',gameId:before.canonical.game.id}));
+  render(<CustomGrimoireApplication onExit={()=>{}}/>);
+  await screen.findByRole('main', {name:'커스텀 마도서'});
+  fireEvent.click(screen.getByRole('button', {name:'새 게임'}));
+  fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name:'새 게임'}));
+  await screen.findByRole('button', {name:'직업 선택 확정'});
+  fireEvent.click(screen.getByRole('button', {name:'5명'}));
+  await waitFor(()=>expect((screen.getByRole('button', {name:'군인'}) as HTMLButtonElement).disabled).toBe(false));
+  fireEvent.click(screen.getByRole('button', {name:'군인'}));
+  await waitFor(()=>expect(screen.getByRole('button', {name:'군인'}).getAttribute('aria-pressed')).toBe('true'));
+  expect(await stored()).toEqual(before);
+  cleanup();
+  render(<StrictMode><CustomGrimoireApplication onExit={()=>{}}/></StrictMode>);
+  await screen.findByRole('button', {name:'직업 선택 확정'});
+  expect(screen.getByRole('button', {name:'5명'}).getAttribute('aria-pressed')).toBe('true');
+  expect(screen.getByRole('button', {name:'군인'}).getAttribute('aria-pressed')).toBe('true');
+  expect(screen.queryByRole('list', {name:'저장된 게임'})).toBeNull();
+  expect(await stored()).toEqual(before);
 });

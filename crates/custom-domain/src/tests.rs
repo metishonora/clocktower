@@ -123,3 +123,15 @@ mod vortox_pit_hag;
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue269_effect_lifetime;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue271_bmr;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod noble;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod golem;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue271_integrated;

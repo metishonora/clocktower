@@ -56,7 +56,7 @@ fn custom_registry_exhaustively_projects_each_tb_and_snv_id_to_one_canonical_kin
     let catalog = custom_script_catalog();
     let ids = catalog.iter().map(|entry| entry.id).collect::<HashSet<_>>();
 
-    assert_eq!(catalog.len(), 55);
+    assert_eq!(catalog.len(), 63);
     assert_eq!(ids.len(), catalog.len());
 
     let mut kind_counts = [0; 4];
@@ -80,13 +80,22 @@ fn custom_registry_exhaustively_projects_each_tb_and_snv_id_to_one_canonical_kin
         } else {
             assert!([
                 ("zealot", CharacterKind::Outsider),
+                ("golem", CharacterKind::Outsider),
                 ("nightwatchman", CharacterKind::Townsfolk),
                 ("pixie", CharacterKind::Townsfolk),
                 ("balloonist", CharacterKind::Townsfolk),
                 ("preacher", CharacterKind::Townsfolk),
+                ("noble", CharacterKind::Townsfolk),
                 ("chambermaid", CharacterKind::Townsfolk),
                 ("boffin", CharacterKind::Minion),
-                ("marionette", CharacterKind::Minion)
+                ("marionette", CharacterKind::Minion),
+                ("fool", CharacterKind::Townsfolk),
+                ("gambler", CharacterKind::Townsfolk),
+                ("devilsAdvocate", CharacterKind::Minion),
+                ("assassin", CharacterKind::Minion),
+                ("grandmother", CharacterKind::Townsfolk),
+                ("moonchild", CharacterKind::Outsider),
+
             ]
             .contains(&(entry.id, entry.kind)));
         }
@@ -98,7 +107,7 @@ fn custom_registry_exhaustively_projects_each_tb_and_snv_id_to_one_canonical_kin
         }] += 1;
     }
 
-    assert_eq!(kind_counts, [31, 9, 10, 5]);
+    assert_eq!(kind_counts, [35, 11, 12, 5]);
 
     let all_character_ids = catalog.iter().map(|entry| entry.id).collect::<Vec<_>>();
     let context = resolve_custom_script(&definition(&all_character_ids)).unwrap();
@@ -149,7 +158,7 @@ fn empty_definition_resolves_but_cannot_invent_registry_membership() {
 
 #[test]
 fn unsupported_case_different_and_bmr_ids_are_rejected_before_official_dispatch() {
-    for character_id in ["futureCharacter", "Imp", "grandmother"] {
+    for character_id in ["futureCharacter", "Imp", "sailor"] {
         let game = custom_game(&["washerwoman", character_id, "imp"]);
         let boundary_error = crate::boundary::parse_game_file(&game.to_string())
             .err()

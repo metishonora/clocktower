@@ -1,3 +1,4 @@
+import {CustomNobleInformation} from './CustomNobleInformation';
 import type {FirstNightController} from '../custom/grimoire/firstNightController';
 import {informationChoices} from '../custom/grimoire/stepInputModel';
 import {CharacterAbilityInput,InformationTreatmentInput} from '../shared-ui/InformationInputPresentation';
@@ -11,6 +12,7 @@ export function CustomNightSelectionInputs({controller}:{controller:FirstNightCo
   const disabled=state.busy||state.saveStatus!=='saved';
   const choices=informationChoices(step,d.playerIds);
   return <>
+    {step.character==='noble'&&<CustomNobleInformation controller={controller} location="board"/>}
     {step.character==='preacher'&&choices.length>1&&<InformationTreatmentInput label="이번 선택의 등록" value={d.choiceIndex||'0'} options={choices.map((choice,i)=>({id:String(i),label:choice.registrationJudgments.length?(choice.result.kind==='boolean'&&choice.result.value?'하수인으로 취급':'주민으로 취급'):'실제 직업'}))} disabled={disabled} onChange={id=>controller.updateInput({choiceIndex:id,judgments:choices[Number(id)].registrationJudgments})}/>}
     {attack?.mayorDecision&&!controller.selectingMayorBounce&&<InformationTreatmentInput className="snvInformationBinary tbSelectionChoices tbRegistrationTreatment" label="시장 공격 결과" value={d.mayorDecision?.kind} options={[{id:'mayorDies',label:'시장이 사망'},{id:'bounce',label:'다른 플레이어가 대신 사망'}]} disabled={disabled} onChange={controller.chooseMayorOutcome}/>}
     {!!attack?.successorPlayerIds.length&&<CharacterAbilityInput label="임프 승계" ariaLabel="임프 승계" value={d.successorPlayerId??''} options={options(attack.successorPlayerIds)} disabled={disabled} onChange={id=>controller.updateInput({successorPlayerId:id||undefined})}/>}

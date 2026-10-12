@@ -72,7 +72,7 @@ test("rejects unknown, case-different, and BMR Character IDs at Registry resolut
   for (const characterIds of [
     ["washerwoman", "futureCharacter", "imp"],
     ["imp", "Imp"],
-    ["imp", "grandmother"],
+    ["imp", "sailor"],
   ]) {
     throws(() => parseGameFileJson(JSON.stringify(customV4(characterIds))));
   }

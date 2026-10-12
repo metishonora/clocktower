@@ -55,6 +55,7 @@ pub fn confirmed_event_reveal_json(game: &str, event_id: &str) -> String {
 }
 
 mod day;
+mod death;
 
 /// Read-only authoring query; completed files must already carry the explicit order.
 pub fn custom_other_night_plan_json(request: &str) -> String {

@@ -50,8 +50,9 @@ function instruction(t:AcceptanceGame['trace'][number]) {
 export async function validateCoverage(games:AcceptanceGame[]) {
   const catalogue=await customScriptCatalog();
   // #232 is the frozen TB/SnV acceptance matrix. Carousel commands and UI
-  // have their own #237 coverage; do not claim these games exercise them.
-  expect([...characterRequirements.map(r=>r.characterId),'nightwatchman','zealot','pixie','balloonist','boffin','marionette','preacher','chambermaid'].sort()).toEqual(catalogue.map(c=>c.id).sort());
+  // have their own #237/#251 coverage; BMR, Noble and Golem additions have #271 acceptance.
+  // Do not claim the frozen #232 games exercise these later additions.
+  expect([...characterRequirements.map(r=>r.characterId),'nightwatchman','zealot','pixie','balloonist','boffin','marionette','preacher','chambermaid','fool','gambler','devilsAdvocate','assassin','grandmother','moonchild','noble','golem'].sort()).toEqual(catalogue.map(c=>c.id).sort());
   expect(characterRequirements).toHaveLength(47);
   const covered=new Set(games.flatMap(g=>g.checks.flatMap(c=>c.requirements)));
   for(const r of characterRequirements)expect(covered.has(r.id),r.id).toBe(true);
@@ -102,7 +103,7 @@ export async function writeArtifacts(games:AcceptanceGame[], partial = false) {
     return;
   }
   const table=coverage.map(r=>`| ${r.id} | ${r.expectedKo} | ${r.cases.join(', ')||'기존 회귀 묶음/수동 확인'} | ${r.automatic==='passed'?'사례 통과':'별도 근거 확인'} | 미확인 | 미확인 |`).join('\n');
-  await writeFile(resolve(artifactRoot,'coverage.md'),`# 확인표\n\n47종 모두 실제 사례가 있다. 아래 통과는 연결된 사례에 한정한다. 각 캐릭터의 추가 주요 분기 목록·공식 근거·기존 테스트 경로는 manifest에 있으며 목록 전체 통과를 뜻하지 않는다.\n\n| 항목 | 기대 | 사례 | 자동 | 사용자 | 실기기 |\n| --- | --- | --- | --- | --- | --- |\n${table}\n`);
+  await writeFile(resolve(artifactRoot,'coverage.md'),`# 확인표\n\n47종 모두 실제 사례가 있다. 아래 통과는 연결된 사례에 한정한다. 각 캐릭터의 추가 주요 분기 목록·공식 근거·기존 테스트 경로는 manifest에 있으며 목록 전체 통과를 뜻하지 않는다.\n\n| 항목 | 기대 | 사례 | 자동 | 사용자 | 실기기 |\n| --- | --- | --- | --- | --- | --- |\n${table}\n\n## 이후 추가 지원\n\n기존 47종 범위는 유지한다. Carousel은 #237, 전도사·객실 청소부는 [#251 확인표](../issue251/README.md), Everyone Can Play의 BMR 6종은 [#271 확인표](../issue271/README.md)에서 별도로 관리한다. 현재 전체 지원 목록은 61종이며, 새 6종을 위 47종의 기존 사례로 검증했다고 간주하지 않는다.\n`);
   await writeFile(resolve(artifactRoot,'cases.md'),`# 실제 확인 사례\n\n각 행은 해당 분기의 기대와 실제 검증 사건을 연결한다. 관찰 상세는 manifest의 같은 사례 ID에서 확인한다.\n\n| 사례 | 캐릭터·공통 항목 | 기대 결과 | 수행 | 시작 파일 | 자동 | 사용자 | 실기기 |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n`+allChecks.map(c=>`| ${c.id} | ${c.requirements.join(', ')} | ${c.expectedKo} | [${c.id.slice(0,3)} 절차 ${Math.max(0,c.traceIndex-1)}](${c.id.slice(0,3)}.md) | [${c.checkpoint}](${c.checkpoint}.game.json) | 통과 | 미확인 | 미확인 |`).join('\n')+'\n');
   await writeFile(resolve(artifactRoot,'results.csv'),'case,game,user_result,device_result,environment,observation,defect\n'+allChecks.map(c=>`${c.id},${c.id.slice(0,3)},unverified,unverified,,,`).join('\n')+'\n');
 }

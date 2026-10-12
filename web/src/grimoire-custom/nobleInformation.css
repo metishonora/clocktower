@@ -1,0 +1,13 @@
+.customNobleInformation { display:grid; gap:12px; }
+.customNobleSelectionHeading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; }
+.customNobleSelectionHeading > span,.customNobleCount > span,.customNobleJudgment > span { color:var(--bmr-muted); font-size:.8rem; }
+.customNobleSelectionHeading button { min-height:34px; padding:5px 14px; border:1px solid var(--bmr-line); border-radius:999px; background:var(--bmr-card); color:var(--bmr-ink); font:inherit; font-size:.8rem; cursor:pointer; }
+.customNobleSelectionHeading button:disabled { opacity:.45; cursor:default; }
+.customNobleSelectedPeople { display:flex; flex-wrap:wrap; gap:8px; }
+.customNobleSelectedPeople span { padding:10px 12px; border:1px solid var(--bmr-line); border-radius:12px; background:var(--bmr-card); color:var(--bmr-ink); font-weight:700; }
+.customNobleCount { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border:1px solid var(--bmr-line); border-radius:12px; background:var(--bmr-card); color:var(--bmr-ink); }
+.customNobleCount.invalid { border-color:#ca6074; }
+.customNobleCount strong { font-size:1.1rem; }
+.customNobleJudgment { display:flex; justify-content:space-between; gap:12px; border-bottom:1px solid var(--bmr-line); padding-bottom:10px; }
+.customGrimoirePlay .customNobleValidation { margin:0; color:#ffb1bf; font-size:.82rem; line-height:1.5; word-break:keep-all; }
+.customNobleSelectionHint { margin:0; color:var(--bmr-muted); font-size:.85rem; }

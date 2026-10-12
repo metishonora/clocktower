@@ -1,0 +1,3235 @@
+{
+  "issue": 271,
+  "preparedOn": "2026-10-10",
+  "characters": [
+    "grandmother",
+    "gambler",
+    "fool",
+    "moonchild",
+    "devilsAdvocate",
+    "assassin",
+    "noble",
+    "golem"
+  ],
+  "runtimeGroups": {
+    "bmr": {
+      "baseCommit": "840759378c9651d64fc5adac4149b5ea12addc6d",
+      "branch": "codex/issue-271-integration",
+      "workingTreeDirty": false,
+      "wasmSha256": "b035370c1ddf45ef5a14e72bfbb68b52b297c559f4ba969a96f0cae9e7e0345b"
+    },
+    "noble": {
+      "baseCommit": "840759378c9651d64fc5adac4149b5ea12addc6d",
+      "branch": "codex/issue-271-integration",
+      "workingTreeDirty": false,
+      "wasmSha256": "b035370c1ddf45ef5a14e72bfbb68b52b297c559f4ba969a96f0cae9e7e0345b"
+    },
+    "golem": {
+      "baseCommit": "840759378c9651d64fc5adac4149b5ea12addc6d",
+      "branch": "codex/issue-271-integration",
+      "workingTreeDirty": false,
+      "wasmSha256": "b035370c1ddf45ef5a14e72bfbb68b52b297c559f4ba969a96f0cae9e7e0345b"
+    },
+    "integrated": {
+      "baseCommit": "840759378c9651d64fc5adac4149b5ea12addc6d",
+      "branch": "codex/issue-271-integration",
+      "workingTreeDirty": false,
+      "wasmSha256": "b035370c1ddf45ef5a14e72bfbb68b52b297c559f4ba969a96f0cae9e7e0345b"
+    }
+  },
+  "fileCount": 36,
+  "files": [
+    {
+      "file": "bmr/advocate.game.json",
+      "group": "bmr",
+      "sha256": "b9638e59f1170224dfe5c713606d0c891b208c1a349acaa984e2c9b8f4b2037c",
+      "events": 3,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "firstNight",
+        "character": "devilsAdvocate",
+        "actionId": "protectExecution"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/assassin.game.json",
+      "group": "bmr",
+      "sha256": "fbb5498b1e361825c97f255597999ad16dfbadfa91f3a4e3bc24d90e1a70c947",
+      "events": 16,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "night",
+        "day": 1,
+        "dayStage": "night",
+        "character": "assassin",
+        "actionId": "killPlayer"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": false
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/execution.game.json",
+      "group": "bmr",
+      "sha256": "7a7a25fcd24e1e51701052a1cc8a35b6a1d36f19b1af0e6c0702f75d09e29b93",
+      "events": 12,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "day",
+        "day": 1,
+        "dayStage": "execution"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/gambler.game.json",
+      "group": "bmr",
+      "sha256": "afe8df32484d13f98e7e7415079357fefe06f113bfb6c1979a3252b35885054d",
+      "events": 12,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "night",
+        "day": 1,
+        "dayStage": "night",
+        "character": "gambler",
+        "actionId": "guessCharacter"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/grandmother-chain.game.json",
+      "group": "bmr",
+      "sha256": "6bd10b07a61dc3c9f84dd5612e0e2a7e392b82a5b5982037fd4402b41eb4fe5d",
+      "events": 15,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "night",
+        "day": 1,
+        "dayStage": "night",
+        "character": "imp",
+        "actionId": "attackPlayer"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/grandmother.game.json",
+      "group": "bmr",
+      "sha256": "2d8cf4809bf29d332cd9c3be6c246cccdb78911434227c8151be4eb8904f8a10",
+      "events": 4,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "firstNight",
+        "character": "grandmother",
+        "actionId": "learnGrandchild"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/moonchild-night.game.json",
+      "group": "bmr",
+      "sha256": "188afb2c6ac33a7f21c5acc88590255df0eb98ddc6a67ba12c801490f53ebe16",
+      "events": 30,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "night",
+        "day": 2,
+        "dayStage": "night",
+        "character": "moonchild",
+        "actionId": "resolveDeath"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": false
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/moonchild.game.json",
+      "group": "bmr",
+      "sha256": "f9dbc6f19d764d2a08c0875f33620d7c85efd9381648a2fd9d3f1dcbd196377d",
+      "events": 19,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "day",
+        "day": 2,
+        "dayStage": "whisper"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": false
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/poisoned-grandmother.game.json",
+      "group": "bmr",
+      "sha256": "049974154652e51c42eeb9af9656e603db2b9ab3d63e807bfacfb355bf4577d0",
+      "events": 4,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "firstNight",
+        "character": "grandmother",
+        "actionId": "learnGrandchild"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/fool-first-execution.game.json",
+      "group": "bmr",
+      "sha256": "0cf2d0fee223ce31ff4f54d5a109edae283d97e1700310c26ddba1425d36af87",
+      "events": 12,
+      "gameId": "acceptance-271-fool-first-execution",
+      "start": {
+        "phase": "day",
+        "day": 1,
+        "dayStage": "execution"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/fool-spent-attack.game.json",
+      "group": "bmr",
+      "sha256": "f44e4e3aed31391db33e3f0517310081e5f28aeafe63e3890c92060f64df5d20",
+      "events": 17,
+      "gameId": "acceptance-271-fool-first-execution",
+      "start": {
+        "phase": "night",
+        "day": 1,
+        "dayStage": "night",
+        "character": "imp",
+        "actionId": "attackPlayer"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/poisoned-gambler.game.json",
+      "group": "bmr",
+      "sha256": "bcf5af02bbeddc478f634701f177b7c3e402d8b7a3fd3c6f3c43c821e3f6d0fe",
+      "events": 12,
+      "gameId": "acceptance-271-poisoned-gambler",
+      "start": {
+        "phase": "night",
+        "day": 1,
+        "dayStage": "night",
+        "character": "gambler",
+        "actionId": "guessCharacter"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/poisoned-fool-execution.game.json",
+      "group": "bmr",
+      "sha256": "9381307d8fc119dfb301ad56bd99c941c2d03eea9adb710dc29ca705aeb501e6",
+      "events": 11,
+      "gameId": "acceptance-271-poisoned-fool",
+      "start": {
+        "phase": "day",
+        "day": 1,
+        "dayStage": "execution"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/poisoned-assassin.game.json",
+      "group": "bmr",
+      "sha256": "89532644b1bd6ed0d19ea149d52ce447e1bc459034ca9b2493bef825f46f97ed",
+      "events": 15,
+      "gameId": "acceptance-271-poisoned-assassin",
+      "start": {
+        "phase": "night",
+        "day": 1,
+        "dayStage": "night",
+        "character": "assassin",
+        "actionId": "killPlayer"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/assassin-spent.game.json",
+      "group": "bmr",
+      "sha256": "2923f9172dabef962705f1bcb1510f7a4d6616729e373d750d64e3985d8aaa6e",
+      "events": 26,
+      "gameId": "acceptance-271-assassin-spent",
+      "start": {
+        "phase": "night",
+        "day": 2,
+        "dayStage": "night",
+        "character": "imp",
+        "actionId": "attackPlayer"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "fool",
+          "alive": false
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/advocate-second-night.game.json",
+      "group": "bmr",
+      "sha256": "92fd8b4111a8ea8bdf946e4c14e313fffd57b7dbc9019debb9d670968f49b24f",
+      "events": 16,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "night",
+        "day": 1,
+        "dayStage": "night",
+        "character": "devilsAdvocate",
+        "actionId": "protectExecution"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/advocate-expired-execution.game.json",
+      "group": "bmr",
+      "sha256": "176c4e315e947acba1fafac31a9bf4976b97caf7e615a191ed6a205be09387ad",
+      "events": 26,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "day",
+        "day": 2,
+        "dayStage": "execution"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/moonchild-day-choice.game.json",
+      "group": "bmr",
+      "sha256": "4b70945ad3e33f9e397046c0e42f7cf60bd82173372f22a13f18e8787835bf3d",
+      "events": 14,
+      "gameId": "acceptance-271-moonchild-day-choice",
+      "start": {
+        "phase": "day",
+        "day": 1,
+        "dayStage": "nightReady"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": false
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/moonchild-night-lethal.game.json",
+      "group": "bmr",
+      "sha256": "0e6ea5ac3d2bef640fd0be2594f4bc71d83cbbaa37f12f4629458436b43e4a70",
+      "events": 30,
+      "gameId": "everyone-can-play-271",
+      "start": {
+        "phase": "night",
+        "day": 2,
+        "dayStage": "night",
+        "character": "moonchild",
+        "actionId": "resolveDeath"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "monk",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "moonchild",
+          "alive": false
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "bmr/moonchild-night-poisoned.game.json",
+      "group": "bmr",
+      "sha256": "e341b357cd6f0b648587c54b0ad6673932a058d2b58f13a73a626f29b7656206",
+      "events": 23,
+      "gameId": "acceptance-271-moonchild-night-poisoned",
+      "start": {
+        "phase": "night",
+        "day": 2,
+        "dayStage": "night",
+        "character": "moonchild",
+        "actionId": "resolveDeath"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "moonchild",
+          "alive": false
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "noble/normal.game.json",
+      "group": "noble",
+      "sha256": "3d6db157a6f014f29893b85e912de123f675d60163ae180e0ba264c092341e98",
+      "events": 4,
+      "gameId": "noble-normal",
+      "start": {
+        "phase": "firstNight",
+        "character": "noble",
+        "actionId": "learnPlayers"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "민지",
+          "character": "noble",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "도현",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "유나",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "도윤",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "서윤",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "noble/poisoned.game.json",
+      "group": "noble",
+      "sha256": "84a98b6eaabeda2c565cfeb300b96c3529ab0fc7240c008c32f011ce485acc3b",
+      "events": 4,
+      "gameId": "noble-poisoned",
+      "start": {
+        "phase": "firstNight",
+        "character": "noble",
+        "actionId": "learnPlayers"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "민지",
+          "character": "noble",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "도현",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "유나",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "도윤",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "서윤",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "noble/recluse.game.json",
+      "group": "noble",
+      "sha256": "04d19c3604fdc3c81c0159a2806a7c1088c4113bef8143e438715b95ec02a332",
+      "events": 3,
+      "gameId": "noble-recluse",
+      "start": {
+        "phase": "firstNight",
+        "character": "noble",
+        "actionId": "learnPlayers"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "민지",
+          "character": "noble",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "도현",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "유나",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "도윤",
+          "character": "savant",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "서윤",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "하린",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "서준",
+          "character": "spy",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "지우",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "noble/spy.game.json",
+      "group": "noble",
+      "sha256": "1ba1d6a61e07932a325cd7ddeaccec6aa4aa22ffc7dd1dbeedfa86d230f45e8a",
+      "events": 3,
+      "gameId": "noble-spy",
+      "start": {
+        "phase": "firstNight",
+        "character": "noble",
+        "actionId": "learnPlayers"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "민지",
+          "character": "noble",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "도현",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "유나",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "도윤",
+          "character": "savant",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "서윤",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "하린",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "서준",
+          "character": "spy",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "지우",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "noble/vortox.game.json",
+      "group": "noble",
+      "sha256": "ea201e6bd62226bb16fdb972290f1585ea6d6890cb6eb0577d056baff4513cd6",
+      "events": 4,
+      "gameId": "noble-vortox",
+      "start": {
+        "phase": "firstNight",
+        "character": "noble",
+        "actionId": "learnPlayers"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "민지",
+          "character": "noble",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "도현",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "유나",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "도윤",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "서윤",
+          "character": "vortox",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "noble/philosopher.game.json",
+      "group": "noble",
+      "sha256": "56a6ece3e103d80b95b8be4ecded182c49f5bca1dd434ada60500d2ca5a35293",
+      "events": 2,
+      "gameId": "acceptance-271-noble-philosopher",
+      "start": {
+        "phase": "firstNight",
+        "character": "noble",
+        "actionId": "learnPlayers"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "philosopher",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "golem/normal.game.json",
+      "group": "golem",
+      "sha256": "c38c9575ee44e1caa66fd73a1fc48c6a91e9969519bcfd65cf62ad375cd92f27",
+      "events": 8,
+      "gameId": "golem-normal",
+      "start": {
+        "phase": "day",
+        "day": 1,
+        "dayStage": "nomination"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "서연",
+          "character": "golem",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "민준",
+          "character": "saint",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "지우",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "하윤",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "도현",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "수빈",
+          "character": "imp",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "예린",
+          "character": "virgin",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "시우",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "유나",
+          "character": "artist",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "golem/poisoned.game.json",
+      "group": "golem",
+      "sha256": "0112ee9f0f14406247586184ef564da36d96856c6119ed6808eaf9c533e7fcb1",
+      "events": 8,
+      "gameId": "golem-poisoned",
+      "start": {
+        "phase": "day",
+        "day": 1,
+        "dayStage": "nomination"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "서연",
+          "character": "golem",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "민준",
+          "character": "saint",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "지우",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "하윤",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "도현",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "수빈",
+          "character": "imp",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "예린",
+          "character": "virgin",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "시우",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "유나",
+          "character": "artist",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "golem/recluse.game.json",
+      "group": "golem",
+      "sha256": "2bec9221774e167902099bbf0441daeb341dc81dfeab0b2f69026d0d9b342de5",
+      "events": 8,
+      "gameId": "golem-recluse",
+      "start": {
+        "phase": "day",
+        "day": 1,
+        "dayStage": "nomination"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "서연",
+          "character": "golem",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "민준",
+          "character": "recluse",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "지우",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "하윤",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "도현",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "수빈",
+          "character": "imp",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "예린",
+          "character": "virgin",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "시우",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "유나",
+          "character": "artist",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "golem/spent.game.json",
+      "group": "golem",
+      "sha256": "37ff14a830ad32d0fe2ee6e54a904c33a2c242ef89f0ba5afadb4c3454f09d45",
+      "events": 10,
+      "gameId": "golem-spent",
+      "start": {
+        "phase": "day",
+        "day": 1,
+        "dayStage": "nomination"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "서연",
+          "character": "golem",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "민준",
+          "character": "saint",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "지우",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "하윤",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "도현",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "수빈",
+          "character": "imp",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "예린",
+          "character": "virgin",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "시우",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "유나",
+          "character": "artist",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "golem/dead.game.json",
+      "group": "golem",
+      "sha256": "8a595ce46fe026bd5bb178cd355fff320c279685bee9676a34ca108936a52d97",
+      "events": 20,
+      "gameId": "golem-dead",
+      "start": {
+        "phase": "day",
+        "day": 2,
+        "dayStage": "nomination"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "서연",
+          "character": "golem",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "민준",
+          "character": "saint",
+          "alive": false
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "지우",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "하윤",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "도현",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "수빈",
+          "character": "imp",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "예린",
+          "character": "virgin",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "시우",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "유나",
+          "character": "artist",
+          "alive": false
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "golem/sweetheart.game.json",
+      "group": "golem",
+      "sha256": "2a08bffb31c706bed285458253d961ccebebc93b834a69ee93827feb08a99e1f",
+      "events": 8,
+      "gameId": "golem-sweetheart",
+      "start": {
+        "phase": "day",
+        "day": 1,
+        "dayStage": "nomination"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "서연",
+          "character": "golem",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "민준",
+          "character": "sweetheart",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "지우",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "하윤",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "도현",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "수빈",
+          "character": "imp",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "예린",
+          "character": "virgin",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "시우",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "유나",
+          "character": "artist",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "golem/boffin-spent.game.json",
+      "group": "golem",
+      "sha256": "89ceee71f23fe1b13e8430d41f9172a786fa2247687a140cd7e9129337d01a98",
+      "events": 11,
+      "gameId": "acceptance-271-golem-boffin",
+      "start": {
+        "phase": "day",
+        "day": 1,
+        "dayStage": "nomination"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "artist",
+          "alive": false
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "virgin",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "ravenkeeper",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "undertaker",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "boffin",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "golem/boffin-suspended.game.json",
+      "group": "golem",
+      "sha256": "3bc5cbd4dde615c833cdb50b0bb44232de0d5ff68101e98b74e533d8e1edf10a",
+      "events": 20,
+      "gameId": "acceptance-271-golem-boffin",
+      "start": {
+        "phase": "day",
+        "day": 2,
+        "dayStage": "nomination"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "artist",
+          "alive": false
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "virgin",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "ravenkeeper",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "undertaker",
+          "alive": false
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "boffin",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "golem/boffin-recovered.game.json",
+      "group": "golem",
+      "sha256": "cafe3a8fc531c8b161f079cc3c61e6b1b10784ac5607f8b1f51be3a277bfc92f",
+      "events": 31,
+      "gameId": "acceptance-271-golem-boffin",
+      "start": {
+        "phase": "day",
+        "day": 3,
+        "dayStage": "nomination"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "artist",
+          "alive": false
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "virgin",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "ravenkeeper",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "slayer",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "undertaker",
+          "alive": false
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "boffin",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "poisoner",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    },
+    {
+      "file": "integrated/all-eight-day.game.json",
+      "group": "integrated",
+      "sha256": "1f25692505ff473ab962d66e4e4ad570017d332f0474642170f083d063d7a105",
+      "events": 10,
+      "gameId": "acceptance-271-all-eight-day",
+      "start": {
+        "phase": "day",
+        "day": 1,
+        "dayStage": "nomination"
+      },
+      "players": [
+        {
+          "seat": 1,
+          "id": "p1",
+          "name": "P1",
+          "character": "grandmother",
+          "alive": true
+        },
+        {
+          "seat": 2,
+          "id": "p2",
+          "name": "P2",
+          "character": "gambler",
+          "alive": true
+        },
+        {
+          "seat": 3,
+          "id": "p3",
+          "name": "P3",
+          "character": "fool",
+          "alive": true
+        },
+        {
+          "seat": 4,
+          "id": "p4",
+          "name": "P4",
+          "character": "noble",
+          "alive": true
+        },
+        {
+          "seat": 5,
+          "id": "p5",
+          "name": "P5",
+          "character": "soldier",
+          "alive": true
+        },
+        {
+          "seat": 6,
+          "id": "p6",
+          "name": "P6",
+          "character": "artist",
+          "alive": true
+        },
+        {
+          "seat": 7,
+          "id": "p7",
+          "name": "P7",
+          "character": "mayor",
+          "alive": true
+        },
+        {
+          "seat": 8,
+          "id": "p8",
+          "name": "P8",
+          "character": "moonchild",
+          "alive": true
+        },
+        {
+          "seat": 9,
+          "id": "p9",
+          "name": "P9",
+          "character": "golem",
+          "alive": true
+        },
+        {
+          "seat": 10,
+          "id": "p10",
+          "name": "P10",
+          "character": "devilsAdvocate",
+          "alive": true
+        },
+        {
+          "seat": 11,
+          "id": "p11",
+          "name": "P11",
+          "character": "assassin",
+          "alive": true
+        },
+        {
+          "seat": 12,
+          "id": "p12",
+          "name": "P12",
+          "character": "imp",
+          "alive": true
+        }
+      ],
+      "canonicalReplay": "passed",
+      "jsonRoundTrip": "passed"
+    }
+  ],
+  "scriptedCheckSummary": {
+    "total": 27,
+    "passed": 27,
+    "failed": 0
+  },
+  "scriptedChecks": [
+    {
+      "group": "bmr",
+      "label": "어릿광대의 첫 처형 생존·원상 복원",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "소모한 어릿광대의 두 번째 사망",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "중독된 도박사의 오답 생존",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "중독된 어릿광대 처형 사망",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "중독된 암살자의 사용 소모·대상 생존",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "사용한 암살자는 다음 밤 순서에서 빠짐 (중독 사용)",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "암살자의 어릿광대 우회 사망",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "사용한 암살자는 다음 밤 순서에서 빠짐",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "변호사는 지난밤 대상을 연속 선택할 수 없음",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "변호사 보호 만료 뒤 어릿광대 자신의 방지만 적용",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "낮 사망 직후 달의 자손 선택 대기",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "달의 자손 예약 사망의 어릿광대 방지·소모·Undo",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "달의 자손 예약 사망은 할머니의 악마 연쇄를 일으키지 않음",
+      "result": "passed"
+    },
+    {
+      "group": "bmr",
+      "label": "밤에 중독된 달의 자손의 확정·재생·Undo",
+      "result": "passed"
+    },
+    {
+      "group": "noble",
+      "label": "귀족 normal 전달·파일 재생",
+      "result": "passed"
+    },
+    {
+      "group": "noble",
+      "label": "귀족 poisoned 전달·파일 재생",
+      "result": "passed"
+    },
+    {
+      "group": "noble",
+      "label": "귀족 vortox 전달·파일 재생",
+      "result": "passed"
+    },
+    {
+      "group": "golem",
+      "label": "과학자 중독 시 지명 가능·골렘 토큰 비활성",
+      "result": "passed"
+    },
+    {
+      "group": "golem",
+      "label": "과학자 회복 시 기존 사용 기록으로 지명 제한 복원",
+      "result": "passed"
+    },
+    {
+      "group": "golem",
+      "label": "골렘 normal/death 미리보기·확정 일치",
+      "result": "passed"
+    },
+    {
+      "group": "golem",
+      "label": "골렘 normal/demon 미리보기·확정 일치",
+      "result": "passed"
+    },
+    {
+      "group": "golem",
+      "label": "골렘 poisoned/impaired 미리보기·확정 일치",
+      "result": "passed"
+    },
+    {
+      "group": "golem",
+      "label": "골렘 recluse/registeredDemon 미리보기·확정 일치",
+      "result": "passed"
+    },
+    {
+      "group": "golem",
+      "label": "골렘 dead/alreadyDead 미리보기·확정 일치",
+      "result": "passed"
+    },
+    {
+      "group": "integrated",
+      "label": "8종 통합 골렘 → p3/protected 확정·재생·Undo",
+      "result": "passed"
+    },
+    {
+      "group": "integrated",
+      "label": "8종 통합 골렘 → p4/death 확정·재생·Undo",
+      "result": "passed"
+    },
+    {
+      "group": "integrated",
+      "label": "8종 통합 골렘 → p8/death 확정·재생·Undo",
+      "result": "passed"
+    }
+  ],
+  "manualAcceptance": "pending",
+  "realDeviceAcceptance": "pending"
+}

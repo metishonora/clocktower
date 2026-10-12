@@ -55,7 +55,8 @@ export function CharacterDetailButton({
     };
   }, [open]);
 
-  if (!details) return null;
+  // Without a rules card the identity still has to stay visible; it just isn't a button.
+  if (!details) return <div className={className.split(" ").filter(name => name !== "interactive").join(" ")}>{children}</div>;
 
   function closeCard() {
     setOpen(false);

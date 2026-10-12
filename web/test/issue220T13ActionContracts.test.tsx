@@ -33,6 +33,12 @@ for(const c of actionCases)it(`T13 P3 ${c[0]} ${c[1]}.${c[2]}: real action resul
    expect(p.getSnapshot().handoff?.notifications).toEqual(expect.arrayContaining([expect.objectContaining({kind:notificationKinds[action]})]));
    await act(async()=>p.showNotification());
    expect(screen.getByRole('dialog',{name:'플레이어 정보'})).toBeTruthy();
+   if(action==='learnTwin'){
+    fireEvent.click(screen.getByRole('button',{name:'확인했으면 다음 단계로'}));
+    expect(p.getSnapshot().public).toBe(true);
+    fireEvent.click(screen.getByRole('button',{name:'두 쌍둥이에게 공개'}));
+    expect(p.getSnapshot().public).toBe(true);
+   }
    fireEvent.click(screen.getByRole('button',{name:'확인했으면 눈을 감으세요'}));
    expect(p.getSnapshot().public).toBe(false);
   }else expect(p.getSnapshot().public).toBe(false);
@@ -87,7 +93,7 @@ it('T13 P3: unknown action cannot become a generic working editor',async()=>{
 });
 
 it('T13 P3: every approved action has exactly one explicit adapter',()=>{
- expect(Object.keys(actionAdapters).sort()).toEqual([...actionCases.map(c=>`${c[1]}.${c[2]}`), 'nightwatchman.choosePlayer','pixie.learnTownsfolk','pixie.assessMadness','balloonist.learnPlayer','boffin.grantAbility','marionette.assignShownCharacter','system.resolveNightDeaths','monk.protectPlayer','imp.attackPlayer','ravenkeeper.learnCharacter','undertaker.learnExecutedCharacter','pitHag.changeCharacter','pitHag.chooseDeaths','fangGu.attackPlayer','noDashii.attackPlayer','vortox.attackPlayer','vigormortis.attackPlayer','vigormortis.choosePoison','barber.swapCharacters','sweetheart.makeDrunk','sage.learnDemon','flowergirl.learnDemonVoted','townCrier.learnMinionNominated','oracle.learnDeadEvilCount','juggler.learnJuggles'].sort());
+ expect(Object.keys(actionAdapters).sort()).toEqual([...actionCases.map(c=>`${c[1]}.${c[2]}`), 'chambermaid.learnCount','preacher.choosePlayer','noble.learnPlayers','grandmother.learnGrandchild','gambler.guessCharacter','devilsAdvocate.protectExecution','assassin.killPlayer','moonchild.resolveDeath','nightwatchman.choosePlayer','pixie.learnTownsfolk','pixie.assessMadness','balloonist.learnPlayer','boffin.grantAbility','marionette.assignShownCharacter','system.resolveNightDeaths','monk.protectPlayer','imp.attackPlayer','ravenkeeper.learnCharacter','undertaker.learnExecutedCharacter','pitHag.changeCharacter','pitHag.chooseDeaths','fangGu.attackPlayer','noDashii.attackPlayer','vortox.attackPlayer','vigormortis.attackPlayer','vigormortis.choosePoison','barber.swapCharacters','sweetheart.makeDrunk','sage.learnDemon','flowergirl.learnDemonVoted','townCrier.learnMinionNominated','oracle.learnDeadEvilCount','juggler.learnJuggles'].sort());
 });
 
 it('T13 P3 A05: an independent interruption is displayed from Core and Undo resumes the original row',async()=>{

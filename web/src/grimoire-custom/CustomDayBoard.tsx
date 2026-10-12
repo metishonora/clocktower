@@ -1,3 +1,5 @@
+import {InformationTreatmentInput} from '../shared-ui/InformationInputPresentation';
+import {GolemNominationPreview,GolemNominationNote} from './GolemNomination';
 import {customSeatCharacter} from './customPlayerPresentation';
 import {useSyncExternalStore, type CSSProperties} from 'react';
 import type {FirstNightController} from '../custom/grimoire/firstNightController';
@@ -23,6 +25,9 @@ export function CustomDayBoard({controller}:{controller:FirstNightController}) {
   const previousVotes=day.nominations.filter(n=>n.countedVoterIds!==null&&(!h.complete||n.eventId!==day.nominations.at(-1)?.eventId));
   const highest=Math.max(0,...previousVotes.map(n=>n.countedVoterIds!.length));
   const targetVotes=Math.max(day.executionVoteThreshold,highest+(previousVotes.length?1:0));
+  const golemOptions=day.golemNominationOptions.filter(o=>o.source.ownerPlayerId===h.nominatorId&&o.targetPlayerId===h.nomineeId);
+  const golemPreview=golemOptions.find(o=>o.recluseAsDemon===!!h.recluseAsDemon);
+  const golemRecord=day.nominations.at(-1)?.golemEffects[0];
   const ready=voting||!!(h.nominatorId&&h.nomineeId);
   const nominator=players.find(p=>p.id===h.nominatorId),nominee=players.find(p=>p.id===h.nomineeId);
   const confirmLabel=voting?`${count}표로 투표 확정`:!nominator?'지명자를 선택하세요':!nominee?'피지명자를 선택하세요':`${nominator.seat}번 → ${nominee.seat}번 지명 확정`;
@@ -34,7 +39,8 @@ export function CustomDayBoard({controller}:{controller:FirstNightController}) {
         const self=!voting&&h.nominatorId===p.id&&h.nomineeId===p.id;
         const selected=voting?h.voterIds.includes(p.id):h.nominatorId===p.id||h.nomineeId===p.id;
         const forced=voting&&!h.complete&&day.forcedVoterIds.includes(p.id);
-        const selectionLabel=voting?forced?'강제 투표':selected?'투표':undefined:self?'지명자 · 피지명자':h.nominatorId===p.id?'지명자':h.nomineeId===p.id?'피지명자':undefined;
+        const golemSpent=!voting&&!h.nominatorId&&day.golemSpentNominatorIds.includes(p.id);
+        const selectionLabel=golemSpent?'지명 불가':voting?forced?'강제 투표':selected?'투표':undefined:self?'지명자 · 피지명자':h.nominatorId===p.id?'지명자':h.nomineeId===p.id?'피지명자':undefined;
         const selectionClass=voting?selected?' issue116VoterSeat':'':self?' issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat':h.nominatorId===p.id?' issue116NominatorSeat':h.nomineeId===p.id?' issue116NomineeSeat':'';
         const eligible=voting?day.eligibleVoterIds.includes(p.id):(h.nominatorId?day.eligibleNomineeIds:day.eligibleNominatorIds).includes(p.id);
         const ghost=voting&&!p.alive&&!p.ghostVoteUsed,spent=voting&&!p.alive&&p.ghostVoteUsed;
@@ -49,6 +55,9 @@ export function CustomDayBoard({controller}:{controller:FirstNightController}) {
       reset={!h.complete&&<button type="button" disabled={busy} onClick={controller.resetDayHandoff}>{voting?'투표 초기화 X':'지명 초기화 X'}</button>}
       action={h.complete?<button type="button" className="issue116PrimaryAction issue116VoteCompleteAction" disabled={busy} onClick={controller.finishDayHandoff}>투표 완료 →</button>:<button type="button" className="issue116PrimaryAction" disabled={busy||!ready} onClick={()=>void controller.confirmDayHandoff()}>{confirmLabel}</button>}>
       {voting?<dl className="issue116VoteSummary"><div><dt>지명</dt><dd>{person(h.nominatorId)} → {person(h.nomineeId)}</dd></div><div><dt>현재</dt><dd className={count>=targetVotes?'thresholdMet':''}>{count}표</dd><span aria-hidden="true">/</span><dd>{previousVotes.length?'후보':'처형'} 기준 {targetVotes}표</dd></div></dl>:<dl><div><dt>지명자</dt><dd>{person(h.nominatorId)}</dd></div><div><dt>피지명자</dt><dd>{person(h.nomineeId)}</dd></div></dl>}
+      {!voting&&golemOptions.some(o=>o.recluseAsDemon)&&<InformationTreatmentInput label="은둔자 취급" className="golemRegistration" value={h.recluseAsDemon?'demon':'outsider'} disabled={busy} options={[{id:'outsider',label:'이방인으로 취급'},{id:'demon',label:'악마로 취급'}]} onChange={value=>controller.setDayRecluseRegistration(value==='demon')}/>}
+      {!voting&&golemPreview&&nominee&&<GolemNominationPreview effect={golemPreview} target={nominee}/>}
+      {voting&&golemRecord&&<GolemNominationNote effect={golemRecord} person={person}/>}
       {!voting&&day.townsfolkRegistrationNominatorIds.includes(h.nominatorId??'')&&day.firstNominationTargetIds.includes(h.nomineeId??'')&&<label><input type="checkbox" checked={h.spyAsTownsfolk} disabled={busy} onChange={e=>controller.setDaySpyRegistration(e.target.checked)}/>이번 판정에서 마을주민으로 취급</label>}
     </GrimoireSelectionPanel>}/>
 }

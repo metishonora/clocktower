@@ -26,3 +26,8 @@ project and is not an official Blood on the Clocktower asset.
 The reference-only Deviant portrait uses the same pinned official `botc-release`
 revision `f10cd02e3401af227ce406287eaae7bb99a06a42`,
 `resources/characters/snv/deviant.webp` (the neutral Traveller portrait).
+
+The six #271 BMR portraits (Grandmother, Gambler, Fool, Moonchild,
+Devil's Advocate and Assassin) were copied unchanged from the reviewed #271
+prototype. They use the official `resources/characters/bmr/<character>_g.webp`
+(good) / `<character>_e.webp` (evil) assets, with lowercase `devilsadvocate`.
