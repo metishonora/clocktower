@@ -109,6 +109,41 @@ test('installed production assets can create the first PDF while offline',async(
   await expect(page.locator('.scenarioReferencePdfCanvas')).toHaveCount(pdf.getPageCount());
 });
 
+test('reference font size changes the PDF, updates pagination and survives reopening', async ({page}, info) => {
+  const ids = ['librarian','noble','grandmother','fortuneTeller','empath','monk','undertaker','gambler','artist','slayer','fool','ravenkeeper','mayor','drunk','golem','saint','moonchild','baron','poisoner','assassin','devilsAdvocate','spy','scarletWoman','imp'];
+  await upload(page, scenario(ids, '만인의 축제'));
+  await page.getByRole('button', {name:'직업 일람', exact:true}).click();
+  const size = page.getByLabel('글자 크기');
+  await expect(size).toHaveValue('9');
+  const original = await pdfBytes(page);
+  const small = await PDFDocument.load(original);
+  expect(small.getPageCount()).toBe(1);
+  await expect(page.locator('.scenarioReferencePdfCanvas')).toHaveCount(1);
+  await mkdir(info.outputDir, {recursive:true});
+  await writeFile(info.outputPath('festival-9pt.pdf'), original);
+  await page.locator('.scenarioReferencePdfCanvas').first().screenshot({path:info.outputPath('festival-9pt.png')});
+
+  await size.selectOption('12');
+  const enlarged = await pdfBytes(page);
+  const large = await PDFDocument.load(enlarged);
+  expect(large.getPageCount()).toBeGreaterThan(small.getPageCount());
+  expect(enlarged.equals(original)).toBe(false);
+  await expect(page.locator('.scenarioReferencePdfCanvas')).toHaveCount(large.getPageCount());
+  await writeFile(info.outputPath('festival-12pt.pdf'), enlarged);
+  for (const viewport of [390, 820, 1366]) {
+    await page.setViewportSize({width:viewport,height:900});
+    await expect(size).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({path:info.outputPath('font-toolbar-' + viewport + '.png')});
+  }
+  await page.getByRole('button', {name:'미리보기 닫기'}).click();
+  await page.getByRole('button', {name:'직업 일람', exact:true}).click();
+  await expect(page.getByLabel('글자 크기')).toHaveValue('12');
+  expect((await pdfBytes(page)).equals(enlarged)).toBe(true);
+  await page.getByLabel('글자 크기').selectOption('9');
+  expect((await pdfBytes(page)).equals(original)).toBe(true);
+});
+
 test('Deviant can be selected, saved and printed as a Traveller without entering game setup', async ({page}, info) => {
   await upload(page, scenario([...mixed, 'deviant'], '괴짜와 함께'));
   await page.getByRole('button', {name:'← 밤 행동 순서로 돌아가기'}).click();

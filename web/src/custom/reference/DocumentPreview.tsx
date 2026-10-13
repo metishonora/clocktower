@@ -3,7 +3,16 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { preparedPdf, referencePdfInput } from './referencePdfCache.js';
+import { defaultReferenceFontSize, isReferenceFontSize, referenceFontSizes, type ReferenceFontSize } from './referenceLayout.js';
 GlobalWorkerOptions.workerSrc = workerUrl;
+const fontPreferenceKey = 'clocktower.reference.fontSize';
+function preferredFontSize(): ReferenceFontSize {
+  try {
+    const value = Number(localStorage.getItem(fontPreferenceKey));
+    if (isReferenceFontSize(value)) return value;
+  } catch { /* The preview also works when storage is unavailable. */ }
+  return defaultReferenceFontSize;
+}
 
 // Keep only the most recent rendered document. Reopening it does not encode or paint again.
 let lastPreview: { key: string; bytes: Uint8Array; canvases: HTMLCanvasElement[] } | undefined;
@@ -16,6 +25,13 @@ export function DocumentPreview({ name, ids, jinxes, onClose }: { name: string; 
   const [firstPageReady, setFirstPageReady] = useState(false);
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
+  const [fontSize, setFontSize] = useState(preferredFontSize);
+  function changeFontSize(value: number) {
+    if (!isReferenceFontSize(value)) return;
+    setPdfUrl(''); setCount(0); setFirstPageReady(false);
+    setFontSize(value);
+    try { localStorage.setItem(fontPreferenceKey, String(value)); } catch { /* Optional device preference. */ }
+  }
   useLayoutEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
@@ -34,7 +50,7 @@ export function DocumentPreview({ name, ids, jinxes, onClose }: { name: string; 
       performance.measure('reference-pdf:download-ready', { start: started, end: performance.now() });
     };
     void (async () => {
-      const request = referencePdfInput(name, ids, jinxes);
+      const request = referencePdfInput(name, ids, jinxes, fontSize);
       if (lastPreview?.key === request.key) {
         preview.current?.replaceChildren(...lastPreview.canvases);
         setCount(lastPreview.canvases.length); setFirstPageReady(true); showDownload(lastPreview.bytes);
@@ -77,9 +93,12 @@ export function DocumentPreview({ name, ids, jinxes, onClose }: { name: string; 
       await loading.destroy(); loading = undefined;
     })().catch(cause => { if (!cancelled) setError(cause instanceof Error ? cause.message : '문서를 만들지 못했습니다.'); });
     return () => { cancelled = true; rendering?.cancel(); if (url) URL.revokeObjectURL(url); void loading?.destroy(); };
-  }, [ids, name, jinxes, retry]);
+  }, [ids, name, jinxes, retry, fontSize]);
   return <dialog className="scenarioReferenceDocumentDialog" ref={dialog} onCancel={onClose} aria-labelledby="document-title" data-page-count={count}>
     <header className="scenarioReferenceDocumentToolbar"><div><h2 id="document-title">{name}</h2><span>{count ? `직업 일람 · A4 · ${count}쪽` : '직업 일람 준비 중…'}</span></div><div>
+      <label className="scenarioReferenceFontControl">글자 크기<select value={fontSize} onChange={event => changeFontSize(Number(event.target.value))}>
+        {referenceFontSizes.map(size => <option key={size} value={size}>{size}pt</option>)}
+      </select></label>
       {pdfUrl ? <a className="scenarioReferenceOpenPdf" href={pdfUrl} target="_blank" rel="noopener noreferrer">인쇄 / PDF 저장</a> : <button type="button" disabled>인쇄 / PDF 저장</button>}
       <button type="button" className="scenarioReferenceClose" onClick={onClose} aria-label="미리보기 닫기">×</button></div></header>
     {error && <div className="scenarioReferencePdfError" role="alert">문서를 준비하지 못했습니다.<button onClick={() => setRetry(value => value + 1)}>다시 시도</button></div>}

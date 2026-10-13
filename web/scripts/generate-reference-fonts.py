@@ -8,7 +8,7 @@ from fontTools.ttLib import TTFont
 
 web = Path(__file__).resolve().parents[1]
 root = web / 'src/custom/reference'
-sources = [web / 'src/custom/authoring/characterPresentation.json', web.parent / 'crates/custom-domain/resources/jinxes.ko.json', root / 'scenarioPdf.ts']
+sources = [web / 'src/custom/authoring/characterPresentation.json', web.parent / 'crates/custom-domain/resources/jinxes.ko.json', root / 'scenarioPdf.ts', root / 'referenceLayout.ts']
 characters = set(''.join(path.read_text() for path in sources))
 characters.update(chr(code) for code in range(32, 127))
 characters.update('×·')
