@@ -1,6 +1,7 @@
 import type { PdfCharacter, PdfJinx } from './scenarioPdf.js';
 import { characterPresentation } from '../authoring/characterPresentation.js';
 import type { ScenarioJinx } from '../core/scenarioJinxes.js';
+import { defaultReferenceFontSize, type ReferenceFontSize } from './referenceLayout.js';
 
 type Pending = { resolve: (bytes: Uint8Array) => void; reject: (error: Error) => void };
 let worker: Worker | undefined;
@@ -27,7 +28,7 @@ function getWorker() {
   };
   return worker;
 }
-function generate(input: { name: string; characters: PdfCharacter[]; jinxes: PdfJinx[] }) {
+function generate(input: { name: string; characters: PdfCharacter[]; jinxes: PdfJinx[]; fontSize: ReferenceFontSize }) {
   return new Promise<Uint8Array>((resolve, reject) => {
     const instance = getWorker(), id = ++requestId;
     pending.set(id, { resolve, reject });
@@ -51,8 +52,8 @@ function iconPng(url: string) {
   }
   return result;
 }
-export function referencePdfInput(name: string, ids: string[], jinxes: ScenarioJinx[]) {
-  const input = { name, characters: ids.map(id => { const role = characterPresentation(id); if (!role) throw Error('직업 정보를 찾지 못했습니다.'); return { id: role.id, label: role.label, kind: role.kind, ability: role.ability, image: role.image }; }), jinxes: jinxes.map(j => ({ ids: j.characterIds, text: j.reasonKo })) };
+export function referencePdfInput(name: string, ids: string[], jinxes: ScenarioJinx[], fontSize: ReferenceFontSize = defaultReferenceFontSize) {
+  const input = { name, fontSize, characters: ids.map(id => { const role = characterPresentation(id); if (!role) throw Error('직업 정보를 찾지 못했습니다.'); return { id: role.id, label: role.label, kind: role.kind, ability: role.ability, image: role.image }; }), jinxes: jinxes.map(j => ({ ids: j.characterIds, text: j.reasonKo })) };
   return { input, key: JSON.stringify(input) };
 }
 export function preparedPdf({ input, key }: ReturnType<typeof referencePdfInput>) {

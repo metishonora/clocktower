@@ -23,6 +23,8 @@
 .scenarioReferenceDocumentToolbar h2 { margin:0 0 4px; font-size:16px; }
 .scenarioReferenceDocumentToolbar span { font-size:12px; color:#756970; }
 .scenarioReferenceDocumentToolbar > div:last-child { display:flex; gap:12px; }
+.scenarioReferenceFontControl { display:inline-flex; align-items:center; gap:8px; white-space:nowrap; font-size:12px; color:#5b2031; }
+.scenarioReferenceFontControl select { min-height:42px; padding:8px; border:1px solid #c4b6b6; border-radius:8px; background:#fff; color:#5b2031; font:inherit; font-weight:750; }
 .scenarioReferenceDocumentToolbar button { min-height:42px; padding:10px 16px; border:1px solid #c4b6b6; border-radius:8px; background:#fff; color:#5b2031; font-size:13px; font-weight:750; }
 .scenarioReferenceDocumentToolbar button.scenarioReferenceClose { width:44px; font-size:24px; padding:0; }
 .scenarioReferenceDocumentScroll { flex:1; min-height:0; overflow:auto; padding:28px 0; }
@@ -44,6 +46,7 @@
   .scenarioReferenceDocumentToolbar h2 { font-size:14px; }
   .scenarioReferenceDocumentToolbar span { font-size:10px; }
   .scenarioReferenceDocumentToolbar > div:last-child { gap:6px; }
+  .scenarioReferenceFontControl { gap:5px; font-size:11px; }
   .scenarioReferenceDocumentToolbar button { font-size:11px; padding:8px; }
   .scenarioReferenceDocumentToolbar button.scenarioReferenceClose { width:36px; }
 }

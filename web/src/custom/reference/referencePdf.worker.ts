@@ -4,8 +4,9 @@ const fullRegularUrl = new URL('./fonts/NanumGothic-Regular.ttf', import.meta.ur
 const fullBoldUrl = new URL('./fonts/NanumGothic-Bold.ttf', import.meta.url).href;
 import coverage from './fonts/coverage.json' with { type: 'json' };
 import { buildReferencePdf, type PdfCharacter, type PdfJinx } from './scenarioPdf.js';
+import { referenceBoldText, referenceRegularText, type ReferenceFontSize } from './referenceLayout.js';
 
-type Request = { id: number; name: string; characters: PdfCharacter[]; jinxes: PdfJinx[] };
+type Request = { id: number; name: string; characters: PdfCharacter[]; jinxes: PdfJinx[]; fontSize: ReferenceFontSize };
 const fonts = new Map<string, Promise<Uint8Array>>();
 const supported = new Set(coverage);
 function fontUrl(text: string, compact: string, full: string) {
@@ -29,8 +30,8 @@ self.onmessage = (event: MessageEvent<Request>) => {
     const { id, ...input } = event.data;
     try {
       performance.clearMeasures();
-      const body = input.characters.map(c => c.ability).join('') + input.jinxes.map(j => j.text).join('');
-      const titles = input.name + input.characters.map(c => c.label).join('');
+      const body = referenceRegularText + input.characters.map(c => c.ability).join('') + input.jinxes.map(j => j.text).join('');
+      const titles = referenceBoldText + input.name + input.characters.map(c => c.label).join('');
       const [regular, bold] = await Promise.all([
         loadFont(fontUrl(body, regularUrl, fullRegularUrl)),
         loadFont(fontUrl(titles, boldUrl, fullBoldUrl)),

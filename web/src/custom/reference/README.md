@@ -8,6 +8,15 @@ The lazily loaded PDF generator runs in a worker. PDF.js paints its exact bytes 
 
 ## Fonts
 
+The preview's 8–12pt control changes the generated PDF, not its canvas zoom.
+The selected size is a device preference and part of the PDF cache key.
+Entries use two columns with inline names and abilities; spacing can tighten
+without changing the selected type size. Groups stay together when doing so
+does not add a page. A compact 7–13 player setup chart follows the last
+character in the same column, before any Jinx entries. It stays with that
+character when paginating, uses unmodified base counts and scales with the
+selected type size.
+
 Nanum Gothic is distributed under `fonts/OFL.txt` (also shipped in `public/assets/licenses/ReferenceFonts-OFL.txt`). Derived compact fonts use the non-reserved family name Clocktower Reference Sans. With FontTools installed, regenerate from the repository root:
 
 ```sh
