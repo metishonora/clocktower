@@ -35,6 +35,14 @@ pub(crate) struct RedirectOptions {
 }
 pub(crate) type RedirectRule = fn(&CustomGameFacts, &Attempt<'_>) -> Option<RedirectOptions>;
 
+/// The original death failed because another ability moved it to a different player.
+/// Keep this audit input separate from actual outcomes, consumption and display text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct RedirectedAttempt {
+    player_id: String,
+    cause: AbilityUseRef,
+}
+
 pub(crate) fn redirect_options(
     facts: &CustomGameFacts,
     attempt: &Attempt<'_>,
@@ -53,30 +61,28 @@ pub(crate) fn redirect(
     facts: &CustomGameFacts,
     attempt: &Attempt<'_>,
     decision: Option<&crate::model::MayorDecisionInput>,
-) -> Result<(String, Vec<Explanation>), crate::error::CoreError> {
+) -> Result<(String, Option<RedirectedAttempt>), crate::error::CoreError> {
     use crate::{error::ErrorKind, model::MayorDecisionInput};
     let invalid = || ErrorKind::InvalidStepInput.into_error();
     let Some(options) = redirect_options(facts, attempt) else {
         return if decision.is_some() {
             Err(invalid())
         } else {
-            Ok((attempt.player_id.into(), vec![]))
+            Ok((attempt.player_id.into(), None))
         };
     };
     match decision.ok_or_else(invalid)? {
-        MayorDecisionInput::MayorDies => Ok((attempt.player_id.into(), vec![])),
+        MayorDecisionInput::MayorDies => Ok((attempt.player_id.into(), None)),
         MayorDecisionInput::Bounce { target_player_id } => {
             if !options.target_player_ids.contains(target_player_id) {
                 return Err(invalid());
             }
             Ok((
                 target_player_id.clone(),
-                vec![Explanation {
+                Some(RedirectedAttempt {
                     player_id: attempt.player_id.into(),
-                    reason: Reason::Redirected {
-                        source: options.source,
-                    },
-                }],
+                    cause: options.source,
+                }),
             ))
         }
     }
@@ -191,12 +197,68 @@ pub(crate) fn consume(facts: &mut CustomGameFacts, outcome: &Outcome, event: &st
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct NightResolution {
+    pub(crate) redirected_attempts: Vec<(RedirectedAttempt, ActionOccurrence)>,
     pub(crate) explanations: Vec<Explanation>,
     pub(crate) unpreventable_player_ids: Vec<String>,
     pub(crate) outcomes: Vec<Outcome>,
     pub(crate) sources: Vec<(String, ActionOccurrence)>,
 }
 impl NightResolution {
+    pub(crate) fn add_redirect(
+        &mut self,
+        redirect: Option<RedirectedAttempt>,
+        source: &ActionOccurrence,
+    ) {
+        if let Some(redirect) = redirect {
+            self.explanations.insert(
+                0,
+                Explanation {
+                    player_id: redirect.player_id.clone(),
+                    reason: Reason::Redirected {
+                        source: redirect.cause.clone(),
+                    },
+                },
+            );
+            self.redirected_attempts.push((redirect, source.clone()));
+        }
+    }
+
+    pub(crate) fn redirect_audit(
+        &self,
+        facts: &CustomGameFacts,
+        event: &str,
+    ) -> Vec<crate::state::MalfunctionEvidence> {
+        self.redirected_attempts
+            .iter()
+            .flat_map(|(redirect, source)| {
+                // Run the same character-owned failure policies as other prevented deaths.
+                // This original attempt never enters the life-change or consumption ledger.
+                audit(
+                    facts,
+                    Some(source),
+                    &Attempt {
+                        player_id: &redirect.player_id,
+                        execution: false,
+                        unpreventable: false,
+                    },
+                    &Outcome {
+                        player_id: redirect.player_id.clone(),
+                        died: false,
+                        prevention: Some(Prevention {
+                            source: redirect.cause.clone(),
+                            consumed: false,
+                        }),
+                        source_character_id: source
+                            .ability_use
+                            .as_ref()
+                            .map(|s| s.character_id.clone()),
+                    },
+                    event,
+                )
+            })
+            .collect()
+    }
+
     pub(crate) fn deaths(&self) -> Vec<String> {
         self.outcomes
             .iter()

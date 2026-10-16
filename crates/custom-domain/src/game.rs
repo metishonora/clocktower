@@ -31,6 +31,20 @@ struct ValidatedReplayPrefix {
     events: Vec<String>,
     state: CustomGameState,
 }
+
+#[derive(Clone, Copy)]
+enum EventMode {
+    Proposal,
+    Replay { continues_night: bool },
+}
+
+fn recorded_night_action(event: &GameEvent) -> bool {
+    event.phase == Phase::Night
+        && matches!(
+            event.kind,
+            GameEventKind::CustomActionConfirmed { .. } | GameEventKind::PhaseStepConfirmed { .. }
+        )
+}
 thread_local! {
     static REPLAY_PREFIX: std::cell::RefCell<Option<ValidatedReplayPrefix>> = const { std::cell::RefCell::new(None) };
 }
@@ -253,7 +267,7 @@ fn propose_step(
         &components.state,
         &event,
         game_file.game.events.len(),
-        false,
+        EventMode::Proposal,
     )?;
     if matches!(candidate.phase, Phase::FirstNight | Phase::Night) {
         let candidate_rules = CustomRuleService::new(&context, &candidate.facts);
@@ -387,6 +401,12 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
                 prefix.schema_version == game_file.schema_version
                     && prefix.script == game_file.script
                     && event_keys.starts_with(&prefix.events)
+                    // An old log can append its already-recorded night continuation to a
+                    // terminal prefix. Re-fold it with lookahead instead of reusing the
+                    // prefix's end-of-file transition to the game-end confirmation.
+                    && !(prefix.state.phase == Phase::Day
+                        && game_file.game.events.get(prefix.events.len())
+                            .is_some_and(recorded_night_action))
             })
             .map(|prefix| (prefix.events.len(), prefix.state.clone()))
     });
@@ -437,7 +457,13 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
             &state,
             event,
             event_index,
-            true,
+            EventMode::Replay {
+                continues_night: game_file
+                    .game
+                    .events
+                    .get(event_index + 1)
+                    .is_some_and(recorded_night_action),
+            },
         )?;
     }
 
@@ -540,7 +566,7 @@ fn apply_event(
     previous: &CustomGameState,
     event: &GameEvent,
     event_index: usize,
-    replay_legacy: bool,
+    mode: EventMode,
 ) -> Result<CustomGameState, CoreError> {
     if previous.facts.day.is_some() && matches!(event.kind, GameEventKind::DayConfirmed { .. }) {
         let mut next = crate::day::apply(context, previous, event)?;
@@ -581,7 +607,7 @@ fn apply_event(
         .chain(previous.progress.available_occurrences.iter())
         .find(|o| o.step_id().is_ok_and(|id| id == *event_step_id))
         .cloned();
-    let legacy = if normal.is_none() && replay_legacy {
+    let legacy = if normal.is_none() && matches!(mode, EventMode::Replay { .. }) {
         scheduler
             .legacy_initial_candidate(&previous_context, &previous.progress)?
             .filter(|o| o.step_id().is_ok_and(|id| id == *event_step_id))
@@ -641,9 +667,35 @@ fn apply_event(
     next_facts.canonical_event_index = Some(event_index);
     // The reducer has already applied immediate succession and source-bound effects.
     // A later night action must not change the winner once this atomic event ends play.
-    let terminal_night = previous.phase == Phase::Night
+    let terminal_outcome = (previous.phase == Phase::Night)
+        .then(|| crate::game_end::common(context, &next_facts, &event.id))
+        .flatten();
+    if previous.phase == Phase::Night && matches!(mode, EventMode::Replay { .. }) {
+        if let Some(previous_end) = crate::game_end::common(context, &previous.facts, &event.id) {
+            // Historical logs may contain information, skips and dawn after play ended.
+            // Validate those events normally, but never let a later action erase or
+            // reverse the already determined result (for example an Assassin kill).
+            let unchanged = next_facts
+                .game_end
+                .as_ref()
+                .or(terminal_outcome.as_ref())
+                .is_some_and(|end| {
+                    end.winning_alignment == previous_end.winning_alignment
+                        && end.reason == previous_end.reason
+                });
+            if !unchanged {
+                return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+            }
+        }
+    }
+    let terminal_night = terminal_outcome.is_some()
         && next_facts.game_end.is_none()
-        && crate::game_end::common(context, &next_facts, &event.id).is_some();
+        && !matches!(
+            mode,
+            EventMode::Replay {
+                continues_night: true
+            }
+        );
     let next_rules = CustomRuleService::new(context, &next_facts);
     let next_context = ActionContext {
         event_id: "",

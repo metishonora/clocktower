@@ -27,6 +27,8 @@ event in the cached prefix match exactly; appended events still cross the normal
 reducer path. Changed or truncated histories replay from setup. A cache entry is replaced only
 after replay and projection succeed, and speculative proposal results never enter it. This is
 a disposable performance optimization, not persisted state or a change to canonical validation.
+Appending a historical night continuation to an already-terminal prefix also invalidates the
+cache, because replay must validate that prefix with its recorded continuation in view.
 
 Build and deploy as static files over HTTPS.
 
@@ -1298,6 +1300,15 @@ succession and resolved effects. A terminal outcome completes the causal action 
 clears pending night work, and enters the existing daytime game-end confirmation without waiting
 for dawn. The terminal action and confirmation remain one Undo unit. The same common query serves
 daytime resolution; character-specific victory restrictions stay in their owning module.
+An effective newly acquired Evil Twin blocks Good's victory until its required pair selection
+resolves; an impaired ability does not postpone the result. This restriction belongs to SnV,
+without admitting unrelated queued night actions after a terminal outcome.
+
+Replay can retain previously recorded night actions and dawn after a terminal condition, provided
+each action passes normal validation and preserves the determined winner and reason. This keeps
+old dawn/confirmation event identities unchanged. A historical action that removes or reverses
+the result is rejected. At the end of any imported prefix, the immediate ending still applies,
+so old files and Undo cannot authorize a new action after the game has ended.
 
 Night death redirection uses character-owned callbacks registered through `characters`. TB owns
 Mayor availability and targets; `death.rs` validates the projected choice without character-name
@@ -1305,8 +1316,11 @@ branches. Demon attacks retain their Demon-only protections around this shared r
 Moonchild calls the same query before ordinary night protection and preserves its original source
 and chosen target while recording the redirected outcome. The UI consumes the projected
 `mayorDecision` input kind and reuses the existing optional input field. Omitted choices in existing
-Moonchild events retain direct death; no GameFile or event schema version changes. Histories that
-continued after a now-terminal night event are rejected instead of silently rewriting their winner.
+Moonchild events retain direct death; no GameFile or event schema version changes. A redirect retains
+the original failed attempt and its ability source separately from actual deaths and display
+explanations. The registered character-owned death audits consume that attempt, so Mathematician
+counts the failed attacking ability even when the new target dies or was already dead. Additional
+protection at the new target retains its own evidence without counting the same player twice.
 
 The existing execution/Undo calculator combines night history and all day histories in canonical
 stream order. An immediate consequence shares its origin's contiguous Undo unit; a later independent

@@ -1250,7 +1250,7 @@ fn moonchild_resolve(
         return Err(invalid());
     }
     let (choice, active) = moonchild_choice(f, o)?;
-    let mut explanations = vec![];
+    let mut redirect = None;
     let targets = if active && choice.chosen_good {
         let attempt = crate::death::Attempt {
             player_id: &choice.target_player_id,
@@ -1261,9 +1261,9 @@ fn moonchild_resolve(
         // New UI projects an explicit decision whenever a redirect is available.
         let legacy_direct = crate::death::redirect_options(f, &attempt)
             .map(|_| crate::model::MayorDecisionInput::MayorDies);
-        let (target, redirect_explanations) =
+        let (target, redirected_attempt) =
             crate::death::redirect(f, &attempt, decision.as_ref().or(legacy_direct.as_ref()))?;
-        explanations = redirect_explanations;
+        redirect = redirected_attempt;
         vec![target]
     } else {
         if decision.is_some() {
@@ -1272,7 +1272,7 @@ fn moonchild_resolve(
         vec![]
     };
     let mut deaths = crate::death::night(f, o, &targets, false);
-    deaths.explanations.splice(0..0, explanations);
+    deaths.add_redirect(redirect, o);
     Ok((
         CustomActionResult::MoonchildResolved {
             target_player_id: choice.target_player_id.clone(),

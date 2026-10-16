@@ -10,6 +10,13 @@ async function enter(page:Page,name:string) {
  await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();
 }
 for(const width of [390,1280]) {
+ test(`legacy completed night imports and reloads at ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height:844});await enter(page,'legacy-night-end');
+  await expect(page.getByRole('region',{name:'게임 종료 상태'})).toContainText('악 진영 승리');
+  await expect(page.getByRole('button',{name:'암살 대상 선택'})).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('region',{name:'게임 종료 상태'})).toContainText('악 진영 승리');
+ });
  test(`Moonchild Mayor decision survives reload at ${width}px`,async({page},info)=>{
   await page.setViewportSize({width,height:844});await enter(page,'moonchild-mayor');
   await page.getByRole('button',{name:'시장 사망 판정',exact:true}).click();

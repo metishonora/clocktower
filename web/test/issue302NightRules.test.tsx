@@ -104,3 +104,22 @@ it('terminal night attack exposes the existing win dialog before any Assassin ac
  expect(loaded.getSnapshot().replay.latestUndoUnit?.eventIds).toHaveLength(2);
  loaded.dispose();c.dispose();
 });
+
+it('an old completed night imports and survives export, reload and undo without reopening night actions',async()=>{
+ const file=parseGameFileJson(readFileSync('../fixtures/acceptance/issue302/legacy-night-end.game.json','utf8'));
+ file.game.id='everyone-can-play-271';file.game.script.definition.id='everyone-can-play-271';
+ const {controller:c}=await create271(file);
+ play(c);
+ expect(screen.getByRole('region',{name:'게임 종료 상태'}).textContent).toContain('악 진영 승리');
+ expect(c.getSnapshot().replay.gameEnd).toMatchObject({winningAlignment:'evil',sourceEventId:'phase-step-36'});
+ const saved=parseGameFileJson(exportGameFileJson(c.getSnapshot().file));
+ expect(saved.game.events).toEqual(file.game.events);
+ const {controller:loaded}=await create271(saved);
+ expect(loaded.getSnapshot().replay).toEqual(c.getSnapshot().replay);
+ await loaded.undo();
+ expect(loaded.getSnapshot().error).toBeUndefined();
+ expect(loaded.getSnapshot().replay.gameEnd).toBeNull();
+ expect(loaded.getSnapshot().replay.day?.pendingGameEnd?.winningAlignment).toBe('evil');
+ expect(loaded.step).toBeUndefined();
+ loaded.dispose();c.dispose();
+});

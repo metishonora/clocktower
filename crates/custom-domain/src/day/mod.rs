@@ -449,7 +449,7 @@ fn resolve(
                         crate::characters::trouble_brewing::day_no_execution(facts, event_id)
                             .filter(|end| {
                                 end.winning_alignment != crate::model::Alignment::Good
-                                    || !crate::characters::sects_and_violets::day_good_win_blocked(
+                                    || !crate::characters::sects_and_violets::good_win_blocked(
                                         facts,
                                     )
                             })

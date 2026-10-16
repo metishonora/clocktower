@@ -1731,6 +1731,7 @@ impl TbHandler {
             let attack = demon_attack(facts, source, player, &fields.mayor_decision)?;
             let mut deaths = crate::death::night(facts, o, &attack.target.into_iter().collect::<Vec<_>>(), false);
             deaths.explanations.extend(attack.explanations);
+            deaths.add_redirect(attack.redirect, o);
             let killed = deaths.deaths().first().cloned();
             let mut identities = vec![];
             let mut eligible: Vec<_> = facts
@@ -2841,6 +2842,7 @@ pub(crate) fn mayor_redirect(
 pub(crate) struct DemonAttack {
     pub(crate) target: Option<String>,
     pub(crate) explanations: Vec<crate::death::Explanation>,
+    pub(crate) redirect: Option<crate::death::RedirectedAttempt>,
 }
 pub(crate) fn demon_attack_target(
     facts: &CustomGameFacts,
@@ -2895,6 +2897,7 @@ pub(crate) fn demon_attack(
         }
         return Ok(DemonAttack {
             target: None,
+            redirect: None,
             explanations: reason
                 .into_iter()
                 .map(|reason| Explanation {
@@ -2904,7 +2907,7 @@ pub(crate) fn demon_attack(
                 .collect(),
         });
     }
-    let (target_id, mut explanations) = crate::death::redirect(
+    let (target_id, redirect) = crate::death::redirect(
         facts,
         &crate::death::Attempt {
             player_id: &target.id,
@@ -2920,13 +2923,17 @@ pub(crate) fn demon_attack(
         protection(&target_id).map(|source| Reason::Protection { source })
     };
     let killed = reason.is_none().then(|| target_id.clone());
-    explanations.extend(reason.map(|reason| Explanation {
-        player_id: target_id,
-        reason,
-    }));
+    let explanations = reason
+        .map(|reason| Explanation {
+            player_id: target_id,
+            reason,
+        })
+        .into_iter()
+        .collect();
     Ok(DemonAttack {
         target: killed,
         explanations,
+        redirect,
     })
 }
 

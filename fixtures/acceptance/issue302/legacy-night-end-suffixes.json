@@ -1,0 +1,377 @@
+{
+  "skipped": [
+    {
+      "id": "phase-step-35",
+      "type": "customActionConfirmed",
+      "payload": {
+        "stepId": "night:4:imp:attackPlayer:owner2:p5:instance8:setup:p5",
+        "actionRef": {
+          "kind": "character",
+          "characterId": "imp",
+          "actionId": "attackPlayer"
+        },
+        "abilityUse": {
+          "ownerPlayerId": "p5",
+          "characterId": "imp",
+          "abilityInstanceId": "setup:p5"
+        },
+        "input": {
+          "playerIds": [
+            "p3"
+          ]
+        },
+        "result": {
+          "kind": "nightAttack",
+          "targetPlayerId": "p3",
+          "killedPlayerId": "p3",
+          "died": true,
+          "identityChanges": []
+        }
+      },
+      "phase": "night",
+      "summary": "단계 확정: night:4:imp:attackPlayer:owner2:p5:instance8:setup:p5",
+      "createdAt": "2026-10-16T00:00:00Z"
+    },
+    {
+      "id": "phase-step-36",
+      "type": "customActionConfirmed",
+      "payload": {
+        "stepId": "night:4:assassin:killPlayer:owner2:p4:instance8:setup:p4",
+        "actionRef": {
+          "kind": "character",
+          "characterId": "assassin",
+          "actionId": "killPlayer"
+        },
+        "abilityUse": {
+          "ownerPlayerId": "p4",
+          "characterId": "assassin",
+          "abilityInstanceId": "setup:p4"
+        },
+        "input": null,
+        "result": {
+          "kind": "assassinUsed",
+          "targetPlayerId": null,
+          "spent": false,
+          "deaths": []
+        }
+      },
+      "phase": "night",
+      "summary": "단계 확정: night:4:assassin:killPlayer:owner2:p4:instance8:setup:p4",
+      "createdAt": "2026-10-16T00:00:00Z"
+    },
+    {
+      "id": "phase-step-37",
+      "type": "phaseStepConfirmed",
+      "payload": {
+        "stepId": "night:4:system:dawn",
+        "actionRef": {
+          "kind": "system",
+          "actionId": "dawn"
+        },
+        "input": null
+      },
+      "phase": "night",
+      "summary": "단계 확정: night:4:system:dawn",
+      "createdAt": "2026-10-16T00:00:00Z"
+    },
+    {
+      "id": "day-event-38",
+      "type": "dayConfirmed",
+      "payload": {
+        "stepId": "day:4:Announcement:after13:phase-step-37",
+        "day": 4,
+        "input": {
+          "kind": "confirmGameEnd"
+        },
+        "result": {
+          "stage": "announcement",
+          "participants": [
+            {
+              "playerId": "p1",
+              "characterId": "artist",
+              "alignment": "good",
+              "characterKind": "Townsfolk",
+              "alive": false,
+              "ghostVoteUsed": false,
+              "abilities": [
+                {
+                  "ownerPlayerId": "p1",
+                  "characterId": "artist",
+                  "abilityInstanceId": "setup:p1"
+                }
+              ],
+              "impairments": []
+            },
+            {
+              "playerId": "p2",
+              "characterId": "slayer",
+              "alignment": "good",
+              "characterKind": "Townsfolk",
+              "alive": false,
+              "ghostVoteUsed": false,
+              "abilities": [
+                {
+                  "ownerPlayerId": "p2",
+                  "characterId": "slayer",
+                  "abilityInstanceId": "setup:p2"
+                }
+              ],
+              "impairments": []
+            },
+            {
+              "playerId": "p3",
+              "characterId": "fool",
+              "alignment": "good",
+              "characterKind": "Townsfolk",
+              "alive": false,
+              "ghostVoteUsed": false,
+              "abilities": [
+                {
+                  "ownerPlayerId": "p3",
+                  "characterId": "fool",
+                  "abilityInstanceId": "setup:p3"
+                }
+              ],
+              "impairments": []
+            },
+            {
+              "playerId": "p4",
+              "characterId": "assassin",
+              "alignment": "evil",
+              "characterKind": "Minion",
+              "alive": true,
+              "ghostVoteUsed": false,
+              "abilities": [
+                {
+                  "ownerPlayerId": "p4",
+                  "characterId": "assassin",
+                  "abilityInstanceId": "setup:p4"
+                }
+              ],
+              "impairments": []
+            },
+            {
+              "playerId": "p5",
+              "characterId": "imp",
+              "alignment": "evil",
+              "characterKind": "Demon",
+              "alive": true,
+              "ghostVoteUsed": false,
+              "abilities": [
+                {
+                  "ownerPlayerId": "p5",
+                  "characterId": "imp",
+                  "abilityInstanceId": "setup:p5"
+                }
+              ],
+              "impairments": []
+            }
+          ],
+          "countedVoterIds": [],
+          "ghostVoteSpentPlayerIds": [],
+          "deathPlayerIds": [],
+          "abilityRecord": null,
+          "pendingDeath": null,
+          "pendingGameEnd": null,
+          "consequences": []
+        }
+      },
+      "phase": "day",
+      "summary": "게임 종료 확정",
+      "createdAt": "2026-10-16T00:00:00Z"
+    }
+  ],
+  "reversal": [
+    {
+      "id": "phase-step-35",
+      "type": "customActionConfirmed",
+      "payload": {
+        "stepId": "night:4:imp:attackPlayer:owner2:p5:instance8:setup:p5",
+        "actionRef": {
+          "kind": "character",
+          "characterId": "imp",
+          "actionId": "attackPlayer"
+        },
+        "abilityUse": {
+          "ownerPlayerId": "p5",
+          "characterId": "imp",
+          "abilityInstanceId": "setup:p5"
+        },
+        "input": {
+          "playerIds": [
+            "p3"
+          ]
+        },
+        "result": {
+          "kind": "nightAttack",
+          "targetPlayerId": "p3",
+          "killedPlayerId": "p3",
+          "died": true,
+          "identityChanges": []
+        }
+      },
+      "phase": "night",
+      "summary": "단계 확정: night:4:imp:attackPlayer:owner2:p5:instance8:setup:p5",
+      "createdAt": "2026-10-16T00:00:00Z"
+    },
+    {
+      "id": "phase-step-36",
+      "type": "customActionConfirmed",
+      "payload": {
+        "stepId": "night:4:assassin:killPlayer:owner2:p4:instance8:setup:p4",
+        "actionRef": {
+          "kind": "character",
+          "characterId": "assassin",
+          "actionId": "killPlayer"
+        },
+        "abilityUse": {
+          "ownerPlayerId": "p4",
+          "characterId": "assassin",
+          "abilityInstanceId": "setup:p4"
+        },
+        "input": {
+          "playerIds": [
+            "p5"
+          ]
+        },
+        "result": {
+          "kind": "assassinUsed",
+          "targetPlayerId": "p5",
+          "spent": true,
+          "deaths": [
+            {
+              "playerId": "p5",
+              "died": true,
+              "prevention": null,
+              "sourceCharacterId": "assassin"
+            }
+          ]
+        }
+      },
+      "phase": "night",
+      "summary": "단계 확정: night:4:assassin:killPlayer:owner2:p4:instance8:setup:p4",
+      "createdAt": "2026-10-16T00:00:00Z"
+    },
+    {
+      "id": "phase-step-37",
+      "type": "phaseStepConfirmed",
+      "payload": {
+        "stepId": "night:4:system:dawn",
+        "actionRef": {
+          "kind": "system",
+          "actionId": "dawn"
+        },
+        "input": null
+      },
+      "phase": "night",
+      "summary": "단계 확정: night:4:system:dawn",
+      "createdAt": "2026-10-16T00:00:00Z"
+    },
+    {
+      "id": "day-event-38",
+      "type": "dayConfirmed",
+      "payload": {
+        "stepId": "day:4:Announcement:after13:phase-step-37",
+        "day": 4,
+        "input": {
+          "kind": "confirmGameEnd"
+        },
+        "result": {
+          "stage": "announcement",
+          "participants": [
+            {
+              "playerId": "p1",
+              "characterId": "artist",
+              "alignment": "good",
+              "characterKind": "Townsfolk",
+              "alive": false,
+              "ghostVoteUsed": false,
+              "abilities": [
+                {
+                  "ownerPlayerId": "p1",
+                  "characterId": "artist",
+                  "abilityInstanceId": "setup:p1"
+                }
+              ],
+              "impairments": []
+            },
+            {
+              "playerId": "p2",
+              "characterId": "slayer",
+              "alignment": "good",
+              "characterKind": "Townsfolk",
+              "alive": false,
+              "ghostVoteUsed": false,
+              "abilities": [
+                {
+                  "ownerPlayerId": "p2",
+                  "characterId": "slayer",
+                  "abilityInstanceId": "setup:p2"
+                }
+              ],
+              "impairments": []
+            },
+            {
+              "playerId": "p3",
+              "characterId": "fool",
+              "alignment": "good",
+              "characterKind": "Townsfolk",
+              "alive": false,
+              "ghostVoteUsed": false,
+              "abilities": [
+                {
+                  "ownerPlayerId": "p3",
+                  "characterId": "fool",
+                  "abilityInstanceId": "setup:p3"
+                }
+              ],
+              "impairments": []
+            },
+            {
+              "playerId": "p4",
+              "characterId": "assassin",
+              "alignment": "evil",
+              "characterKind": "Minion",
+              "alive": true,
+              "ghostVoteUsed": false,
+              "abilities": [
+                {
+                  "ownerPlayerId": "p4",
+                  "characterId": "assassin",
+                  "abilityInstanceId": "setup:p4"
+                }
+              ],
+              "impairments": []
+            },
+            {
+              "playerId": "p5",
+              "characterId": "imp",
+              "alignment": "evil",
+              "characterKind": "Demon",
+              "alive": false,
+              "ghostVoteUsed": false,
+              "abilities": [
+                {
+                  "ownerPlayerId": "p5",
+                  "characterId": "imp",
+                  "abilityInstanceId": "setup:p5"
+                }
+              ],
+              "impairments": []
+            }
+          ],
+          "countedVoterIds": [],
+          "ghostVoteSpentPlayerIds": [],
+          "deathPlayerIds": [],
+          "abilityRecord": null,
+          "pendingDeath": null,
+          "pendingGameEnd": null,
+          "consequences": []
+        }
+      },
+      "phase": "day",
+      "summary": "게임 종료 확정",
+      "createdAt": "2026-10-16T00:00:00Z"
+    }
+  ]
+}

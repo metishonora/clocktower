@@ -32,6 +32,9 @@ fn first_night(game: &mut Value) {
     panic!("first night did not finish");
 }
 fn game(roles: &[&str]) -> Value {
+    game_with_pool(roles, &[])
+}
+fn game_with_pool(roles: &[&str], extra: &[&str]) -> Value {
     let mut game = configured_game(roles, None, "nightwatchman");
     let scenario: Value = serde_json::from_str(include_str!(
         "../../../../fixtures/acceptance/issue302/festival.scenario.json"
@@ -39,6 +42,33 @@ fn game(roles: &[&str]) -> Value {
     .unwrap();
     game["game"]["script"]["definition"] = scenario["scenario"].clone();
     game["game"]["script"]["definition"]["id"] = json!("festival-302");
+    let definition = &mut game["game"]["script"]["definition"];
+    let mut extended = false;
+    for role in roles.iter().chain(extra) {
+        let pool = definition["characterIds"].as_array_mut().unwrap();
+        if !pool.contains(&json!(role)) {
+            pool.push(json!(role));
+            extended = true;
+        }
+    }
+    if extended {
+        let mut request = definition.clone();
+        request.as_object_mut().unwrap().remove("firstNightOrder");
+        request.as_object_mut().unwrap().remove("otherNightOrder");
+        for (field, query) in [
+            (
+                "firstNightOrder",
+                crate::custom_first_night_plan_json as fn(&str) -> String,
+            ),
+            ("otherNightOrder", crate::custom_other_night_plan_json),
+        ] {
+            let result: Value =
+                serde_json::from_str(&query(&json!({"customDefinition":request}).to_string()))
+                    .unwrap();
+            assert_eq!(result["ok"], true, "{result}");
+            definition[field] = result["value"]["plan"].clone();
+        }
+    }
     first_night(&mut game);
     game
 }
@@ -286,4 +316,254 @@ fn moonchild_mayor_redirects_to_a_monk_protected_target_and_replays() {
     assert_eq!(state["players"][0]["alive"], true);
     assert_eq!(state["players"][1]["alive"], false);
     roundtrip_and_undo(&g, &before);
+}
+
+#[test]
+fn old_completed_night_keeps_its_dawn_confirmation_and_warm_cold_replay_agree() {
+    // Recorded with develop d64e429 before immediate night endings were introduced.
+    let full: Value = serde_json::from_str(include_str!(
+        "../../../../fixtures/acceptance/issue302/legacy-night-end.game.json"
+    ))
+    .unwrap();
+    let events = full["game"]["events"].as_array().unwrap();
+    let terminal_count = events.len() - 2; // terminal attack, dawn, confirmation
+    let expected_end = json!({"winningAlignment":"evil", "reason":"twoLivingPlayers", "sourceEventId":events[events.len()-2]["id"]});
+    for count in terminal_count..=events.len() {
+        let mut prefix = full.clone();
+        prefix["game"]["events"]
+            .as_array_mut()
+            .unwrap()
+            .truncate(count);
+        crate::game::clear_replay_prefix_for_tests();
+        let cold = replay(&prefix);
+        let mut shorter = prefix.clone();
+        shorter["game"]["events"].as_array_mut().unwrap().pop();
+        replay(&shorter);
+        assert_eq!(replay(&prefix), cold, "cached prefix length {}", count - 1);
+        assert!(cold["currentStep"].is_null());
+        if count == events.len() {
+            assert_eq!(cold["gameEnd"], expected_end);
+        } else {
+            assert_eq!(cold["day"]["pendingGameEnd"]["winningAlignment"], "evil");
+            assert_eq!(
+                cold["day"]["pendingGameEnd"]["sourceEventId"],
+                events[count - 1]["id"]
+            );
+        }
+    }
+}
+
+#[test]
+fn old_harmless_night_suffix_replays_but_an_assassin_winner_reversal_is_rejected() {
+    let original: Value = serde_json::from_str(include_str!(
+        "../../../../fixtures/acceptance/issue302/terminal-imp.game.json"
+    ))
+    .unwrap();
+    let suffixes: Value = serde_json::from_str(include_str!(
+        "../../../../fixtures/acceptance/issue302/legacy-night-end-suffixes.json"
+    ))
+    .unwrap();
+    for label in ["skipped", "reversal"] {
+        let mut g = original.clone();
+        g["game"]["events"]
+            .as_array_mut()
+            .unwrap()
+            .extend(suffixes[label].as_array().unwrap().iter().cloned());
+        crate::game::clear_replay_prefix_for_tests();
+        if label == "skipped" {
+            assert_eq!(replay(&g)["gameEnd"]["winningAlignment"], "evil");
+            // Undo the old dawn + confirmation, then the newly derived pending win is
+            // still terminal; a legacy suffix never permits a new live Assassin action.
+            let remaining = g["game"]["events"].as_array().unwrap().len() - 2;
+            g["game"]["events"]
+                .as_array_mut()
+                .unwrap()
+                .truncate(remaining);
+            assert!(replay(&g)["currentStep"].is_null());
+            assert_eq!(
+                replay(&g)["day"]["pendingGameEnd"]["winningAlignment"],
+                "evil"
+            );
+            assert_eq!(replay(&g)["gameEnd"], Value::Null);
+        } else {
+            assert_eq!(super::issue225_nights::result(&g)["ok"], false);
+            let mut terminal = original.clone();
+            terminal["game"]["events"]
+                .as_array_mut()
+                .unwrap()
+                .push(suffixes[label][0].clone());
+            replay(&terminal);
+            assert_eq!(super::issue225_nights::result(&g)["ok"], false);
+        }
+    }
+}
+
+fn demon_to_twin(poisoned: bool) -> Value {
+    let mut roster = vec![
+        "artist",
+        "slayer",
+        "fool",
+        "soldier",
+        if poisoned { "poisoner" } else { "monk" },
+        "pitHag",
+        "imp",
+    ];
+    if poisoned {
+        roster.extend(["empath", "gambler", "monk"]); // Ten players admit two Minions.
+    }
+    let mut g = game_with_pool(&roster, &["evilTwin"]);
+    execute(&mut g, "p1");
+    next_night(&mut g);
+    while replay(&g)["currentStep"]["character"] != "pitHag" {
+        let s = replay(&g);
+        let input = match s["currentStep"]["character"].as_str().unwrap() {
+            "poisoner" => json!({"playerIds":["p7"]}),
+            "monk" => json!({"playerIds":["p2"]}),
+            "gambler" => json!({"playerIds":["p9"],"characterIds":["gambler"]}),
+            other => panic!("unexpected step: {other}"),
+        };
+        confirm(&mut g, input);
+    }
+    g
+}
+
+#[test]
+fn last_demon_becoming_twin_sets_its_pair_before_deciding_good_victory() {
+    for target in ["p2", "p1"] {
+        let mut g = demon_to_twin(false);
+        let before = g.clone();
+        confirm(
+            &mut g,
+            json!({"playerIds":["p7"],"characterIds":["evilTwin"]}),
+        );
+        let state = replay(&g);
+        assert!(state["day"]["pendingGameEnd"].is_null());
+        assert_eq!(state["currentStep"]["actionRef"]["actionId"], "assignTwin");
+        roundtrip_and_undo(&g, &before);
+        let before_assignment = g.clone();
+        let assigned = confirm(&mut g, json!({"playerIds":[target]}));
+        let state = replay(&g);
+        if target == "p1" {
+            assert_eq!(state["day"]["pendingGameEnd"]["winningAlignment"], "good");
+            assert_eq!(
+                state["day"]["pendingGameEnd"]["sourceEventId"],
+                assigned["id"]
+            );
+            assert!(state["currentStep"].is_null());
+        } else {
+            assert_eq!(state["phase"], "night");
+            assert!(state["day"]["pendingGameEnd"].is_null());
+        }
+        roundtrip_and_undo(&g, &before_assignment);
+    }
+}
+
+#[test]
+fn an_impaired_new_twin_does_not_postpone_the_win() {
+    let mut g = demon_to_twin(true);
+    let before = g.clone();
+    let changed = confirm(
+        &mut g,
+        json!({"playerIds":["p7"],"characterIds":["evilTwin"]}),
+    );
+    let state = replay(&g);
+    assert!(state["currentStep"].is_null());
+    assert_eq!(state["day"]["pendingGameEnd"]["winningAlignment"], "good");
+    assert_eq!(
+        state["day"]["pendingGameEnd"]["sourceEventId"],
+        changed["id"]
+    );
+    roundtrip_and_undo(&g, &before);
+}
+
+#[test]
+fn mathematician_counts_the_moonchild_redirect_once_even_with_fool_or_dead_target() {
+    let mut original = game(&[
+        "mayor",
+        "artist",
+        "slayer",
+        "fool",
+        "mathematician",
+        "moonchild",
+        "assassin",
+        "imp",
+    ]);
+    execute(&mut original, "p6");
+    let consequence = replay(&original)["day"]["consequences"][0]["id"].clone();
+    day(
+        &mut original,
+        json!({"kind":"resolveConsequence","consequenceId":consequence,"playerId":"p1"}),
+    );
+    next_night(&mut original);
+    confirm(&mut original, json!({"playerIds":["p6"]}));
+    confirm(&mut original, Value::Null);
+    assert_eq!(replay(&original)["currentStep"]["character"], "moonchild");
+    for target in [None, Some("p2"), Some("p4"), Some("p6")] {
+        let mut g = original.clone();
+        let decision = target
+            .map(|id| json!({"kind":"bounce","targetPlayerId":id}))
+            .unwrap_or(json!({"kind":"mayorDies"}));
+        let event = confirm(&mut g, json!({"mayorDecision":decision}));
+        let state = replay(&g);
+        assert_eq!(state["currentStep"]["character"], "mathematician");
+        let prompt = &state["currentStep"]["informationPrompt"];
+        assert_eq!(
+            prompt["computedResult"]["value"],
+            u8::from(target.is_some())
+        );
+        let records = prompt["mathematicianAudit"]["records"].as_array().unwrap();
+        assert_eq!(records.len(), usize::from(target.is_some()));
+        if target.is_some() {
+            assert_eq!(records[0]["subjectPlayerId"], "p6");
+            assert_eq!(records[0]["characterId"], "moonchild");
+            assert!(records[0]["evidence"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|e| e["resolutionEventId"] == event["id"]
+                    && e["outcome"]["effect"] == "moonchildDeath"));
+        }
+        roundtrip_and_undo(&g, &original);
+    }
+}
+
+#[test]
+fn demon_redirects_share_the_same_source_bound_mathematician_audit() {
+    let mut original = game(&[
+        "mayor",
+        "artist",
+        "slayer",
+        "fool",
+        "mathematician",
+        "assassin",
+        "imp",
+    ]);
+    execute(&mut original, "p2");
+    next_night(&mut original);
+    for target in [None, Some("p2"), Some("p3"), Some("p4")] {
+        let mut g = original.clone();
+        let decision = target
+            .map(|id| json!({"kind":"bounce","targetPlayerId":id}))
+            .unwrap_or(json!({"kind":"mayorDies"}));
+        confirm(&mut g, json!({"playerIds":["p1"],"mayorDecision":decision}));
+        confirm(&mut g, Value::Null);
+        let state = replay(&g);
+        assert_eq!(state["currentStep"]["character"], "mathematician");
+        let prompt = &state["currentStep"]["informationPrompt"];
+        assert_eq!(
+            prompt["computedResult"]["value"],
+            u8::from(target.is_some())
+        );
+        if target.is_some() {
+            assert_eq!(
+                prompt["mathematicianAudit"]["records"][0]["subjectPlayerId"],
+                "p7"
+            );
+            assert_eq!(
+                prompt["mathematicianAudit"]["records"][0]["characterId"],
+                "imp"
+            );
+        }
+        roundtrip_and_undo(&g, &original);
+    }
 }

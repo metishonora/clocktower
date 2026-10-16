@@ -15,7 +15,7 @@ pub(crate) fn common(
     let demon_alive = facts.players.iter().any(|p| {
         p.alive && context.character_kind(&p.actual_character) == Some(CharacterKind::Demon)
     });
-    let good_blocked = crate::characters::sects_and_violets::day_good_win_blocked(facts);
+    let good_blocked = crate::characters::sects_and_violets::good_win_blocked(facts);
     let (winning_alignment, reason) = if !demon_alive && !good_blocked {
         (Alignment::Good, CustomGameEndReason::DemonAbsent)
     } else if alive <= 2 {
