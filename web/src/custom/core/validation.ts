@@ -39,6 +39,7 @@ const inputKinds = new Set([
   "executionDecision",
   "executionDeathDecision",
   "slayerDeathDecision",
+  "mayorDecision",
   "demonSuccession",
   "madnessAssignment",
   "day",
@@ -913,6 +914,7 @@ function isAutomaticReminder(value: unknown): boolean {
 
 
 function isPhaseStepInput(value: unknown): value is PhaseStepInput {
+  if (isRecord(value) && hasExactKeys(value, ["mayorDecision"])) return isMayorDecisionInput(value.mayorDecision);
   if(isRecord(value) && hasExactKeys(value,["madnessCheck"])) return value.madnessCheck === "clear" || value.madnessCheck === "violation";
   if (value === null) return true;
   if (!isRecord(value)) return false;

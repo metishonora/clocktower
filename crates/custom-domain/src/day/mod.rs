@@ -856,30 +856,10 @@ fn common_game_end(
     day: &DayProgress,
     event_id: &str,
 ) -> Option<crate::contracts::CustomGameEnd> {
-    use crate::{
-        contracts::{CustomGameEnd, CustomGameEndReason},
-        model::{Alignment, CharacterKind},
-    };
     if day.pending_death.is_some() || crate::characters::sects_and_violets::day_waits_for_win(day) {
         return None;
     }
-    let alive = facts.players.iter().filter(|p| p.alive).count();
-    let demon_alive = facts.players.iter().any(|p| {
-        p.alive && context.character_kind(&p.actual_character) == Some(CharacterKind::Demon)
-    });
-    let good_blocked = crate::characters::sects_and_violets::day_good_win_blocked(facts);
-    let (winning_alignment, reason) = if !demon_alive && !good_blocked {
-        (Alignment::Good, CustomGameEndReason::DemonAbsent)
-    } else if alive <= 2 {
-        (Alignment::Evil, CustomGameEndReason::TwoLivingPlayers)
-    } else {
-        return None;
-    };
-    Some(CustomGameEnd {
-        winning_alignment,
-        reason,
-        source_event_id: event_id.into(),
-    })
+    crate::game_end::common(context, facts, event_id)
 }
 
 fn apply_death(

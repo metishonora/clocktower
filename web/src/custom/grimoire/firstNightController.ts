@@ -129,6 +129,7 @@ export class FirstNightController {
     if(this.state.selectionKind==='delivery')return ids.length===2;
     if(isPlayerPairInformation(step))return ids.length===2&&informationChoices(step,ids).length>0;
     const d=this.state.inputDraft;
+    if(r.kind==='mayorDecision')return !!r.mayorDecision&&!!d.mayorDecision&&(d.mayorDecision.kind==='mayorDies'||r.mayorDecision.bounceTargetPlayerIds.includes(d.mayorDecision.targetPlayerId));
     if(step.character==='noble')return !!nobleInformationDraft(step,d).choice;
     if(actionAdapter(step)?.emptySelection&&!ids.length)return false;
     if(d.zero)return !!r.zeroAllowed;
@@ -144,21 +145,22 @@ export class FirstNightController {
   }
   beginSelection = (kind:'action'|'delivery'='action') => { if (!this.state.busy && !this.state.public && !this.hasCheckpoint && this.state.saveStatus==='saved') this.patch({selecting:true,selectionKind:kind,selectionRevision:this.state.selectionRevision+1,handoff:this.step?{stage:'editing',step:this.step,playerIds:[],file:this.state.file,notifications:[],notificationIndex:0}:undefined}); };
   get selectedPlayerIds() {return this.state.selectionKind==='delivery'?this.state.inputDraft.preparedPlayerIds:this.state.inputDraft.playerIds;}
-  get mayorPrompt() {return this.step?.requiredInput.attackOptions?.find(o=>o.targetPlayerId===this.state.inputDraft.playerIds[0])?.mayorDecision;}
+  get mayorPrompt() {return this.step?.requiredInput.mayorDecision??this.step?.requiredInput.attackOptions?.find(o=>o.targetPlayerId===this.state.inputDraft.playerIds[0])?.mayorDecision;}
   get selectingMayorBounce() {return !!this.state.inputDraft.mayorBounceSelecting&&!!this.mayorPrompt;}
-  get boardSelectedPlayerIds() {const d=this.state.inputDraft.mayorDecision;return this.selectingMayorBounce?(d?.kind==='bounce'?[d.targetPlayerId]:[]):this.selectedPlayerIds;}
+  get boardSelectedPlayerIds() {const d=this.state.inputDraft.mayorDecision;return this.selectingMayorBounce?(d?.kind==='bounce'?[d.targetPlayerId]:[]):this.step?.requiredInput.mayorDecision?[this.step.requiredInput.mayorDecision.mayorPlayerId]:this.selectedPlayerIds;}
   chooseMayorOutcome = (outcome:string) => {if(!this.mayorPrompt)return;this.updateInput({mayorBounceSelecting:outcome==='bounce',mayorDecision:outcome==='mayorDies'?{kind:'mayorDies'}:undefined});};
-  resetSelection = () => {if(this.selectingMayorBounce)this.updateInput({mayorDecision:undefined});else this.updateInput({playerIds:[],treatments:{},judgments:[],correct:'',choiceIndex:'',delivery:undefined});};
+  resetSelection = () => {if(this.selectingMayorBounce||this.step?.requiredInput.kind==='mayorDecision')this.updateInput({mayorDecision:undefined});else this.updateInput({playerIds:[],treatments:{},judgments:[],correct:'',choiceIndex:'',delivery:undefined});};
   updatePrepared = (patch:Partial<Pick<CurrentInputDraft,'preparedPlayerIds'|'preparedCharacter'|'preparedZero'>>) => {
     const d={...this.state.inputDraft,...patch};
     const delivery:InformationResult|undefined=d.preparedZero?{kind:'setupInfo',playerIds:[],zeroOutsiders:true}:d.preparedPlayerIds.length===2&&d.preparedCharacter?{kind:'setupInfo',playerIds:d.preparedPlayerIds,characterId:d.preparedCharacter,zeroOutsiders:false}:undefined;
     this.updateInput({...patch,delivery});
   };
-  cancelSelection = () => { if(this.selectingMayorBounce){this.updateInput({mayorBounceSelecting:false,mayorDecision:undefined});return;} if (this.step && actionAdapter(this.step)?.cancellation==='discardInput' && !this.state.busy && !this.state.public) {if(this.state.selectionKind==='delivery')this.updatePrepared({preparedPlayerIds:[]});else this.updateInput({playerIds:[],correct:'',choiceIndex:'',delivery:undefined});this.patch({selecting:false,handoff:undefined});} };
+  cancelSelection = () => { if(this.selectingMayorBounce){this.updateInput({mayorBounceSelecting:false,mayorDecision:undefined});return;} if (this.step && actionAdapter(this.step)?.cancellation==='discardInput' && !this.state.busy && !this.state.public) {if(this.state.selectionKind==='delivery')this.updatePrepared({preparedPlayerIds:[]});else this.updateInput({playerIds:[],correct:'',choiceIndex:'',delivery:undefined,mayorDecision:undefined,mayorBounceSelecting:false});this.patch({selecting:false,handoff:undefined});} };
   canSelectPlayer = (id: string) => {
     const r=this.step?.requiredInput; if (!r) return false;
     const ids=this.selectedPlayerIds;
     if(this.selectingMayorBounce)return this.mayorPrompt?.bounceTargetPlayerIds.includes(id)??false;
+    if(r.kind==='mayorDecision')return false;
     if(this.state.selectionKind==='delivery') return this.state.replay.players.some(p=>p.id===id)&&(ids.includes(id)||ids.length<2);
     if (ids.includes(id)) return true;
     if(isPlayerPairInformation(this.step!))return ids.length<2 && informationChoices(this.step!,[]).some(c=>c.result.kind==='playerPair'&&[...ids,id].every(target=>c.result.kind==='playerPair'&&c.result.playerIds.includes(target)));
@@ -205,6 +207,7 @@ export class FirstNightController {
     const step=this.step;if(!step)return;
     if(!actionPresentation(step)){this.patch({error:"이 행동의 화면 연결을 확인할 수 없습니다."});return;}
     const d=this.state.inputDraft, choices=informationChoices(step,d.playerIds);
+    if(step.requiredInput.kind==='mayorDecision'&&!this.selectionReady)return;
     if(step.character==='noble'&&!nobleInformationDraft(step,d).choice)return;
     if(!skip && isPlayerPairInformation(step) && (d.playerIds.length!==2 || d.choiceIndex==='' || !choices[Number(d.choiceIndex)] || !judgmentsEqual(choices[Number(d.choiceIndex)].registrationJudgments,d.judgments)))return;
     if(!skip && step.requiredInput.kind==='setupInfo'&&!selectedSetupChoice(step,d))return;

@@ -639,6 +639,11 @@ fn apply_event(
     };
     next_facts.prefix_event_id = event.id.clone();
     next_facts.canonical_event_index = Some(event_index);
+    // The reducer has already applied immediate succession and source-bound effects.
+    // A later night action must not change the winner once this atomic event ends play.
+    let terminal_night = previous.phase == Phase::Night
+        && next_facts.game_end.is_none()
+        && crate::game_end::common(context, &next_facts, &event.id).is_some();
     let next_rules = CustomRuleService::new(context, &next_facts);
     let next_context = ActionContext {
         event_id: "",
@@ -660,6 +665,11 @@ fn apply_event(
     };
     let scheduler = if legacy_admitted {
         scheduler.with_legacy_initial()
+    } else {
+        scheduler
+    };
+    let scheduler = if terminal_night {
+        scheduler.finish_after_current()
     } else {
         scheduler
     };

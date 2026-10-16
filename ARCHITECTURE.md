@@ -1292,8 +1292,21 @@ Night deaths retain their event source, original abilities, simulation guidance 
 snapshot. Character handlers decide which parts are frozen and which target eligibility is evaluated
 at resolution. The same typed result is recomputed for proposal and replay validation. Prior reveals
 come from confirmed snapshots; later identity changes never recalculate them. Daytime information
-uses #223 participant/ability records, including their historical registration sources. At dawn,
-existing daytime game-end confirmation handles a resolved win condition and blocks ordinary progress.
+uses #223 participant/ability records, including their historical registration sources. After each
+night event, the common game-end query runs on the fully reduced facts, including immediate demon
+succession and resolved effects. A terminal outcome completes the causal action and its snapshot,
+clears pending night work, and enters the existing daytime game-end confirmation without waiting
+for dawn. The terminal action and confirmation remain one Undo unit. The same common query serves
+daytime resolution; character-specific victory restrictions stay in their owning module.
+
+Night death redirection uses character-owned callbacks registered through `characters`. TB owns
+Mayor availability and targets; `death.rs` validates the projected choice without character-name
+branches. Demon attacks retain their Demon-only protections around this shared redirect query.
+Moonchild calls the same query before ordinary night protection and preserves its original source
+and chosen target while recording the redirected outcome. The UI consumes the projected
+`mayorDecision` input kind and reuses the existing optional input field. Omitted choices in existing
+Moonchild events retain direct death; no GameFile or event schema version changes. Histories that
+continued after a now-terminal night event are rejected instead of silently rewriting their winner.
 
 The existing execution/Undo calculator combines night history and all day histories in canonical
 stream order. An immediate consequence shares its origin's contiguous Undo unit; a later independent

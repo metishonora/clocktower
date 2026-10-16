@@ -29,6 +29,59 @@ pub(crate) struct Attempt<'a> {
 }
 pub(crate) type ProtectionRule = fn(&CustomGameFacts, &Attempt<'_>) -> Option<Prevention>;
 
+pub(crate) struct RedirectOptions {
+    pub(crate) source: AbilityUseRef,
+    pub(crate) target_player_ids: Vec<String>,
+}
+pub(crate) type RedirectRule = fn(&CustomGameFacts, &Attempt<'_>) -> Option<RedirectOptions>;
+
+pub(crate) fn redirect_options(
+    facts: &CustomGameFacts,
+    attempt: &Attempt<'_>,
+) -> Option<RedirectOptions> {
+    if attempt.unpreventable || !facts.player(attempt.player_id).is_some_and(|p| p.alive) {
+        return None;
+    }
+    crate::characters::death_redirect_rules()
+        .into_iter()
+        .find_map(|rule| rule(facts, attempt))
+}
+
+/// Resolve a character-owned redirect before applying the original cause's protections.
+/// The existing decision DTO is shared by attacks and deaths with a previously fixed target.
+pub(crate) fn redirect(
+    facts: &CustomGameFacts,
+    attempt: &Attempt<'_>,
+    decision: Option<&crate::model::MayorDecisionInput>,
+) -> Result<(String, Vec<Explanation>), crate::error::CoreError> {
+    use crate::{error::ErrorKind, model::MayorDecisionInput};
+    let invalid = || ErrorKind::InvalidStepInput.into_error();
+    let Some(options) = redirect_options(facts, attempt) else {
+        return if decision.is_some() {
+            Err(invalid())
+        } else {
+            Ok((attempt.player_id.into(), vec![]))
+        };
+    };
+    match decision.ok_or_else(invalid)? {
+        MayorDecisionInput::MayorDies => Ok((attempt.player_id.into(), vec![])),
+        MayorDecisionInput::Bounce { target_player_id } => {
+            if !options.target_player_ids.contains(target_player_id) {
+                return Err(invalid());
+            }
+            Ok((
+                target_player_id.clone(),
+                vec![Explanation {
+                    player_id: attempt.player_id.into(),
+                    reason: Reason::Redirected {
+                        source: options.source,
+                    },
+                }],
+            ))
+        }
+    }
+}
+
 pub(crate) fn decide(facts: &CustomGameFacts, attempt: Attempt<'_>) -> Outcome {
     let alive = facts.player(attempt.player_id).is_some_and(|p| p.alive);
     let prevention = if alive && !attempt.unpreventable {

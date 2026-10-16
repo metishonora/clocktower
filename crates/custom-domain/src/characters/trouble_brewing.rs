@@ -2814,7 +2814,30 @@ fn scarlet_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
         .collect()
 }
 
-/// Resolve TB protections and Mayor redirection once, including event-prefix explanations.
+/// Mayor policy applies to any preventable night death, independently of its cause.
+pub(crate) fn mayor_redirect(
+    facts: &CustomGameFacts,
+    attempt: &crate::death::Attempt<'_>,
+) -> Option<crate::death::RedirectOptions> {
+    if attempt.execution {
+        return None;
+    }
+    let source = facts.ability_provenance.iter().find(|r| {
+        r.ability_use.owner_player_id == attempt.player_id
+            && r.ability_use.character_id == "mayor"
+            && effective(facts, &r.ability_use)
+    })?;
+    Some(crate::death::RedirectOptions {
+        source: source.ability_use.clone(),
+        target_player_ids: facts
+            .players
+            .iter()
+            .filter(|p| p.id != attempt.player_id)
+            .map(|p| p.id.clone())
+            .collect(),
+    })
+}
+
 pub(crate) struct DemonAttack {
     pub(crate) target: Option<String>,
     pub(crate) explanations: Vec<crate::death::Explanation>,
@@ -2881,53 +2904,30 @@ pub(crate) fn demon_attack(
                 .collect(),
         });
     }
-    let mayor_source = facts.ability_provenance.iter().find(|r| {
-        r.ability_use.owner_player_id == target.id
-            && r.ability_use.character_id == "mayor"
-            && effective(facts, &r.ability_use)
-    });
-    if let Some(mayor_source) = mayor_source {
-        match mayor.as_ref().ok_or_else(invalid)? {
-            MayorDecisionInput::MayorDies => Ok(DemonAttack {
-                target: Some(target.id.clone()),
-                explanations: vec![],
-            }),
-            MayorDecisionInput::Bounce { target_player_id } => {
-                if *target_player_id == target.id {
-                    return Err(invalid());
-                }
-                let redirected = facts.player(target_player_id).ok_or_else(invalid)?;
-                let reason = if !redirected.alive {
-                    Some(Reason::AlreadyDead)
-                } else {
-                    protection(target_player_id).map(|source| Reason::Protection { source })
-                };
-                let mut explanations = vec![Explanation {
-                    player_id: target.id.clone(),
-                    reason: Reason::Redirected {
-                        source: mayor_source.ability_use.clone(),
-                    },
-                }];
-                let killed = reason.is_none().then(|| target_player_id.clone());
-                explanations.extend(reason.map(|reason| Explanation {
-                    player_id: target_player_id.clone(),
-                    reason,
-                }));
-                Ok(DemonAttack {
-                    target: killed,
-                    explanations,
-                })
-            }
-        }
+    let (target_id, mut explanations) = crate::death::redirect(
+        facts,
+        &crate::death::Attempt {
+            player_id: &target.id,
+            execution: false,
+            unpreventable: false,
+        },
+        mayor.as_ref(),
+    )?;
+    let redirected = facts.player(&target_id).ok_or_else(invalid)?;
+    let reason = if !redirected.alive {
+        Some(Reason::AlreadyDead)
     } else {
-        if mayor.is_some() {
-            return Err(invalid());
-        }
-        Ok(DemonAttack {
-            target: Some(target.id.clone()),
-            explanations: vec![],
-        })
-    }
+        protection(&target_id).map(|source| Reason::Protection { source })
+    };
+    let killed = reason.is_none().then(|| target_id.clone());
+    explanations.extend(reason.map(|reason| Explanation {
+        player_id: target_id,
+        reason,
+    }));
+    Ok(DemonAttack {
+        target: killed,
+        explanations,
+    })
 }
 
 fn raven_occurrences(

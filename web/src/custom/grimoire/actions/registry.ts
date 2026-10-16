@@ -8,7 +8,7 @@ export type ActionAdapter={
  notificationBeforeResult?:boolean;
  emptySelection?:{label:string};
  confirmSelectionLabel?:string;
- resultReview?:'attack'|'selection'|'changedIdentity'|'unchangedIdentity';
+ resultReview?:'attack'|'selection'|'decision'|'changedIdentity'|'unchangedIdentity';
  selectionLabel?:string;
  stage:'preparation'|'action'|'delivery'|'transition';
  inputView:'team'|'setup'|'ability'|'players'|'madness'|'execution'|'information'|'none';

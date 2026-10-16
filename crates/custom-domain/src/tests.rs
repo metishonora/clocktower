@@ -135,3 +135,6 @@ mod golem;
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue271_integrated;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue302_night_death_rules;

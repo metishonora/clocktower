@@ -53,10 +53,10 @@ it('Witch and unchanged Snake Charmer retain results while direct Monk protectio
  const {controller:c}=await nightFixture(['soldier','monk','snakeCharmer','virgin','slayer','witch','imp'],{chooseCursedPlayer:{playerIds:['p1']},choosePlayer:{playerIds:['p1']}});
  try{for(let i=0;i<3;i++){const action=c.step!.actionRef!.actionId;await choose(c,['p1']);if(action==='protectPlayer')expect(c.getSnapshot().handoff).toBeUndefined();else {expect(c.getSnapshot().handoff?.stage).toBe('result');c.finishHandoff();}}}finally{c.dispose();}
 });
-it('the final Demon death keeps the attack result before night ends, including restoration',async()=>{
+it('the final Demon death keeps its result before game-end confirmation, including restoration',async()=>{
  const {controller:c,session}=await nightFixture(['soldier','monk','virgin','slayer','ravenkeeper','scarletWoman','imp'],{},[],undefined,{},'p6');
  try{await choose(c,['p1']);await choose(c,['p7']);expect(c.getSnapshot().replay.players.filter(p=>p.actualCharacter==='imp').every(p=>!p.alive)).toBe(true);expect(c.getSnapshot().handoff?.stage).toBe('result');
- const restored=new FirstNightController(session,realWasmCore());expect(restored.getSnapshot().handoff?.stage).toBe('result');restored.finishHandoff();expect(restored.getSnapshot().handoff).toBeUndefined();expect(restored.step?.actionRef?.actionId).toBe('dawn');restored.dispose();
+ const restored=new FirstNightController(session,realWasmCore());expect(restored.getSnapshot().handoff?.stage).toBe('result');restored.finishHandoff();expect(restored.getSnapshot().handoff).toBeUndefined();expect(restored.step).toBeUndefined();expect(restored.getSnapshot().replay.day?.pendingGameEnd?.winningAlignment).toBe('good');restored.dispose();
  }finally{c.dispose();}
 });
 it('Mayor board selection keeps the original attack and supports reset, cancel and Mayor death',async()=>{

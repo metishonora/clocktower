@@ -5,6 +5,6 @@ export const badMoonRisingActions = {
  'gambler.guessCharacter':{...directNightAction,acceptedInputs:['characterTransformation'],selectionLabel:'사람·직업 선택',confirmSelectionLabel:'추측 확정',resultReview:'selection'},
  'devilsAdvocate.protectExecution':{...directNightAction,selectionLabel:'보호 대상 선택',resultReview:'selection'},
  'assassin.killPlayer':{...directNightAction,selectionLabel:'암살 대상 선택',confirmSelectionLabel:'공격 확정',resultReview:'selection'},
- 'moonchild.resolveDeath':{...nightInformation,stage:'action',inputView:'none',revealView:'none',revealOpen:'result'},
+ 'moonchild.resolveDeath':{...directNightAction,acceptedInputs:['none','mayorDecision'],inputView:'none',selectionLabel:'시장 사망 판정',confirmSelectionLabel:'사망 확정',resultReview:'decision'},
  'chambermaid.learnCount':{stage:'delivery',inputView:'information',acceptedInputs:['playerIds'],selectionContract:'information',completionContract:{afterSelection:'edit',continuationEntry:'select'},selectionLabel:'두 명 선택',revealView:'chambermaid',revealOpen:'preview',closeDestination:'progress',cancellation:'discardInput'},
 } as const satisfies Record<string,ActionAdapter>;
