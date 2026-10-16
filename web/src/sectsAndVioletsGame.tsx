@@ -246,6 +246,8 @@ export function SectsAndVioletsGameSurface({
   const [liveNominatorId, setLiveNominatorId] = useState<string>();
   const [liveNomineeId, setLiveNomineeId] = useState<string>();
   const [liveVoterIds, setLiveVoterIds] = useState<string[]>([]);
+  const [liveVoteCursor, setLiveVoteCursor] = useState(0);
+  const lastConfirmedVote = useRef<{gameId:string;beforeEventIds:string[];stepId:string;voterIds:string[];cursor:number} | undefined>(undefined);
   const [liveTargetId, setLiveTargetId] = useState<string>();
   const [livePoisonTargetId, setLivePoisonTargetId] = useState<string>();
   const [liveTargetIds, setLiveTargetIds] = useState<string[]>([]);
@@ -1077,6 +1079,19 @@ export function SectsAndVioletsGameSurface({
     setPhaseCheckpoints((current) => current.filter((checkpoint) => checkpoint.id !== removal.value.removed.id));
     setProposalTransientStateAfterHistoryChange();
     setUndoCheckpoint(undefined);
+    const vote = lastConfirmedVote.current;
+    const nomination = replayed.value.dayState?.activeNomination;
+    if (vote && nomination && vote.gameId === removal.value.gameFile.game.id
+      && vote.stepId === replayed.value.currentStep?.id
+      && JSON.stringify(vote.beforeEventIds) === JSON.stringify(removal.value.gameFile.game.events.map(e => e.id))) {
+      setLiveHandoff({kind:"vote",complete:false});
+      setLiveNominatorId(nomination.nominatorId);
+      setLiveNomineeId(nomination.nomineeId);
+      setLiveNominationCheckpointId(nomination.eventId);
+      setLiveVoterIds(vote.voterIds);
+      setLiveVoteCursor(vote.cursor);
+      navigateToTab("seating");
+    }
     setOperationBusy(false);
     markAutosaveNeeded();
   };
@@ -1147,6 +1162,7 @@ export function SectsAndVioletsGameSurface({
     setLiveNominatorId(undefined);
     setLiveNomineeId(undefined);
     setLiveVoterIds([]);
+    setLiveVoteCursor(0);
     setLiveTargetId(undefined);
     setLiveTargetIds([]);
     setLiveCharacterId(undefined);
@@ -1786,6 +1802,7 @@ export function SectsAndVioletsGameSurface({
       setLiveNominatorId(undefined);
       setLiveNomineeId(undefined);
       setLiveVoterIds([]);
+      setLiveVoteCursor(0);
       setLiveNominationCheckpointId(undefined);
     }
     if (kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "evilTwin" || kind === "witch" || kind === "sweetheart" || kind === "klutz") setLiveTargetId(undefined);
@@ -1958,6 +1975,7 @@ export function SectsAndVioletsGameSurface({
       });
       if (applied) {
         setLiveVoterIds([]);
+        setLiveVoteCursor(0);
         setLiveNominationCheckpointId(applied.gameFile.game.events.at(-1)?.id);
         setLiveHandoff({ kind: "vote", complete: false });
       }
@@ -1966,7 +1984,13 @@ export function SectsAndVioletsGameSurface({
         type: "confirmStep",
         payload: { stepId: step.id, input: { voterIds: liveVoterIds } },
       });
-      if (applied) setLiveHandoff({ kind: "vote", complete: true });
+      if (applied) {
+        lastConfirmedVote.current = {
+          gameId:gameFile.game.id, beforeEventIds:gameFile.game.events.map(e => e.id),
+          stepId:step.id, voterIds:liveVoterIds, cursor:liveVoteCursor,
+        };
+        setLiveHandoff({ kind: "vote", complete: true });
+      }
     } else if (liveHandoff.kind === "dreamer" || liveHandoff.kind === "seamstress") {
       const needed = liveHandoff.kind === "dreamer" ? 1 : 2;
       if (liveTargetIds.length === needed) {
@@ -2044,6 +2068,7 @@ export function SectsAndVioletsGameSurface({
     setLiveNominatorId(undefined);
     setLiveNomineeId(undefined);
     setLiveVoterIds([]);
+    setLiveVoteCursor(0);
     setLiveTargetId(undefined);
     setLivePoisonTargetId(undefined);
     setLiveTargetIds([]);
@@ -2086,6 +2111,7 @@ export function SectsAndVioletsGameSurface({
       setLiveNomineeId(undefined);
     } else if (liveHandoff?.kind === "vote") {
       setLiveVoterIds([]);
+      setLiveVoteCursor(0);
     } else if (liveHandoff?.kind === "dreamer" || liveHandoff?.kind === "seamstress" || liveHandoff?.kind === "barber") {
       setLiveTargetIds([]);
     }
@@ -2098,6 +2124,7 @@ export function SectsAndVioletsGameSurface({
       setLiveNominatorId(undefined);
       setLiveNomineeId(undefined);
       setLiveVoterIds([]);
+      setLiveVoteCursor(0);
       setLiveNominationCheckpointId(undefined);
       navigateToTab("play");
       return;
@@ -2312,6 +2339,13 @@ export function SectsAndVioletsGameSurface({
           nominatorId={liveNominatorId}
           nomineeId={liveNomineeId}
           voterIds={liveVoterIds}
+          voteCursor={liveVoteCursor}
+          onVote={(id, raised, cursor) => {
+            const player = replayState.players.find(p => p.id === id);
+            if (operationBusy || liveHandoff?.kind !== "vote" || liveHandoff.complete || !player || !player.alive && player.ghostVoteUsed) return;
+            setLiveVoterIds(current => raised ? [...new Set([...current,id])] : current.filter(v => v !== id));
+            setLiveVoteCursor(cursor);
+          }}
           targetId={liveTargetId}
           secondaryTargetId={livePoisonTargetId}
           referenceTargetId={pendingVigormortisPoison?.previousTargetPlayerId}

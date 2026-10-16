@@ -33,7 +33,7 @@ import { TroubleBrewingRevealScreen } from "./features/trouble-brewing/TroubleBr
 import { TroubleBrewingLiveGrimoire, type TroubleBrewingLiveHandoff } from "./features/trouble-brewing/TroubleBrewingLiveGrimoire";
 import { troubleBrewingImpAttackPresentation } from "./features/trouble-brewing/impAttackPresentation";
 import { TroubleBrewingBugReportDialog } from "./features/bug-report/TroubleBrewingBugReportDialog";
-import { emptyNominationDraft, useNominationDraft } from "./features/voting/useNominationDraft";
+import { emptyNominationDraft, useNominationDraft, type NominationDraft } from "./features/voting/useNominationDraft";
 import { SlayerAbilityAction } from "./features/public-actions/SlayerAbilityDialog";
 import { SlayerAbilityReveal } from "./features/public-actions/SlayerAbilityReveal";
 import {
@@ -985,6 +985,9 @@ export function ClocktowerApp({
   const [troubleBrewingStage, setTroubleBrewingStage] = useState<TroubleBrewingLiveStage>("play");
   const [troubleBrewingHandoff, setTroubleBrewingHandoff] = useState<TroubleBrewingLiveHandoff>();
   const [troubleBrewingAttackCheckpoint, setTroubleBrewingAttackCheckpoint] = useState<TroubleBrewingAttackCheckpoint>();
+  const [troubleBrewingVoteResult, setTroubleBrewingVoteResult] = useState<NominationDraft>();
+  const [restoredVoteDraft, setRestoredVoteDraft] = useState<{stepId:string;draft:NominationDraft}>();
+  const lastConfirmedVote = useRef<{eventId:string;stepId:string;sessionRevision:number;draft:NominationDraft} | undefined>(undefined);
   const [troubleBrewingMayorBounceSelecting, setTroubleBrewingMayorBounceSelecting] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   const [newGameConfirmOpen, setNewGameConfirmOpen] = useState(false);
@@ -992,7 +995,7 @@ export function ClocktowerApp({
     TroubleBrewingBugReportSnapshot
   >();
   const troubleBrewingBugReportTriggerRef = useRef<HTMLButtonElement>(null);
-  const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id, undoResetRevision);
+  const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id, undoResetRevision, restoredVoteDraft);
   const preActionRevealKey = gameStore.currentStep?.preActionReveal
     ? `${gameStore.currentStep.id}:${gameStore.currentStep.preActionReveal.sourceEventId}`
     : undefined;
@@ -1184,6 +1187,12 @@ export function ClocktowerApp({
     setTroubleBrewingStage("seating");
   }, [gameStore.currentStep?.id, scriptId, troubleBrewingVoteStepActive]);
 
+  useEffect(() => {
+    lastConfirmedVote.current = undefined;
+    setTroubleBrewingVoteResult(undefined);
+    setRestoredVoteDraft(undefined);
+  }, [gameStore.gameSessionRevision]);
+
   function exportLatestGame() {
     const blob = new Blob([gameStore.exportGameFile()], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -1228,6 +1237,15 @@ export function ClocktowerApp({
     const removed = gameStore.undoLatestLiveEvent(liveUndoDialogEvent.id);
     setLiveUndoDialogEvent(undefined);
     if (removed) {
+      const vote = lastConfirmedVote.current;
+      setTroubleBrewingVoteResult(undefined);
+      setTroubleBrewingHandoff(undefined);
+      setTroubleBrewingStage("play");
+      setRestoredVoteDraft(
+        vote?.sessionRevision === gameStore.gameSessionRevision && liveUndoDialogEvent.events.some(e => e.id === vote.eventId)
+          ? {stepId:vote.stepId, draft:vote.draft}
+          : undefined,
+      );
       setUndoResetRevision((current) => current + 1);
       setActiveRevealPayload(undefined);
       setSlayerReveal(undefined);
@@ -1327,7 +1345,7 @@ export function ClocktowerApp({
     if (troubleBrewingHandoff === "nomination") {
       setNominationDraft(emptyNominationDraft());
     } else if (troubleBrewingHandoff === "vote") {
-      setNominationDraft((current) => ({ ...current, voterIds: [] }));
+      setNominationDraft((current) => ({ ...current, voterIds: [], voteCursor: 0 }));
     } else {
       phaseInputDraft.reset();
     }
@@ -1358,6 +1376,18 @@ export function ClocktowerApp({
     );
     if (!confirmed?.ok) return;
     setTroubleBrewingMayorBounceSelecting(false);
+    if (troubleBrewingHandoff === "vote") {
+      const draft = {
+        ...nominationDraft,
+        nominatorId: nominationDraft.nominatorId || gameStore.dayState?.activeNomination?.nominatorId || "",
+        nomineeId: nominationDraft.nomineeId || gameStore.dayState?.activeNomination?.nomineeId || "",
+      };
+      lastConfirmedVote.current = {eventId:confirmed.value.event.id, stepId:phaseInputStep.id, sessionRevision:gameStore.gameSessionRevision, draft};
+      setTroubleBrewingVoteResult(draft);
+      setRestoredVoteDraft(undefined);
+      setTroubleBrewingStage("seating");
+      return;
+    }
     if (troubleBrewingImpAttackPresentation(confirmed.value, gameStore.players)) {
       setTroubleBrewingAttackCheckpoint({ step: phaseInputStep, proposal: confirmed.value });
       setTroubleBrewingHandoff("target");
@@ -1368,7 +1398,7 @@ export function ClocktowerApp({
       troubleBrewingHandoff === "nomination"
       && phaseInputStep.requiredInput.kind === "nomination"
     ) {
-      setNominationDraft((current) => ({ ...current, voterIds: [] }));
+      setNominationDraft((current) => ({ ...current, voterIds: [], voteCursor: 0 }));
       setTroubleBrewingHandoff("vote");
       setTroubleBrewingStage("seating");
       return;
@@ -1533,7 +1563,7 @@ export function ClocktowerApp({
             dayState={gameStore.dayState}
             ruleState={gameStore.ruleState}
             onUpdatePlayerAnnotations={gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}
-            nominationVoting={troubleBrewingHandoff === "nomination" || troubleBrewingHandoff === "vote" ? { draft: nominationDraft, onChange: setNominationDraft } : undefined}
+            nominationVoting={troubleBrewingHandoff === "nomination" || troubleBrewingHandoff === "vote" ? { draft: troubleBrewingVoteResult??nominationDraft, onChange: setNominationDraft } : undefined}
             setupInformationSelection={
               troubleBrewingHandoff === "target" && phaseInputStep?.requiredInput.kind === "setupInfo"
                 ? {
@@ -1599,7 +1629,14 @@ export function ClocktowerApp({
                   }]
                 : undefined}
             selectionReady={troubleBrewingSelectionReady}
-            completedSelection={troubleBrewingAttackResult ? {
+            completedSelection={troubleBrewingVoteResult ? {
+              title: "투표 결과",
+              onContinue: () => {
+                setTroubleBrewingVoteResult(undefined);
+                setTroubleBrewingHandoff(undefined);
+                setTroubleBrewingStage("play");
+              },
+            } : troubleBrewingAttackResult ? {
               title: "악마 공격 결과",
               summary: troubleBrewingAttackResult.summary,
               onContinue: finishTroubleBrewingAttackCheckpoint,

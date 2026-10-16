@@ -4,6 +4,7 @@ export type NominationDraft = {
   nominatorId: string;
   nomineeId: string;
   voterIds: string[];
+  voteCursor?: number;
 };
 
 export function emptyNominationDraft(): NominationDraft {
@@ -14,13 +15,13 @@ export function emptyNominationDraft(): NominationDraft {
   };
 }
 
-export function useNominationDraft(stepId: string | undefined, resetRevision = 0) {
+export function useNominationDraft(stepId: string | undefined, resetRevision = 0, restored?: {stepId: string; draft: NominationDraft}) {
   const nominationDraftState = useState<NominationDraft>(() => emptyNominationDraft());
   const [, setNominationDraft] = nominationDraftState;
 
   useEffect(() => {
-    setNominationDraft(emptyNominationDraft());
-  }, [stepId, resetRevision, setNominationDraft]);
+    setNominationDraft(restored && restored.stepId === stepId ? restored.draft : emptyNominationDraft());
+  }, [stepId, resetRevision, restored, setNominationDraft]);
 
   return nominationDraftState;
 }

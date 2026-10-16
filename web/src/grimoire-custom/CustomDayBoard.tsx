@@ -9,6 +9,7 @@ import {GrimoireToolbar} from '../shared-ui/GrimoireToolbar';
 import {GrimoireSelectionPanel} from '../shared-ui/GrimoireSelectionPanel';
 import {GrimoireSeatContent} from '../shared-ui/GrimoireSeatContent';
 import {NominationArrow} from '../shared-ui/NominationArrow';
+import {VotingList} from '../shared-ui/VotingList';
 import '../features/grimoire/sectsAndVioletsSeatStates.css';
 import '../shared-ui/styles/liveTargetStates.css';
 
@@ -31,6 +32,15 @@ export function CustomDayBoard({controller}:{controller:FirstNightController}) {
   const ready=voting||!!(h.nominatorId&&h.nomineeId);
   const nominator=players.find(p=>p.id===h.nominatorId),nominee=players.find(p=>p.id===h.nomineeId);
   const confirmLabel=voting?`${count}표로 투표 확정`:!nominator?'지명자를 선택하세요':!nominee?'피지명자를 선택하세요':`${nominator.seat}번 → ${nominee.seat}번 지명 확정`;
+  if(voting)return <VotingList
+    players={players.map(p=>({...p,eligible:day.eligibleVoterIds.includes(p.id),forced:!h.complete&&day.forcedVoterIds.includes(p.id),excluded:day.voteDependencies.some(d=>d.voterId===p.id&&!h.voterIds.includes(d.requiredVoterId))}))}
+    nominatorId={h.nominatorId} nomineeId={h.nomineeId} voterIds={h.voterIds} cursor={h.voteCursor??0}
+    count={count} targetVotes={targetVotes} complete={h.complete} busy={busy||!!state.dayNotifications?.length}
+    resultSummary={day.executionCandidateId?`처형 후보 ${person(day.executionCandidateId)} · ${day.highestVoteCount}표`:'처형 후보 없음'}
+    note={golemRecord&&<GolemNominationNote effect={golemRecord} person={person}/>}
+    cancelLabel={controller.canCancelDayVote?'투표 취소 →':'돌아가기 →'}
+    onVote={controller.setDayVote} onReset={controller.resetDayHandoff} onCancel={()=>void controller.cancelDayHandoff()}
+    onConfirm={()=>void controller.confirmDayHandoff()} onComplete={controller.finishDayHandoff}/>;
   return <GrimoirePresentation ariaLabel="마도서" className={`snvSeatingSurface bmrGrimoireSurface issue116GrimoireSurface confirmed issue116HandoffActive ${voting?'issue116VoteMode':'issue116NominationMode'}`} workspaceClassName="snvSeatingWorkspace bmrGrimoireWorkspace stable" style={style}
     toolbar={<GrimoireToolbar showCurrentActor={false}>{!h.complete&&<button type="button" disabled={busy} onClick={()=>void controller.cancelDayHandoff()}>{voting&&controller.canCancelDayVote?'투표 취소 →':'돌아가기 →'}</button>}</GrimoireToolbar>}
     board={<RectangularGrimoireBoard ariaLabel={`${players.length}자리 마도서`} className="snvGrimoireDraft bmrGrimoireBoard" style={style}

@@ -1,0 +1,107 @@
+.votingListSurface { --bmr-line: rgba(112,41,54,.22); --bmr-muted: #76545b; --bmr-selected: #a63d49; --bmr-ink: #3b2026; padding: 12px; scroll-margin-top: 12px; }
+.vlNote { font-size: 13px; }
+.vlLedger { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "header header" "rows rows" "side footer"; max-width: 1080px; height: min(1080px, calc(100svh - 72px)); min-height: 420px; margin: 0 auto; border: 1px solid var(--bmr-line); border-radius: 18px; overflow: hidden; background: #fff9f3; box-shadow: 0 10px 32px #683e2b0a; }
+
+.vlLedgerHeader { grid-area: header; display: flex; align-items: center; gap: 20px; padding: 14px 22px; border-bottom: 1px solid var(--bmr-line); background: #fbede2; }
+.vlTitle { flex: 0 0 auto; margin: 0; padding-right: 20px; border-right: 1px solid var(--bmr-line); color: var(--bmr-selected); font: 800 22px/1.2 system-ui, sans-serif; }
+.vlNominee { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
+.vlNominee > span { color: #874049; font-size: 12px; font-weight: 800; }
+.vlNominee > strong { color: #3b2026; font-size: 22px; font-weight: 800; }
+.vlNominee > small { font-size: 13px; color: var(--bmr-muted); }
+.vlHeaderActions { display: flex; gap: 8px; margin-left: auto; }
+.vlReset { flex: 0 0 auto; min-height: 40px; border: 1px solid var(--bmr-line); border-radius: 999px; padding: 6px 14px; color: var(--bmr-muted); background: transparent; font: 700 12px system-ui, sans-serif; cursor: pointer; }
+.vlReset:disabled { opacity: .45; cursor: default; }
+.vlConfirmedBadge { flex: 0 0 auto; padding: 7px 10px; border: 1px solid #bfc9ad; border-radius: 999px; color: #50613d; background: #f3f5e9; font-size: 11px; font-weight: 800; }
+
+.vlRows { grid-area: rows; margin: 0; padding: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; list-style: none; touch-action: pan-y; }
+.vlRows li { margin: 0; padding: 0; }
+.vlRow { display: grid; grid-template-columns: 46px minmax(0, 1fr) 44px 36px; align-items: center; gap: 14px; width: 100%; min-height: 70px; padding: 12px 22px; border: 0; border-bottom: 1px solid #eee2d7; border-left: 4px solid transparent; background: transparent; color: #3b2026; text-align: left; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.vlRow:not(:disabled):hover { background: #f9ede0; }
+.vlRow:focus-visible { outline: 2px solid #8b3b44 !important; outline-offset: -3px !important; }
+.vlRow.isSelected, .vlRow.isSelected:not(:disabled):hover { border-left-color: #a75c1d; background: #f9e8c5; }
+.vlRow.isUnavailable { color: #8e8179; background: #f0ece6; cursor: not-allowed; }
+.vlRow.isNominee { border-top: 2px solid #b6656c; }
+.vlRow:disabled { opacity: 1; }
+.vlSeatNumber { font-size: 24px; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vlSeatNumber small { margin-left: 3px; color: var(--bmr-muted); font-size: 11px; font-weight: 600; }
+.vlIdentity { display: grid; gap: 3px; min-width: 0; }
+.vlIdentity > strong { font-size: 20px; font-weight: 750; }
+.vlIdentity > span { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px; }
+.vlIdentity > span:empty { display: none; }
+.vlIdentity em { color: #953c48; font-size: 12px; font-style: normal; font-weight: 800; }
+.vlGhostState { display: inline-flex; align-items: center; gap: 4px; color: #77594b; font-size: 12px; font-weight: 650; }
+.vlGhostState > svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 4px; }
+.vlRole { display: flex; align-items: center; justify-content: center; }
+.vlRole > .snvGhostVoteIcon { width: 31px; height: 31px; color: #887975; fill: #dcd5ce; stroke: #887975; stroke-width: 2px; }
+.vlRole .snvFuneralIcon { position: static; width: 22px; height: 30px; opacity: .45; transform: none; }
+.vlRole .snvFuneralIcon svg { width: 22px; height: 30px; }
+.vlVoteMark { display: grid; place-items: center; width: 29px; height: 29px; border: 1.5px solid #c9b3a0; border-radius: 50%; background: #fffaf4; }
+.vlVoteMark svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.4px; }
+.isSelected .vlVoteMark { color: #fff9ec; border-color: #92551f; background: #92551f; }
+.isUnavailable .vlVoteMark { color: #9e938b; border-color: transparent; background: transparent; }
+/* Hand position: rows already passed recede, the current voter is filled with the selection red. */
+.vlRow { transition: background-color .15s, opacity .15s; }
+.vlRow.isPassed { opacity: .5; }
+.vlRow.isCursor, .vlRow.isCursor:not(:disabled):hover { border-left-color: var(--bmr-selected); color: #fff7f2; background: var(--bmr-selected); }
+.vlRow.isCursor :is(.vlSeatNumber small, .vlIdentity em, .vlGhostState) { color: #ffe3df; }
+.vlRow.isCursor .vlRole > .snvGhostVoteIcon { color: #fff; fill: #ffffff33; stroke: #fff; }
+.vlRow.isCursor .vlVoteMark { border-color: #fff7f2; background: transparent; }
+.vlRow.isCursor.isSelected .vlVoteMark { color: var(--bmr-selected); background: #fff7f2; }
+
+
+/* Tally: current and needed votes only. */
+.vlSide { grid-area: side; display: grid; align-content: center; gap: 8px; min-width: 0; padding: 12px 22px; border-top: 1px solid var(--bmr-line); background: #fff6eb; }
+.vlTally { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 22px; }
+.vlTally > div { display: flex; align-items: baseline; gap: 6px; }
+.vlTally span { color: #683b3c; font-size: 13px; font-weight: 700; }
+.vlTally strong { color: #3b2026; font-size: 32px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.vlTally strong small { margin-left: 2px; color: #683b3c; font-size: 14px; font-weight: 700; }
+.vlTally .vlNeed strong { color: #7d6058; }
+.vlTally > p { margin: 0; color: var(--bmr-muted); font-size: 13px; }
+.vlGhostSummary { margin: 0; color: #796153; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+
+/* Answer and confirm sit together, centred under the list. */
+.vlLedgerFooter { grid-area: footer; display: flex; justify-content: center; align-items: center; gap: 12px; padding: 12px 22px; border-top: 1px solid var(--bmr-line); background: #fff6eb; }
+.vlLedgerFooter button { min-height: 60px; border-radius: 14px; font: 800 18px system-ui, sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.vlLedgerFooter button:disabled { opacity: .4; cursor: default; }
+.vlLedgerFooter button:not(:disabled):active { transform: scale(.98); }
+.vlAnswerNo, .vlAnswerYes { width: 150px; }
+.vlAnswerNo { border: 1px solid var(--bmr-line); color: var(--bmr-ink); background: #fff; }
+.vlAnswerYes { border: 1px solid var(--bmr-selected); color: #fff7f2; background: var(--bmr-selected); }
+.vlLedgerFooter .issue116PrimaryAction { width: auto; min-width: 170px; margin: 0 0 0 12px; padding: 12px 22px; font-size: 16px; }
+
+/* Portrait tablets retain a scrollable list above the fixed controls. */
+@media (min-width: 761px) {
+  .vlRow { min-height: 58px; padding-block: 4px; }
+}
+
+/* Tablet landscape: the tally becomes a narrow rail beside the list; answers stay centred below. */
+@media (min-width: 900px) and (orientation: landscape) {
+  .vlLedger { grid-template-columns: minmax(0, 1fr) 210px; grid-template-areas: "header header" "rows side" "footer footer"; height: calc(100svh - 72px); min-height: 0; }
+  .vlRows { border-right: 1px solid var(--bmr-line); }
+  .vlSide { align-content: center; gap: 24px; padding: 22px; border-top: 0; background: #fff9f3; }
+  .vlTally { flex-direction: column; gap: 18px; }
+  .vlTally > div { flex-direction: column; gap: 0; }
+  .vlTally strong { font-size: 60px; line-height: 1; }
+  .vlTally strong small { font-size: 20px; }
+  .vlTally .vlNeed strong { font-size: 40px; }
+  .vlRow { min-height: 40px; padding-block: 2px; }
+  .vlSeatNumber { font-size: 22px; }
+  .vlIdentity { display: flex; align-items: baseline; gap: 12px; }
+  .vlRole > .snvGhostVoteIcon { width: 24px; height: 24px; }
+  .vlRole .snvFuneralIcon, .vlRole .snvFuneralIcon svg { height: 24px; }
+  .vlVoteMark { width: 26px; height: 26px; }
+  .vlLedgerHeader { padding-block: 10px; }
+  .vlLedgerFooter { padding-block: 10px; }
+}
+
+/* Keep the ledger usable in one column on smaller screens. */
+@media (max-width: 760px) {
+  .vlLedger { grid-template-columns: 1fr; grid-template-areas: "header" "rows" "side" "footer"; border-radius: 14px; }
+  .vlLedgerHeader { flex-wrap: wrap; gap: 8px 12px; padding: 12px 14px; }
+  .vlTitle { padding-right: 12px; }
+  .vlRow { grid-template-columns: 46px minmax(0, 1fr) 28px 28px; min-height: 60px; gap: 8px; padding: 8px 12px; }
+  .vlLedgerFooter { padding: 10px 14px max(10px, env(safe-area-inset-bottom)); gap: 8px; }
+  .vlAnswerNo, .vlAnswerYes { flex: 1; width: auto; }
+  .vlLedgerFooter .issue116PrimaryAction { min-width: 0; margin-left: 0; padding-inline: 12px; font-size: 14px; }
+}

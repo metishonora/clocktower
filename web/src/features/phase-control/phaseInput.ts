@@ -376,7 +376,7 @@ export function stepInputPayload(
   if (step.requiredInput.kind === "nominationVote") {
     return step.id.endsWith(":vote")
       ? { voterIds: nominationDraft.voterIds }
-      : nominationDraft;
+      : {nominatorId:nominationDraft.nominatorId,nomineeId:nominationDraft.nomineeId,voterIds:nominationDraft.voterIds};
   }
   if (step.requiredInput.kind === "demonSuccession") {
     const fixedSuccessor = step.requiredInput.demonSuccession?.kind === "fixed"

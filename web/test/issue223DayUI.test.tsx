@@ -58,6 +58,7 @@ it('ghost vote is selected on a dead seat and cannot be reused on the next nomin
  await screen.findByRole('heading',{name:'투표'});
  const ghost=screen.getByRole('button',{name:/^7번 좌석,.*유령표 사용 가능/});expect(ghost.querySelector('.snvGhostVoteIcon')).not.toBeNull();await seat(7);await click('1표로 투표 확정');await click('투표 완료 →');
  await click('← 지명하기');await seat(3);await seat(5);await click('3번 → 5번 지명 확정');
+ await screen.findByRole('heading',{name:'투표'});
  const spent=await screen.findByRole('button',{name:/^7번 좌석,.*유령표 사용함/});expect((spent as HTMLButtonElement).disabled).toBe(true);expect(spent.className).toContain('snvGhostVoteSpent');app.dispose();
 });
 
