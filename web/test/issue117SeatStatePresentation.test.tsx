@@ -91,11 +91,11 @@ test("shows ghost-vote availability only while voting and preserves dead-seat se
     voterIds: ["player-2"],
   });
 
-  const deadVoter = screen.getByRole("button", { name: /2번 좌석.*사망.*투표.*투표 가능/ });
+  const deadVoter = screen.getByRole("button", { name: /2번 좌석.*사망.*유령표 사용 예정/ });
   expect(deadVoter.getAttribute("aria-pressed")).toBe("true");
   expect(deadVoter.hasAttribute("disabled")).toBe(false);
 
-  const spentGhost = screen.getByRole("button", { name: /3번 좌석.*사망.*투표 불가/ });
+  const spentGhost = screen.getByRole("button", { name: /3번 좌석.*사망.*유령표 소진/ });
   expect(spentGhost.hasAttribute("disabled")).toBe(true);
 });
 
@@ -143,7 +143,7 @@ test.each([
     targetId: "player-2",
   });
 
-  const resultPanel = screen.getByLabelText("현재 마도서 작업");
+  const resultPanel = screen.getByLabelText(kind === "vote" ? "투표 화면" : "현재 마도서 작업");
   expect(within(resultPanel).getByRole("heading", { name: expectedHeading })).toBeTruthy();
   expect(within(resultPanel).queryByText("처리 완료")).toBeNull();
 });

@@ -16,6 +16,19 @@ test("confirmed Undo resets nomination drafts even when replay returns to the sa
   expect(result.current[0]).toEqual(emptyNominationDraft());
 });
 
+test("an undone ballot restores votes and cursor only at its own step", () => {
+  const restored = {stepId:"day:nomination:1:vote",draft:{nominatorId:"player-1",nomineeId:"player-2",voterIds:["player-3"],voteCursor:2}};
+  const {result,rerender} = renderHook(
+    ({stepId}) => useNominationDraft(stepId,1,restored),
+    {initialProps:{stepId:undefined as string|undefined}},
+  );
+  expect(result.current[0]).toEqual(emptyNominationDraft());
+  rerender({stepId:restored.stepId});
+  expect(result.current[0]).toEqual(restored.draft);
+  rerender({stepId:"day:nomination:2:vote"});
+  expect(result.current[0]).toEqual(emptyNominationDraft());
+});
+
 test("confirmed Undo resets phase selections and suggestion state at the same step ID", () => {
   const currentStep = step({
     id: "firstNight:poisoner",

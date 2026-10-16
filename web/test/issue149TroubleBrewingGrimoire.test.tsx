@@ -432,11 +432,11 @@ test("opens an active nomination vote directly in the S&V vote grimoire", async 
     eligibleNomineeIds: ["player-1", "player-4", "player-5"],
   } as ReplayState["dayState"]);
 
-  const surface = await screen.findByLabelText("Trouble Brewing 마도서 검토");
+  const surface = await screen.findByLabelText("투표 화면");
   expect(surface.classList.contains("issue116VoteMode")).toBe(true);
-  const panel = within(surface).getByRole("complementary", { name: "현재 마도서 작업" });
-  expect(within(panel).getByText("처형 기준 2표")).toBeTruthy();
-  expect(within(panel).getByRole("button", { name: "0표로 투표 확정" })).toBeTruthy();
+  expect(within(surface).getByRole("list", { name: "투표자 선택" })).toBeTruthy();
+  expect(within(surface).getByRole("status").textContent).toContain("필요2표");
+  expect(within(surface).getByRole("button", { name: "0표로 투표 확정" })).toBeTruthy();
 });
 
 test("starts a fresh game after one S&V-style confirmation and clears the selected roles", async () => {

@@ -31,19 +31,18 @@ test("a real-WASM second-day nomination accepts the killed Snake Charmer's ghost
 
   expect(await within(app).findByRole("heading", { name: "투표" })).toBeTruthy();
   const deadSnakeCharmer = within(app).getByRole("button", {
-    name: /3번 좌석.*뱀 조련사.*사망, 투표 가능/,
+    name: /3번 좌석.*사망 · 유령표 사용 가능/,
   });
   expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
-  expect(deadSnakeCharmer.classList.contains("snvDeadSeat")).toBe(true);
+  expect(deadSnakeCharmer.classList.contains("isUnavailable")).toBe(false);
   expect(deadSnakeCharmer.querySelector(".snvGhostVoteIcon")).not.toBeNull();
-  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).not.toBeNull();
   expect(deadSnakeCharmer.querySelector("img")).toBeNull();
 
   await user.click(deadSnakeCharmer);
-  expect(within(app).getByText("1표")).toBeTruthy();
+  expect(within(app).getByRole("status",{name:"투표 집계"}).textContent).toContain("현재1표");
   expect(deadSnakeCharmer.getAttribute("aria-pressed")).toBe("true");
-  expect(deadSnakeCharmer.classList.contains("snvSeatStateStrong")).toBe(true);
-  expect(deadSnakeCharmer.classList.contains("snvSeatStateSelected")).toBe(true);
+  expect(deadSnakeCharmer.classList.contains("isSelected")).toBe(true);
+  expect(deadSnakeCharmer.textContent).toContain("유령표 사용 예정");
 
   await user.click(within(app).getByRole("button", { name: "1표로 투표 확정" }));
   await waitFor(() => expect(storage.latestCanonical()?.game.events.at(-1)?.type).toBe("nominationVoteConfirmed"));
@@ -57,14 +56,14 @@ test("a real-WASM second-day nomination accepts the killed Snake Charmer's ghost
   await user.click(within(app).getByRole("button", { name: "6번 → 8번 지명 확정" }));
 
   const spentSnakeCharmer = await within(app).findByRole("button", {
-    name: /3번 좌석.*뱀 조련사.*사망, 투표 불가/,
+    name: /3번 좌석.*사망 · 유령표 사용함/,
   });
   expect(spentSnakeCharmer.hasAttribute("disabled")).toBe(true);
   expect(spentSnakeCharmer.classList.contains("snvGhostVoteSpent")).toBe(true);
-  expect(getComputedStyle(spentSnakeCharmer).filter).toContain("grayscale");
-  expect(getComputedStyle(spentSnakeCharmer.querySelector("img")!).opacity).toBe("0.42");
+  expect(spentSnakeCharmer.classList.contains("isUnavailable")).toBe(true);
+  expect(spentSnakeCharmer.textContent).toContain("유령표 소진");
   expect(spentSnakeCharmer.querySelector(".snvFuneralIcon")).not.toBeNull();
-  expect(spentSnakeCharmer.querySelector(".snvGhostVoteIcon")).toBeNull();
+  expect(spentSnakeCharmer.querySelector(".vlRole .snvGhostVoteIcon")).toBeNull();
 });
 
 test("the same mounted game keeps the swapped and killed Snake Charmer eligible for a later ghost vote", async () => {
@@ -130,7 +129,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
   await user.click(within(app).getByRole("button", { name: "5번 → 9번 지명 확정" }));
 
   const deadSnakeCharmer = await within(app).findByRole("button", {
-    name: /3번 좌석.*뱀 조련사.*사망, 투표 가능/,
+    name: /3번 좌석.*사망 · 유령표 사용 가능/,
 });
 
 async function completeMinionInformation(user: ReturnType<typeof userEvent.setup>, app: HTMLElement) {
@@ -154,7 +153,7 @@ async function completeDemonInformation(user: ReturnType<typeof userEvent.setup>
 }
   expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
   await user.click(deadSnakeCharmer);
-  expect(within(app).getByText("1표")).toBeTruthy();
+  expect(within(app).getByRole("status",{name:"투표 집계"}).textContent).toContain("현재1표");
   expect(deadSnakeCharmer.getAttribute("aria-pressed")).toBe("true");
   await user.click(within(app).getByRole("button", { name: "1표로 투표 확정" }));
   await waitFor(() => expect(storage.latestCanonical()?.game.events.at(-1)?.type).toBe("nominationVoteConfirmed"));

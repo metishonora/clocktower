@@ -28,6 +28,7 @@ import { NightResultsAnnouncement } from "./features/phase-control/NightResultsA
 import { PlayerImpairmentBadges } from "./features/phase-control/ImpairmentBadges";
 import { FuneralIcon, GhostVoteIcon } from "./features/grimoire/SeatStateIcons";
 import { NominationArrow } from "./shared-ui/NominationArrow";
+import { VotingList } from "./shared-ui/VotingList";
 import { GrimoireToolbar } from "./shared-ui/GrimoireToolbar";
 import { collapseNominationVotingSteps } from "./features/phase-control/phaseInput";
 
@@ -327,6 +328,8 @@ export function SectsAndVioletsLiveGrimoire({
   nominatorId,
   nomineeId,
   voterIds,
+  voteCursor,
+  onVote,
   targetId,
   secondaryTargetId,
   referenceTargetId,
@@ -365,6 +368,8 @@ export function SectsAndVioletsLiveGrimoire({
   nominatorId?: string;
   nomineeId?: string;
   voterIds: string[];
+  voteCursor?: number;
+  onVote?: (id:string,raised:boolean,nextCursor:number) => void;
   targetId?: string;
   secondaryTargetId?: string;
   referenceTargetId?: string;
@@ -394,6 +399,7 @@ export function SectsAndVioletsLiveGrimoire({
   theme?: "day" | "night";
 }) {
   const [detailsPlayerId, setDetailsPlayerId] = useState<string>();
+  const [fallbackVoteCursor,setFallbackVoteCursor] = useState(0);
   const phaseTheme = theme ?? (currentStep?.phase === "day" ? "day" : "night");
   const seatRefs = useRef(new Map<string, HTMLButtonElement>());
   const desktopPositions = useMemo(() => rectangularSeatPositions(players.length, false), [players.length]);
@@ -457,6 +463,24 @@ export function SectsAndVioletsLiveGrimoire({
   useEffect(() => {
     if (handoff) setDetailsPlayerId(undefined);
   }, [handoff]);
+
+  useEffect(() => {setFallbackVoteCursor(0);}, [nomineeId]);
+
+  const voteHandoff = handoff?.kind === "vote" ? handoff : undefined;
+  if(voteHandoff) {
+    const previousVotes=voteHandoff.complete?dayState?.nominations.slice(0,-1):dayState?.nominations;
+    const highest=Math.max(0,...(previousVotes??[]).map(n=>n.voteCount));
+    const candidate=players.find(p=>p.id===dayState?.executionCandidate?.nomineeId);
+    return <VotingList players={players.map(p=>({...p,eligible:p.alive||!p.ghostVoteUsed}))}
+      nominatorId={nominatorId} nomineeId={nomineeId} voterIds={voterIds} cursor={voteCursor??fallbackVoteCursor}
+      count={voteHandoff.complete?dayState?.nominations.at(-1)?.voteCount??voterIds.length:voterIds.length}
+      targetVotes={Math.max(dayState?.executionVoteThreshold??1,highest+(previousVotes?.length?1:0))}
+      complete={voteHandoff.complete} busy={operationBusy||readOnly}
+      resultSummary={candidate?`처형 후보 ${candidate.seat}번 ${candidate.name} · ${dayState?.executionCandidate?.voteCount}표`:'처형 후보 없음'}
+      note={handoffSupplement}
+      onVote={(id,raised,nextCursor)=>{if(onVote)onVote(id,raised,nextCursor);else{if(voterIds.includes(id)!==raised)onSeatClick(id);setFallbackVoteCursor(nextCursor);}}}
+      onReset={()=>{setFallbackVoteCursor(0);onResetDaySelection();}} onCancel={onCancelDayHandoff} onConfirm={onConfirm} onComplete={onReturn}/>;
+  }
 
   return (
     <section className={`snvSeatingSurface snvTabPanel issue116GrimoireSurface${modeClass}`} aria-label={readOnly ? "종료된 게임의 읽기 전용 마도서" : currentStep?.phase === "day" ? "낮 마도서" : "밤 마도서"}>

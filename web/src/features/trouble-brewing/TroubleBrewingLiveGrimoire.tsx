@@ -17,6 +17,7 @@ import {
 import { GrimoireToolbar } from "../../shared-ui/GrimoireToolbar";
 import { characterLabel, characters, kindLabels } from "../../setupDraft";
 import { NominationArrow } from "../../shared-ui/NominationArrow";
+import { VotingList } from "../../shared-ui/VotingList";
 import { nextVoterIdsAfterToggle, voteStatusForPlayer } from "../../voting";
 import { FuneralIcon, GhostVoteIcon } from "../grimoire/SeatStateIcons";
 import { PlayerAnnotationsDialog } from "../grimoire/PlayerAnnotationsDialog";
@@ -336,6 +337,20 @@ export function TroubleBrewingLiveGrimoire({
           };
         });
   if(revealMode)return <SpyGrimoireView seats={seats} style={sizeStyle} title="Trouble Brewing" phaseLabel={phaseLabel} runtime={phaseRuntime} disabled={progressActionDisabled} onClose={revealMode.onClose}/>;
+  if(handoff === "vote" && nominationVoting) {
+    const {draft,onChange} = nominationVoting;
+    const previousVotes = selectionComplete ? dayState?.nominations.slice(0,-1) : dayState?.nominations;
+    const highest = Math.max(0,...(previousVotes??[]).map(n=>n.voteCount));
+    const candidate = players.find(p=>p.id===dayState?.executionCandidate?.nomineeId);
+    return <VotingList players={players.map(p=>({...p,eligible:!voteStatusForPlayer(p,false).disabled}))}
+      nominatorId={nominatorId} nomineeId={nomineeId} voterIds={draft.voterIds} cursor={draft.voteCursor??0}
+      count={selectionComplete ? dayState?.nominations.at(-1)?.voteCount??draft.voterIds.length : draft.voterIds.length}
+      targetVotes={Math.max(dayState?.executionVoteThreshold??0,highest+(previousVotes?.length?1:0))}
+      complete={selectionComplete} busy={busy||gameEnded||interactionLocked} ready={Boolean(selectionReady)}
+      resultSummary={candidate?`처형 후보 ${candidate.seat}번 ${candidate.name} · ${dayState?.executionCandidate?.voteCount}표`:'처형 후보 없음'}
+      onVote={(id,raised,voteCursor)=>onChange({...draft,voterIds:raised?[...new Set([...draft.voterIds,id])]:draft.voterIds.filter(v=>v!==id),voteCursor})}
+      onReset={()=>onResetSelection?.()} onCancel={()=>onCancelSelection?.()} onConfirm={()=>onConfirmSelection?.()} onComplete={completedSelection?.onContinue}/>;
+  }
   return <>
     {interactionLocked && !handoff ? <SpyGrimoireView seats={seats} style={sizeStyle} title="Trouble Brewing" phaseLabel={phaseLabel} runtime={phaseRuntime} disabled={progressActionDisabled} buttonLabel={progressActionLabel} onClose={()=>onGoToProgress?.()}/> : <GrimoirePresentation
       ariaLabel={revealMode ? "Trouble Brewing 첩자 마도서" : "Trouble Brewing 마도서 검토"}
