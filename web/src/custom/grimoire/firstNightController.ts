@@ -18,7 +18,7 @@ export type CurrentInputDraft = { mayorBounceSelecting?: boolean; mayorDecision?
 const emptyInput = (): CurrentInputDraft => ({treatments:{},playerIds:[],characterIds:[],correct:'',zero:false,execute:false,choiceIndex:'',judgments:[],preparedPlayerIds:[],preparedCharacter:'',preparedZero:false});
 export type DayHandoff = {
   kind: 'nomination' | 'vote'; stepId: string; nominatorId?: string; nomineeId?: string;
-  voterIds: string[]; spyAsTownsfolk: boolean; recluseAsDemon?: boolean; complete: boolean; countedVotes?: number;
+  voterIds: string[]; voteCursor?: number; spyAsTownsfolk: boolean; recluseAsDemon?: boolean; complete: boolean; countedVotes?: number;
 };
 /** Restore the same ballot after a nomination-triggered death and its consequences. */
 function interruptedDayVoteHandoff(replay:ReplayState):DayHandoff|undefined {
@@ -48,6 +48,7 @@ export class FirstNightController {
   private request = 0;
   private saveRequest = 0;
   private savedDayNotifications?: RevealPayload[];
+  private lastConfirmedDayVote?: {beforeEventIds: string[]; handoff: DayHandoff};
   private setupRequest = 0;
   private disposed = false;
   constructor(readonly session: GrimoireSession, private readonly core: CoreAdapter) {
@@ -264,13 +265,17 @@ export class FirstNightController {
     this.patch({busy:true,error:undefined});
     try {
       const handoff=this.state.dayHandoff;
+      const beforeEventIds=this.state.file.game.events.map(e=>e.id);
       const beforeCount=this.state.file.game.events.length;
       const result=await this.session.execute({type:'confirmDay',payload:{stepId:day.stepId,expectedEventCount:this.state.file.game.events.length,input}});
       if(!result.ok){this.patch({error:result.error.messageKo});return;}
       this.adopt();
       const currentDay=this.state.replay.day!;
-      if(handoff&&input.kind==='nominate'&&currentDay.stage==='voting'&&!currentDay.pendingGameEnd&&!currentDay.consequences.some(c=>!c.resolved&&c.source.characterId!=='barber')) this.patch({dayHandoff:{...handoff,kind:'vote',stepId:currentDay.stepId,voterIds:[...currentDay.forcedVoterIds],complete:false}});
-      if(handoff&&input.kind==='vote') this.patch({dayHandoff:{...handoff,stepId:currentDay.stepId,complete:true,countedVotes:currentDay.nominations.at(-1)?.countedVoterIds?.length??0}});
+      if(handoff&&input.kind==='nominate'&&currentDay.stage==='voting'&&!currentDay.pendingGameEnd&&!currentDay.consequences.some(c=>!c.resolved&&c.source.characterId!=='barber')) this.patch({dayHandoff:{...handoff,kind:'vote',stepId:currentDay.stepId,voterIds:[...currentDay.forcedVoterIds],voteCursor:0,complete:false}});
+      if(handoff&&input.kind==='vote') {
+        this.lastConfirmedDayVote={beforeEventIds,handoff};
+        this.patch({dayHandoff:{...handoff,stepId:currentDay.stepId,complete:true,countedVotes:currentDay.nominations.at(-1)?.countedVoterIds?.length??0}});
+      }
       const newIds=new Set(this.state.file.game.events.slice(beforeCount).map(e=>e.id));
       const notifications=this.state.replay.pendingIdentityReveals?.filter(r=>newIds.has(r.deliveryEventId??r.sourceEventId)).map(r=>r.payload)??[];
       if(this.state.replay.phase==='day')this.savedDayNotifications=notifications;
@@ -305,9 +310,14 @@ export class FirstNightController {
     const h=this.state.dayHandoff!;
     this.patch({dayHandoff:h.kind==='vote'?{...h,voterIds:h.voterIds.includes(id)?h.voterIds.filter(v=>v!==id):[...h.voterIds,id]}:!h.nominatorId?{...h,nominatorId:id}:{...h,nomineeId:h.nomineeId===id?undefined:id,spyAsTownsfolk:false,recluseAsDemon:false}});
   };
+  setDayVote = (id:string,raised:boolean,voteCursor:number) => {
+    if(this.state.dayHandoff?.kind!=='vote'||!this.canSelectDayPlayer(id))return;
+    const h=this.state.dayHandoff;
+    this.patch({dayHandoff:{...h,voterIds:raised?[...new Set([...h.voterIds,id])]:h.voterIds.filter(v=>v!==id),voteCursor}});
+  };
   resetDayHandoff = () => {
     const h=this.state.dayHandoff;if(!h||h.complete||!this.dayInteractionReady)return;
-    this.patch({dayHandoff:h.kind==='vote'?{...h,voterIds:[...this.state.replay.day!.forcedVoterIds]}:{...h,nominatorId:undefined,nomineeId:undefined,spyAsTownsfolk:false,recluseAsDemon:false}});
+    this.patch({dayHandoff:h.kind==='vote'?{...h,voterIds:[...this.state.replay.day!.forcedVoterIds],voteCursor:0}:{...h,nominatorId:undefined,nomineeId:undefined,spyAsTownsfolk:false,recluseAsDemon:false}});
   };
   setDaySpyRegistration = (value:boolean) => {
     const h=this.state.dayHandoff;if(h&&!h.complete&&this.dayInteractionReady)this.patch({dayHandoff:{...h,spyAsTownsfolk:value}});
@@ -421,7 +431,12 @@ export class FirstNightController {
     try {
       const result = await this.session.undo(target.id);
       if (!result.ok) { this.patch({ error: result.error.messageKo }); return; }
-      this.adopt(); void this.observeSave(result.value.autosave);
+      this.adopt();
+      const vote=this.lastConfirmedDayVote;
+      if(vote&&this.state.replay.day?.stage==='voting'&&vote.handoff.stepId===this.state.replay.day.stepId&&JSON.stringify(vote.beforeEventIds)===JSON.stringify(this.state.file.game.events.map(e=>e.id))) {
+        this.patch({dayHandoff:vote.handoff});
+      }
+      void this.observeSave(result.value.autosave);
     } catch (error) { this.patch({ error: message(error) }); }
     finally { this.patch({ busy: false }); }
   };

@@ -9,13 +9,14 @@ afterEach(cleanup);
 
 // Supply a Core projection to the real production controller and board. Character
 // eligibility is deliberately not calculated in this UI contract test.
-async function board(forcedVoterIds: string[]) {
+async function board(forcedVoterIds: string[],voteDependencies:{voterId:string;requiredVoterId:string}[]=[]) {
   const {app, play} = await daytime();
   await toNominations(play);
   await dayInput(play, {kind:'nominate', nominatorId:'p1', nomineeId:'p2', spyAsTownsfolk:false});
   const file = play.getSnapshot().file;
   const replay = structuredClone(play.getSnapshot().replay);
   replay.day!.forcedVoterIds = forcedVoterIds;
+  replay.day!.voteDependencies = voteDependencies;
   const session = {snapshot:{canonical:file}, replay} as GrimoireSession;
   const controller = new FirstNightController(session, realWasmCore());
   controller.beginDayHandoff();
@@ -29,7 +30,7 @@ it('preselects forced votes, prevents toggling and preserves them on reset', asy
   const forced = screen.getByRole('button', {name:/1번 좌석.*강제 투표/}) as HTMLButtonElement;
   expect(forced.disabled).toBe(true);
   expect(forced.getAttribute('aria-pressed')).toBe('true');
-  expect(forced.classList.contains('customForcedVoteSeat')).toBe(true);
+  expect(forced.classList.contains('isForced')).toBe(true);
   expect(screen.getByRole('button', {name:'1표로 투표 확정'})).toBeDefined();
   controller.selectDayPlayer('p1');
   expect(controller.getSnapshot().dayHandoff!.voterIds).toEqual(['p1']);
@@ -51,5 +52,17 @@ it('uses normal voting when the Core releases the obligation', async () => {
   expect(controller.getSnapshot().dayHandoff!.voterIds).toEqual(['p1']);
   fireEvent.click(screen.getByRole('button', {name:'투표 초기화 X'}));
   expect(controller.getSnapshot().dayHandoff!.voterIds).toEqual([]);
+  controller.dispose();
+});
+
+it('keeps a dependent raised hand while showing the Core-counted total',async()=>{
+  const controller=await board([],[{voterId:'p3',requiredVoterId:'p4'}]);
+  render(<CustomDayBoard controller={controller}/>);
+  fireEvent.click(screen.getByRole('button',{name:'투표함'}));
+  expect(screen.getByRole('button',{name:/3번 좌석.*집계 제외/}).getAttribute('aria-pressed')).toBe('true');
+  expect(screen.getByRole('button',{name:'0표로 투표 확정'})).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:'투표함'}));
+  expect(screen.getByRole('button',{name:'2표로 투표 확정'})).toBeTruthy();
+  expect(screen.queryByText('집계 제외')).toBeNull();
   controller.dispose();
 });
