@@ -846,7 +846,7 @@ impl SnvHandler {
                 },
                 CustomFactChanges::default()
                     .with_execution(None, end)
-                    .with_resolved_deaths(crate::death::NightResolution { explanations:vec![], unpreventable_player_ids:vec![], outcomes: death.into_iter().collect(), sources: vec![(actor.id.clone(), occurrence.clone())] })
+                    .with_resolved_deaths(crate::death::NightResolution { outcomes: death.into_iter().collect(), sources: vec![(actor.id.clone(), occurrence.clone())], ..Default::default() })
                     .with_audit(audit),
             ));
         }
@@ -2415,11 +2415,24 @@ pub(crate) fn day_madness(facts: &CustomGameFacts) -> Vec<crate::day::contracts:
     }
     items
 }
-pub(crate) fn day_good_win_blocked(facts: &CustomGameFacts) -> bool {
+pub(crate) fn good_win_blocked(facts: &CustomGameFacts) -> bool {
     facts
         .twin_relationships
         .iter()
         .any(|r| r.effective && facts.player(&r.target_player_id).is_some_and(|p| p.alive))
+        // A newly acquired Twin ability applies immediately, but its pair is chosen by
+        // the required preparation. Resolve that choice before declaring Good's win.
+        || facts.ability_provenance.iter().any(|record| {
+            let source = &record.ability_use;
+            source.character_id == "evilTwin"
+                && effective(facts, source)
+                && facts.player(&source.owner_player_id).is_some_and(|p| p.alive)
+                && (!facts
+                    .twin_relationships
+                    .iter()
+                    .any(|r| r.ability_use == *source)
+                    || twin_needs_repair(facts, source))
+        })
 }
 pub(crate) fn day_execution_end(
     facts: &CustomGameFacts,
@@ -3764,6 +3777,7 @@ impl SnvNightHandler {
         }
         let mut deaths = crate::death::night(facts, o, &dead.clone().into_iter().collect::<Vec<_>>(), false);
         deaths.explanations.extend(attack.explanations);
+        deaths.add_redirect(attack.redirect, o);
         if dead.is_some() && deaths.deaths().is_empty() {
             dead = None;
             identities.clear();

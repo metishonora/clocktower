@@ -34,6 +34,7 @@ export function stepConfirmation(step: PhaseStep, selection: StepSelection, skip
     case 'madnessAssignment': input = { playerIds, characterId: characterIds[0] }; break;
     case 'characterTransformation': input = { playerIds, characterIds }; break;
     case 'executionDecision': input = { execute }; break;
+    case 'mayorDecision': input = selection.mayorDecision ? {mayorDecision:selection.mayorDecision} : null; break;
   }
   return { input, ...(!skip && selection.choice ? { deliveredResult: selection.choice.result, registrationJudgments: selection.choice.registrationJudgments } : {}),
     ...(!skip && selection.deliveredResult ? { deliveredResult: selection.deliveredResult } : {}),

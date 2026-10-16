@@ -217,13 +217,13 @@ it.each([['p1',false],['p14',true]] as const)('Klutz chooses %s on the board aft
 });
 
 import {nightFixture} from './custom/issue222Support';
-it('undo after a dawn-triggered game end returns to night without reopening the victory dialog',async()=>{
+it('undo after a terminal night action restores that action without reopening the victory dialog',async()=>{
  const {controller:play}=await nightFixture(['soldier','monk','virgin','slayer','ravenkeeper','pitHag','imp'],{},['saint']);
  play.beginSelection();play.togglePlayer('p1');await play.acceptSelection();
  play.beginSelection();play.togglePlayer('p7');play.updateInput({characterIds:['saint']});await play.acceptSelection();
  play.finishHandoff();play.showNotification();play.conceal();
- expect(play.step?.actionRef?.actionId).toBe('dawn');
- await play.prepareCurrent();
+ expect(play.step).toBeUndefined();
+ expect(play.getSnapshot().replay.day?.pendingGameEnd?.winningAlignment).toBe('good');
  render(<Play play={play}/>);await click('게임 종료');
  await screen.findByRole('region',{name:'게임 종료 상태'});
  await waitFor(()=>{expect(play.getSnapshot().busy).toBe(false);expect(play.getSnapshot().saveStatus).toBe('saved');});
@@ -234,8 +234,6 @@ it('undo after a dawn-triggered game end returns to night without reopening the 
  expect(play.getSnapshot().replay.day?.pendingGameEnd).toBeNull();
  expect(screen.queryByRole('dialog',{name:'선 진영 승리'})).toBeNull();
  expect(screen.queryByRole('region',{name:'게임 종료 상태'})).toBeNull();
- expect(play.step?.actionRef?.actionId).toBe('dawn');
- await play.undo();await waitFor(()=>expect(play.getSnapshot().saveStatus).toBe('saved'));
  expect(play.getSnapshot().replay.players.find(p=>p.id==='p7')?.actualCharacter).toBe('imp');
  expect(play.step?.actionRef?.actionId).toBe('changeCharacter');play.dispose();
 });

@@ -79,6 +79,8 @@ pub(crate) enum RequiredInputKind {
     ExecutionDeathDecision,
     #[serde(rename = "slayerDeathDecision")]
     SlayerDeathDecision,
+    #[serde(rename = "mayorDecision")]
+    MayorDecision,
     #[serde(rename = "demonSuccession")]
     DemonSuccession,
     #[serde(rename = "day")]

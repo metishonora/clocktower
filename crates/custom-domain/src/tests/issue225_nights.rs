@@ -1030,7 +1030,7 @@ fn daytime_registration_uses_the_recorded_source_even_if_poisoned_tonight() {
 }
 
 #[test]
-fn demon_absence_at_dawn_uses_existing_day_end_confirmation_and_blocks_progress() {
+fn demon_absence_during_night_uses_existing_day_end_confirmation_and_blocks_progress() {
     let mut game = super::issue223_day::production(
         &[
             "soldier",
@@ -1050,15 +1050,15 @@ fn demon_absence_at_dawn_uses_existing_day_end_confirmation_and_blocks_progress(
         json!({"playerIds":["p1"]}),
         None,
     );
+    let before_change = game.clone();
     step(
         &mut game,
         character("pitHag", "changeCharacter"),
         json!({"playerIds":["p7"],"characterIds":["saint"]}),
         None,
     );
-    let before_dawn = game.clone();
-    step(&mut game, system("dawn"), Value::Null, None);
     let state = replay(&game);
+    assert!(state["currentStep"].is_null());
     assert_eq!(state["day"]["pendingGameEnd"]["winningAlignment"], "good");
     assert_eq!(
         propose(
@@ -1081,11 +1081,11 @@ fn demon_absence_at_dawn_uses_existing_day_end_confirmation_and_blocks_progress(
     assert_eq!(
         undo_ids.len(),
         2,
-        "dawn and game-end confirmation form one Undo unit"
+        "the terminal action and game-end confirmation form one Undo unit"
     );
     let events = game["game"]["events"].as_array_mut().unwrap();
     events.truncate(events.len() - undo_ids.len());
-    assert_eq!(replay(&game), replay(&before_dawn));
+    assert_eq!(replay(&game), replay(&before_change));
     assert!(replay(&game)["gameEnd"].is_null());
     assert!(replay(&game)["day"]["pendingGameEnd"].is_null());
 }

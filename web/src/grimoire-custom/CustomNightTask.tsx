@@ -40,7 +40,12 @@ export function CustomNightTask({controller}:{controller:FirstNightController}) 
   if(step.character==='moonchild') {
     const planned=replay.ruleState.scheduledDeaths?.find(c=>c.night===replay.nightNumber&&c.source.abilityInstanceId===step.abilityUse?.abilityInstanceId);
     const role=characterPresentation('moonchild')!,actor=replay.players.find(p=>p.id===step.playerId);
-    return <NightTaskCard className="bmrCurrentStep" label="예약 사망" identity={<div className="snvCurrentStepIdentity snvInformationIdentity"><img src={role.image} alt=""/><div><h3>{role.label}</h3><strong>{actor?.seat}번 {actor?.name}</strong></div></div>}><CustomBmrVerdicts replay={replay} items={bmrResultVerdicts(planned?.preview??undefined,step.playerId,[])}/><div className="snvStepActions"><button type="button" className="prominent" disabled={state.busy||state.saveStatus!=='saved'||!planned?.preview} onClick={()=>void controller.prepareCurrent()}>확정</button></div></NightTaskCard>;
+    const decision=step.requiredInput.mayorDecision;
+    const target=replay.players.find(p=>p.id===decision?.mayorPlayerId);
+    return <NightTaskCard className="bmrCurrentStep" label="예약 사망" identity={<div className="snvCurrentStepIdentity snvInformationIdentity"><img src={role.image} alt=""/><div><h3>{role.label}</h3><strong>{actor?.seat}번 {actor?.name}</strong></div></div>}>
+      {decision?<p>선택된 대상 · {target?.seat}번 {target?.name}</p>:<CustomBmrVerdicts replay={replay} items={bmrResultVerdicts(planned?.preview??undefined,step.playerId,[])}/>}
+      <div className="snvStepActions"><button type="button" className="prominent" disabled={state.busy||state.saveStatus!=='saved'||(!decision&&!planned?.preview)} onClick={()=>decision?controller.beginSelection():void controller.prepareCurrent()}>{decision?'시장 사망 판정':'확정'}</button></div>
+    </NightTaskCard>;
   }
   const actor=model.actor;
   const role=model.ability;

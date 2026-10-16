@@ -8,12 +8,14 @@ export function reviewedAction(event:GameEvent|undefined) {
  const policy=actionAdapter({actionRef})?.resultReview;
  const review=policy==='attack'&&result.kind==='nightAttack'
   ||policy==='selection'
+  ||policy==='decision'&&event.payload.input!==null
   ||policy==='changedIdentity'&&((result.kind==='pitHagChange'&&result.changed)||(result.kind==='barberSwap'&&result.effective&&result.playerIds.length>0))
   ||policy==='unchangedIdentity'&&result.kind==='snakeCharmer'&&result.outcome!=='swapped';
  if(!review||(result.kind==='assassinUsed'&&!result.spent))return undefined;
  const step:HandoffStep={id:stepId,actionRef,character:actionRef.kind==='character'?actionRef.characterId:undefined,abilityUse,playerId:abilityUse?.ownerPlayerId??simulationSource?.sourceAbilityUse.ownerPlayerId};
  const input=event.payload.input;
- return {step,result,playerIds:input&&'playerIds' in input?input.playerIds??[]:[]};
+ const decision=input&&'mayorDecision' in input?input.mayorDecision:undefined;
+ return {step,result,playerIds:input&&'playerIds' in input?input.playerIds??[]:decision?.kind==='bounce'?[decision.targetPlayerId]:decision&&'targetPlayerId' in result&&typeof result.targetPlayerId==='string'?[result.targetPlayerId]:[]};
 }
 export function actionResultRows(result:CustomActionResult,person:(id:string)=>string,role:(id:string)=>string, pendingNightDeath=false) {
  switch(result.kind){
