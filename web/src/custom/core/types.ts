@@ -101,6 +101,7 @@ export type PhaseStepInput =
   | { voterIds: string[] }
   | { playerIds: string[]; mayorDecision?: MayorDecisionInput; successorPlayerId?: string; chooserPlayerId?: string }
   | { successorPlayerId: string }
+  | { mayorDecision: MayorDecisionInput }
   | { execute: boolean }
   | { died: boolean };
 
@@ -785,6 +786,7 @@ export type RequiredInputKind =
   | "executionDecision"
   | "executionDeathDecision"
   | "slayerDeathDecision"
+  | "mayorDecision"
   | "demonSuccession"
   | "madnessAssignment"
   | "day"

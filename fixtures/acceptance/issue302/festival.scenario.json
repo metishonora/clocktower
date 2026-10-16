@@ -1,0 +1,157 @@
+{
+  "type": "clocktower-custom-scenario",
+  "version": 3,
+  "scenario": {
+    "name": "만인의 축제",
+    "characterIds": [
+      "librarian",
+      "noble",
+      "grandmother",
+      "fortuneTeller",
+      "empath",
+      "monk",
+      "undertaker",
+      "gambler",
+      "artist",
+      "slayer",
+      "fool",
+      "ravenkeeper",
+      "mayor",
+      "drunk",
+      "golem",
+      "saint",
+      "moonchild",
+      "baron",
+      "poisoner",
+      "assassin",
+      "devilsAdvocate",
+      "spy",
+      "scarletWoman",
+      "imp"
+    ],
+    "firstNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "system",
+        "actionId": "minionInfo"
+      },
+      {
+        "kind": "system",
+        "actionId": "demonInfo"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "devilsAdvocate",
+        "actionId": "protectExecution"
+      },
+      {
+        "kind": "character",
+        "characterId": "librarian",
+        "actionId": "learnOutsider"
+      },
+      {
+        "kind": "character",
+        "characterId": "empath",
+        "actionId": "learnEvilNeighbors"
+      },
+      {
+        "kind": "character",
+        "characterId": "fortuneTeller",
+        "actionId": "checkDemon"
+      },
+      {
+        "kind": "character",
+        "characterId": "grandmother",
+        "actionId": "learnGrandchild"
+      },
+      {
+        "kind": "character",
+        "characterId": "noble",
+        "actionId": "learnPlayers"
+      },
+      {
+        "kind": "character",
+        "characterId": "spy",
+        "actionId": "inspectGrimoire"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ],
+    "otherNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "gambler",
+        "actionId": "guessCharacter"
+      },
+      {
+        "kind": "character",
+        "characterId": "monk",
+        "actionId": "protectPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "devilsAdvocate",
+        "actionId": "protectExecution"
+      },
+      {
+        "kind": "character",
+        "characterId": "imp",
+        "actionId": "attackPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "assassin",
+        "actionId": "killPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "moonchild",
+        "actionId": "resolveDeath"
+      },
+      {
+        "kind": "character",
+        "characterId": "empath",
+        "actionId": "learnEvilNeighbors"
+      },
+      {
+        "kind": "character",
+        "characterId": "fortuneTeller",
+        "actionId": "checkDemon"
+      },
+      {
+        "kind": "character",
+        "characterId": "undertaker",
+        "actionId": "learnExecutedCharacter"
+      },
+      {
+        "kind": "character",
+        "characterId": "spy",
+        "actionId": "inspectGrimoire"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ],
+    "nightOrderVersion": 2
+  }
+}

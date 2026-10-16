@@ -53,6 +53,8 @@ pub(crate) fn reduce_custom_facts(
         crate::death::consume(&mut next, outcome, event.id());
     }
     let resolution = event.fact_changes().resolved_deaths();
+    next.malfunction_audit
+        .extend(resolution.redirect_audit(previous, event.id()));
     if !resolution.outcomes.is_empty() || !resolution.explanations.is_empty() {
         next.death_resolutions.push(crate::death::Record {
             event_id: event.id().into(), outcomes: resolution.outcomes.clone(),

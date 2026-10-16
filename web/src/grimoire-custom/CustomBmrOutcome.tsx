@@ -30,7 +30,7 @@ function recordedReason(ctx:BmrVerdictContext|undefined,playerId:string):string|
  const values=ctx?.explanations?.filter(e=>e.playerId===playerId).map(({reason:r})=>{
   if(r.kind==='alreadyDead')return '이미 사망';
   if(r.kind==='impaired')return `${label(r.source.characterId)} ${impairmentLabel(r.impairments)??'능력 무효'}`;
-  if(r.kind==='redirected')return label(r.source.characterId);
+  if(r.kind==='redirected')return '사망 전가';
   const effect=r.source.characterId==='fool'?'최초 사망 방지':r.source.characterId==='devilsAdvocate'?'처형 보호':`${label(r.source.characterId)} 보호`;
   return r.kind==='bypassedProtection'?`${effect} 무시`:effect;
  });
@@ -42,17 +42,17 @@ export function bmrResultVerdicts(result:CustomActionResult|undefined,actor:stri
  // On someone else's card, say whose ability was impaired.
  const impairedFor=(playerId:string)=>impairment&&(playerId===actor||!character?impairment:`${label(character)} ${impairment}`);
  const none=(playerId:string,reason?:string):BmrVerdict=>({playerId,label:'효과 없음',tone:'none',reason});
+ const redirected=(ctx?.explanations??[]).filter(e=>e.reason.kind==='redirected').map(e=>({playerId:e.playerId,label:'생존',tone:'alive' as const,reason:recordedReason(ctx,e.playerId)}));
  if(result.kind==='simulation'&&character==='gambler'&&actor)return [none(actor,impairedFor(actor))];
  if(result.kind==='gamblerGuessed')return result.deaths.length?result.deaths.map(deathVerdict):actor?[result.effective?{playerId:actor,label:'생존',tone:'alive'}:none(actor,impairedFor(actor))]:[];
  if(result.kind==='devilsAdvocateProtected')return [result.effective?{playerId:result.targetPlayerId,label:'보호',tone:'alive'}:none(result.targetPlayerId,impairedFor(result.targetPlayerId))];
  if(result.kind==='assassinUsed')return result.deaths.length?result.deaths.map(d=>d.died?{...deathVerdict(d),reason:recordedReason(ctx,d.playerId)}:deathVerdict(d)):result.targetPlayerId?[none(result.targetPlayerId,impairedFor(result.targetPlayerId))]:[];
  if(result.kind==='moonchildResolved'){
-  if(result.deaths.length)return result.deaths.map(deathVerdict);
+  if(result.deaths.length)return [...redirected,...result.deaths.map(deathVerdict)];
   const target=ctx?.replay.players.find(p=>p.id===result.targetPlayerId);
   return [none(result.targetPlayerId,!result.chosenGood?(target?.alignment==='good'?'악으로 취급':'악'):!result.effective?impairedFor(result.targetPlayerId)??'능력 무효':undefined)];
  }
  if(result.kind==='nightAttack'){
-  const redirected=(ctx?.explanations??[]).filter(e=>e.reason.kind==='redirected').map(e=>({playerId:e.playerId,label:'생존',tone:'alive' as const,reason:recordedReason(ctx,e.playerId)}));
   if(deaths.length)return [...redirected,...deaths.map(deathVerdict)];
   if(result.killedPlayerId)return [...redirected,{playerId:result.killedPlayerId,label:'사망',tone:'death'}];
   const targets=[...new Set([result.targetPlayerId,...(ctx?.explanations??[]).map(e=>e.playerId)])];

@@ -22,6 +22,7 @@ pub(crate) struct NightScheduler<'a> {
     registry: &'a ActionRegistry,
     activation: &'a dyn ActivationRule,
     legacy_initial: bool,
+    finish_after_current: bool,
 }
 
 impl<'a> NightScheduler<'a> {
@@ -35,12 +36,20 @@ impl<'a> NightScheduler<'a> {
             registry,
             activation,
             legacy_initial: false,
+            finish_after_current: false,
         }
     }
 
     /// Replay-only admission of the old setup-preparation prefix. New proposals never use it.
     pub(crate) fn with_legacy_initial(mut self) -> Self {
         self.legacy_initial = true;
+        self
+    }
+
+    /// The game owner has resolved a terminal outcome. Retain this completion and its
+    /// snapshot, without admitting another independent action or a death-triggered wake.
+    pub(crate) fn finish_after_current(mut self) -> Self {
+        self.finish_after_current = true;
         self
     }
 
@@ -186,11 +195,12 @@ impl<'a> NightScheduler<'a> {
             next.current_occurrences.remove(0);
         }
 
-        if is_dawn(&occurrence) {
-            if !next.immediate_queue.is_empty() {
+        if self.finish_after_current || is_dawn(&occurrence) {
+            if !self.finish_after_current && !next.immediate_queue.is_empty() {
                 return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
             }
             next.current_occurrences.clear();
+            next.immediate_queue.clear();
             next.required_queue.clear();
             next.available_occurrences.clear();
             next.ended = true;

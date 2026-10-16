@@ -9,6 +9,17 @@ pub(crate) use trouble_brewing::{
     registration_sources,
 };
 
+pub(crate) fn death_redirect_rules() -> Vec<crate::death::RedirectRule> {
+    #[cfg(feature = "custom-runtime-fixtures")]
+    {
+        vec![]
+    }
+    #[cfg(not(feature = "custom-runtime-fixtures"))]
+    {
+        vec![trouble_brewing::mayor_redirect]
+    }
+}
+
 pub(crate) fn death_follow_up_rules() -> Vec<crate::death::FollowUpRule> {
     #[cfg(feature = "custom-runtime-fixtures")]
     {

@@ -536,6 +536,12 @@ impl BmrAction {
         let d = c.rule_service.definition().ok_or_else(invalid)?;
         let mut step = super::carousel::base_step(c, o, self.character)?;
         if self.character == "moonchild" {
+            if let Some(prompt) = moonchild_redirect_prompt(f, o)? {
+                step.required_input.kind = RequiredInputKind::MayorDecision;
+                step.required_input.mayor_decision = Some(prompt);
+                step.required_input.min_selections = Some(0);
+                step.required_input.max_selections = Some(0);
+            }
             return Ok(step);
         }
         if self.character == "grandmother" {
@@ -1230,9 +1236,58 @@ fn moonchild_resolve(
     o: &ActionOccurrence,
     input: &ActionInput,
 ) -> Result<(CustomActionResult, CustomFactChanges), CoreError> {
-    if input.input.is_some() || !input.registration_judgments.is_empty() {
+    let decision = input.input.as_ref().and_then(|i| i.mayor_decision.clone());
+    if !input.registration_judgments.is_empty()
+        || input.input.as_ref().is_some_and(|i| {
+            decision.is_none()
+                || *i
+                    != crate::model::StepInputFields {
+                        mayor_decision: decision.clone(),
+                        ..Default::default()
+                    }
+        })
+    {
         return Err(invalid());
     }
+    let (choice, active) = moonchild_choice(f, o)?;
+    let mut redirect = None;
+    let targets = if active && choice.chosen_good {
+        let attempt = crate::death::Attempt {
+            player_id: &choice.target_player_id,
+            execution: false,
+            unpreventable: false,
+        };
+        // Omitted input in existing records means the chosen player died directly.
+        // New UI projects an explicit decision whenever a redirect is available.
+        let legacy_direct = crate::death::redirect_options(f, &attempt)
+            .map(|_| crate::model::MayorDecisionInput::MayorDies);
+        let (target, redirected_attempt) =
+            crate::death::redirect(f, &attempt, decision.as_ref().or(legacy_direct.as_ref()))?;
+        redirect = redirected_attempt;
+        vec![target]
+    } else {
+        if decision.is_some() {
+            return Err(invalid());
+        }
+        vec![]
+    };
+    let mut deaths = crate::death::night(f, o, &targets, false);
+    deaths.add_redirect(redirect, o);
+    Ok((
+        CustomActionResult::MoonchildResolved {
+            target_player_id: choice.target_player_id.clone(),
+            chosen_good: choice.chosen_good,
+            effective: active,
+            deaths: deaths.outcomes.clone(),
+        },
+        CustomFactChanges::default().with_resolved_deaths(deaths),
+    ))
+}
+
+fn moonchild_choice<'a>(
+    f: &'a crate::state::CustomGameFacts,
+    o: &ActionOccurrence,
+) -> Result<(&'a MoonchildChoice, bool), CoreError> {
     let choice = f
         .moonchild_choices
         .iter()
@@ -1247,22 +1302,31 @@ fn moonchild_resolve(
         },
     )
     .active();
-    let targets = if active && choice.chosen_good {
-        vec![choice.target_player_id.clone()]
-    } else {
-        vec![]
-    };
-    let deaths = crate::death::night(f, o, &targets, false);
-    Ok((
-        CustomActionResult::MoonchildResolved {
-            target_player_id: choice.target_player_id.clone(),
-            chosen_good: choice.chosen_good,
-            effective: active,
-            deaths: deaths.outcomes.clone(),
-        },
-        CustomFactChanges::default().with_resolved_deaths(deaths),
-    ))
+    Ok((choice, active))
 }
+
+fn moonchild_redirect_prompt(
+    f: &crate::state::CustomGameFacts,
+    o: &ActionOccurrence,
+) -> Result<Option<crate::model::MayorDecisionPrompt>, CoreError> {
+    let (choice, active) = moonchild_choice(f, o)?;
+    if !active || !choice.chosen_good {
+        return Ok(None);
+    }
+    Ok(crate::death::redirect_options(
+        f,
+        &crate::death::Attempt {
+            player_id: &choice.target_player_id,
+            execution: false,
+            unpreventable: false,
+        },
+    )
+    .map(|options| crate::model::MayorDecisionPrompt {
+        mayor_player_id: choice.target_player_id.clone(),
+        bounce_target_player_ids: options.target_player_ids,
+    }))
+}
+
 fn moonchild_consequence(
     day: &mut crate::day::contracts::DayProgress,
     source: &AbilityUseRef,
@@ -1487,6 +1551,9 @@ pub(crate) fn scheduled_deaths(f: &crate::state::CustomGameFacts) -> Vec<Schedul
                     )
                     .expect("source")
                     .in_night(c.night);
+                    if moonchild_redirect_prompt(f, &o).ok().flatten().is_some() {
+                        return None;
+                    }
                     moonchild_resolve(
                         f,
                         &o,
